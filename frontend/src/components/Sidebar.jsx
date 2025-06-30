@@ -122,7 +122,7 @@ const Sidebar = ({ onBoostClick }) => {
 
       <div className="hidden lg:block sticky top-24">
         <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
+          {/* <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
             <Card className="border-0 shadow-lg bg-gradient-to-br from-pink-50 to-purple-50">
               <CardHeader className="pb-3"><CardTitle className="text-lg font-semibold text-gray-900">Your Stats</CardTitle></CardHeader>
               <CardContent className="space-y-4">
@@ -133,7 +133,7 @@ const Sidebar = ({ onBoostClick }) => {
                 <div className="flex items-center justify-between"><div className="flex items-center space-x-2"><MessageCircle className="w-5 h-5 text-green-500" /><span className="font-medium">Messages</span></div><Badge variant="secondary" className="bg-green-100 text-green-800">8</Badge></div>
               </CardContent>
             </Card>
-          </motion.div>
+          </motion.div> */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
             <QuickActionsCard />
           </motion.div>

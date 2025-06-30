@@ -14,34 +14,56 @@ const BoostModal = ({ open, onOpenChange }) => {
 
   const boostCost = 50;
 
-  const handleBoost = () => {
-    if (coins >= boostCost) {
+ const handleBoost = async () => {
+  if (coins < boostCost) {
+    toast({
+      title: "Insufficient Coins",
+      description: `You need at least ${boostCost} coins to boost your profile.`,
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/boost-profile/boost`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      // Optimistically update coins if backend succeeds
       updateCoins(coins - boostCost);
-      onOpenChange(false);
+
       toast({
         title: "Your profile is now boosted! ✨",
         description: "You're featured at the top for 24 hours!",
+        variant: "success",
       });
+
+      onOpenChange(false);
     } else {
+      // Specific error messages from backend
       toast({
-        title: "Insufficient Coins",
-        description: `You need ${boostCost} coins to boost. Buy more now!`,
+        title: "Boost Failed",
+        description: data.error || "Boost request was not successful.",
         variant: "destructive",
-        action: (
-          <Button 
-            size="sm" 
-            onClick={() => {
-              onOpenChange(false);
-              navigate('/coins');
-            }}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white"
-          >
-            Buy Coins
-          </Button>
-        )
       });
     }
-  };
+  } catch (error) {
+    console.error("Boost failed", error);
+    toast({
+      title: "Boost Failed",
+      description: "Something went wrong. Please try again later.",
+      variant: "destructive",
+    });
+  }
+};
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

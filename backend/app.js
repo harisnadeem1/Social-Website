@@ -16,6 +16,7 @@ const chatterRoutes = require('./src/routes/chatterRoutes');
 const chatterLockRoutes = require('./src/routes/chatterLockRoutes');
 
 const chatterLikeRoutes = require('./src/routes/chatterLikes');
+const boostRoutes = require('./src/routes/boostRoutes');
 
 
 
@@ -54,6 +55,8 @@ app.use('/api/chatter', chatterRoutes);
 app.use('/api/chatter-lock', chatterLockRoutes);
 
 app.use('/api/chatter/likes', chatterLikeRoutes);
+app.use('/api/boost-profile', boostRoutes);
+
 
 
 
