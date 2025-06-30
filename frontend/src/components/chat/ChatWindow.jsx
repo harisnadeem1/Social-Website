@@ -1,13 +1,12 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video } from 'lucide-react';
+import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AuthContext from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import EmojiPicker from 'emoji-picker-react';
-
 
 import {
   DropdownMenu,
@@ -31,7 +30,8 @@ const ChatWindow = ({
   onBackToInbox,
   currentUserId,
   isChatter = false,
-  setConversations
+  setConversations,
+  isLoadingMessages = false
 }) => {
   const { user, coins } = useContext(AuthContext);
   const { toast } = useToast();
@@ -39,13 +39,6 @@ const ChatWindow = ({
 
   const identity = currentUserId || user?.id;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
-
-
-
-
-
-
 
   const navigate = useNavigate();
 
@@ -60,7 +53,7 @@ const ChatWindow = ({
         title: "Chat deleted",
         description: "The conversation has been removed.",
       });
-      onBackToInbox(); // go back to chat list
+      onBackToInbox();
     } catch (err) {
       console.error("Failed to delete chat:", err);
       toast({
@@ -70,8 +63,6 @@ const ChatWindow = ({
       });
     }
   };
-
-
 
   useEffect(() => {
     const fetchProfileId = async () => {
@@ -90,9 +81,6 @@ const ChatWindow = ({
 
   console.log("selected chat")
   console.log(selectedChat)
-
-
-
 
   useEffect(() => {
     scrollToBottom();
@@ -124,8 +112,6 @@ const ChatWindow = ({
     );
   }
 
-
-
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-gray-200 bg-white">
@@ -146,7 +132,12 @@ const ChatWindow = ({
             </Avatar>
 
             <div>
-              <h3 className="font-semibold text-gray-900">{selectedChat.name}</h3>
+              <h3 className="font-semibold text-gray-900 flex items-center">
+                {selectedChat.name}
+                {isLoadingMessages && (
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin text-gray-500" />
+                )}
+              </h3>
               <p className="text-sm text-gray-500">
                 {isChatter ? `Replying as ${selectedChat.participants.girl.name}` : (selectedChat.online ? 'Active now' : `Last seen ${selectedChat.lastSeen || '1 hour ago'}`)}
               </p>
@@ -154,8 +145,6 @@ const ChatWindow = ({
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* <Button variant="ghost" size="sm"><Phone className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm"><Video className="w-4 h-4" /></Button> */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -175,7 +164,6 @@ const ChatWindow = ({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
           </div>
         </div>
       </div>
@@ -189,40 +177,49 @@ const ChatWindow = ({
           </div>
         )}
 
-        <AnimatePresence>
-          {selectedChat.messages.map((msg) => {
-            const isMyMessage = msg.senderId === identity;
-            return (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${isMyMessage
-                  ? 'bg-pink-500 text-white rounded-br-md'
-                  : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
-                  }`}>
-                  <p className="text-sm">{msg.text}</p>
-                  <div className={`flex items-center justify-between mt-1 text-xs ${isMyMessage ? 'text-pink-100' : 'text-gray-500'
+        {isLoadingMessages ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
+              <p className="text-sm text-gray-500">Loading messages...</p>
+            </div>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {selectedChat.messages.map((msg) => {
+              const isMyMessage = msg.senderId === identity;
+              return (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${isMyMessage
+                    ? 'bg-pink-500 text-white rounded-br-md'
+                    : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
                     }`}>
-                    <span>{msg.timestamp}</span>
-                    {isMyMessage && (
-                      <span className="ml-2">
-                        {msg.status === 'sent' && '✓'}
-                        {msg.status === 'delivered' && '✓✓'}
-                        {msg.status === 'read' && <span className="text-pink-200">✓✓</span>}
-                      </span>
-                    )}
+                    <p className="text-sm">{msg.text}</p>
+                    <div className={`flex items-center justify-between mt-1 text-xs ${isMyMessage ? 'text-pink-100' : 'text-gray-500'
+                      }`}>
+                      <span>{msg.timestamp}</span>
+                      {isMyMessage && (
+                        <span className="ml-2">
+                          {msg.status === 'sent' && '✓'}
+                          {msg.status === 'delivered' && '✓✓'}
+                          {msg.status === 'read' && <span className="text-pink-200">✓✓</span>}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
 
-        {isTyping && (
+        {isTyping && !isLoadingMessages && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -252,8 +249,8 @@ const ChatWindow = ({
             onKeyPress={handleKeyPress}
             placeholder={isChatter ? `Replying as ${selectedChat.participants.girl.name}...` : "Each message costs 5 coins..."}
             className="flex-1 border-gray-300 rounded-full"
+            disabled={isLoadingMessages}
           />
-
 
           {showEmojiPicker && (
             <div className="absolute bottom-20 z-10">
@@ -267,7 +264,7 @@ const ChatWindow = ({
           )}
           <Button
             onClick={onSendMessage}
-            disabled={!message.trim()}
+            disabled={!message.trim() || isLoadingMessages}
             className="bg-pink-500 hover:bg-pink-600 text-white rounded-full p-2"
             title={isChatter ? "Send Reply" : "Costs 5 coins per message"}
           >
