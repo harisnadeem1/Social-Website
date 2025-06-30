@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button.jsx';
 import { MessageSquare, Heart, Plus } from 'lucide-react';
 import ChatterConversationList from './ChatterConversationList.jsx';
 import WinksList from './WinksList.jsx';
+import LikeList from './LikeList.jsx';
+
 import StartNewChatModal from './StartNewChatModal.jsx';
 
 const ChatterSidebar = ({
@@ -22,6 +24,23 @@ const ChatterSidebar = ({
 
     const [winks, setWinks] = useState([]);
 
+
+    const [likes, setLikes] = useState([]);
+
+useEffect(() => {
+  const fetchLikes = async () => {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chatter/likes/get`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    const data = await res.json();
+    setLikes(data);
+  };
+
+  fetchLikes();
+}, []);
+
 useEffect(() => {
   const fetchWinks = async () => {
     const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chatter/winks`, {
@@ -36,6 +55,19 @@ useEffect(() => {
   fetchWinks();
 }, []);
 
+const handleLikeResponse = async (like) => {
+  try {
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/chatter/likes/respond/${like.id}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    setLikes(prev => prev.filter(l => l.id !== like.id));
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 
 const handleWinkResponse = async (wink) => {
@@ -81,6 +113,13 @@ const handleWinkResponse = async (wink) => {
             currentChatterId={currentChatterId}
           />
         );
+        case 'likes':
+  return (
+    <LikeList
+      likes={likes}
+      onLikeResponse={handleLikeResponse}
+    />
+  );
       case 'winks':
         return (
           <WinksList
@@ -134,6 +173,16 @@ const handleWinkResponse = async (wink) => {
             <Heart className="w-4 h-4 mr-1" />
             Winks
           </Button>
+
+          <Button
+  variant={activeView === 'likes' ? 'default' : 'outline'}
+  size="sm"
+  onClick={() => setActiveView('likes')}
+  className={activeView === 'likes' ? 'bg-pink-500 hover:bg-pink-600 text-white' : ''}
+>
+  <Heart className="w-4 h-4 mr-1" />
+  Likes
+</Button>
         </div>
       </div>
       {renderContent()}

@@ -1,19 +1,47 @@
 const db = require('../config/db');
 
-exports.addLike = async (req, res) => {
+const addLike = async (req, res) => {
   const senderId = req.user.id;
-  const receiverId = parseInt(req.params.receiverId);
+  const { receiverId } = req.params;
 
   try {
-    await db.query(`
-      INSERT INTO likes (sender_id, receiver_id)
-      VALUES ($1, $2)
-      ON CONFLICT (sender_id, receiver_id) DO NOTHING
-    `, [senderId, receiverId]);
+    const existing = await db.query(
+      'SELECT * FROM likes WHERE sender_id = $1 AND receiver_id = $2',
+      [senderId, receiverId]
+    );
 
-    res.json({ message: 'Like added' });
+    if (existing.rows.length > 0) {
+      return res.status(200).json({ status: 'already_liked' });
+    }
+
+    await db.query(
+      'INSERT INTO likes (sender_id, receiver_id) VALUES ($1, $2)',
+      [senderId, receiverId]
+    );
+
+    return res.status(201).json({ status: 'like_sent' });
   } catch (err) {
-    console.error('Error adding like:', err);
-    res.status(500).json({ message: 'Failed to like profile' });
+    console.error('Error sending like:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+const checkLikeStatus = async (req, res) => {
+  const senderId = req.user.id;
+  const { receiverId } = req.params;
+
+  try {
+    const result = await db.query(
+      'SELECT * FROM likes WHERE sender_id = $1 AND receiver_id = $2',
+      [senderId, receiverId]
+    );
+
+    const liked = result.rows.length > 0;
+    return res.status(200).json({ liked });
+  } catch (err) {
+    console.error('Error checking like status:', err);
+    return res.status(500).json({ error: 'Failed to check like status' });
+  }
+};
+
+module.exports = {checkLikeStatus,addLike}

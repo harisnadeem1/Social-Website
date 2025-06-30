@@ -5,14 +5,3 @@ frontend/node_modules/
 backend/.env
 frontend/.env
 
-# Ignore log files
-*.log
-
-# Optional: ignore build folders
-frontend/build/
-backend/dist/
-
-# Ignore OS or IDE-specific files
-.DS_Store
-.env
-*.env

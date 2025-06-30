@@ -19,6 +19,10 @@ const ProfileDetail = () => {
   const [profile, setProfile] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+const [liked, setLiked] = useState(false);
+
+
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -29,6 +33,10 @@ const ProfileDetail = () => {
 
 
         setProfile(data);
+        if (data.isLikedByCurrentUser) {
+  setLiked(true);
+}
+
 
         console.log(data);
       } catch (error) {
@@ -139,23 +147,50 @@ const ProfileDetail = () => {
 
 const authToken = localStorage.getItem('token');
 
-const handleLike = async () => {
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/likes/${profile.user_id}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`
-      }
-    });
+ const handleLike = async (e) => {
+    e.stopPropagation();
+    const authToken = localStorage.getItem('token');
 
-    if (!res.ok) throw new Error('Like failed');
-    toast({ title: '❤️ Profile liked!' });
-  } catch (err) {
-    console.log(err);
-    toast({ title: 'Failed to like profile', variant: 'destructive' });
-  }
-};
+    try {
+      // Get user ID from profile ID
+      const userIdRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user-id/${profile.id}`);
+      const userData = await userIdRes.json();
+      const receiverId = userData.user_id;
+
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/likes/${receiverId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        }
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'like_sent') {
+        setLiked(true);
+        toast({
+          title: "❤️ Like sent!",
+          description: `You liked ${profile.name}'s profile!`,
+        });
+      } else if (data.status === 'already_liked') {
+        setLiked(true);
+        toast({
+          title: "Already Liked",
+          description: `You already liked ${profile.name}.`,
+        });
+      } else {
+        throw new Error(data.error || 'Failed to send like');
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive"
+      });
+    }
+  };
+
 
   const handleMessage = () => {
     navigate(`/chat?user=${profile.id}&name=${encodeURIComponent(profile.name)}`);
