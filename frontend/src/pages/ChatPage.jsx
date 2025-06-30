@@ -22,6 +22,7 @@ const ChatPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const hasHandledSearchParams = useRef(false);
 
   // Socket setup
@@ -88,6 +89,68 @@ const ChatPage = () => {
     };
   }, [selectedChatId]);
 
+  // Function to fetch all conversations
+  const fetchAllConversations = useCallback(async () => {
+    setIsLoadingConversations(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/me/conversations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+
+      if (data.conversations) {
+        const conversationsWithMessages = await Promise.all(
+          data.conversations.map(async (conv) => {
+            // Fetch messages for each conversation
+            const messagesRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/messages/${conv.conversation_id}`, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+
+            const messagesData = await messagesRes.json();
+            const messages = Array.isArray(messagesData.messages)
+              ? messagesData.messages.map((msg) => ({
+                  id: msg.id,
+                  text: msg.content,
+                  senderId: msg.sender_id,
+                  timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  status: 'delivered',
+                }))
+              : [];
+
+            return {
+              id: conv.conversation_id,
+              girlId: conv.girl_id,
+              name: conv.girl_name,
+              avatar: conv.avatar || '/default-avatar.jpg',
+              lastMessage: messages[messages.length - 1]?.text || 'Tap to continue...',
+              timestamp: 'now',
+              unread: 0,
+              online: true,
+              messages: messages,
+              lastActivity: new Date(conv.last_activity).getTime(),
+            };
+          })
+        );
+
+        setConversations(conversationsWithMessages);
+        console.log('Conversation list reloaded');
+      }
+    } catch (err) {
+      console.error('Failed to fetch conversations:', err);
+      toast({
+        title: "Error",
+        description: "Failed to reload conversation list. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [toast]);
+
   // Function to fetch messages for a specific conversation
   const fetchMessagesForConversation = useCallback(async (conversationId) => {
     setIsLoadingMessages(true);
@@ -139,62 +202,8 @@ const ChatPage = () => {
 
   // Initial fetch of conversations
   useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/me/conversations`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        const data = await res.json();
-
-        if (data.conversations) {
-          const conversationsWithMessages = await Promise.all(
-            data.conversations.map(async (conv) => {
-              // Fetch messages for each conversation
-              const messagesRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/messages/${conv.conversation_id}`, {
-                headers: {
-                  Authorization: `Bearer ${token}`
-                }
-              });
-
-              const messagesData = await messagesRes.json();
-              const messages = Array.isArray(messagesData.messages)
-                ? messagesData.messages.map((msg) => ({
-                    id: msg.id,
-                    text: msg.content,
-                    senderId: msg.sender_id,
-                    timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    status: 'delivered',
-                  }))
-                : [];
-                console.log(conv);
-                console.log("========0000000conv");
-
-              return {
-                id: conv.conversation_id,
-                girlId: conv.girl_id,
-                name: conv.girl_name,
-                avatar: conv.avatar || '/default-avatar.jpg',
-                lastMessage: messages[messages.length - 1]?.text || 'Tap to continue...',
-                timestamp: 'now',
-                unread: 0,
-                online: true,
-                messages: messages,
-                lastActivity: new Date(conv.last_activity).getTime(),
-              };
-            })
-          );
-
-          setConversations(conversationsWithMessages);
-        }
-      } catch (err) {
-        console.error('Failed to fetch conversations:', err);
-      }
-    };
-
-    fetchConversations();
-  }, []);
+    fetchAllConversations();
+  }, [fetchAllConversations]);
 
   // Handle URL parameters
   useEffect(() => {
@@ -211,12 +220,16 @@ const ChatPage = () => {
     }
   }, [searchParams, conversations]);
 
-  // Reload messages whenever a chat is selected
+  // Reload messages and conversation list whenever a chat is selected
   useEffect(() => {
     if (selectedChatId) {
-      fetchMessagesForConversation(selectedChatId);
+      // Reload the conversation list first
+      fetchAllConversations().then(() => {
+        // Then reload messages for the selected chat
+        fetchMessagesForConversation(selectedChatId);
+      });
     }
-  }, [selectedChatId, fetchMessagesForConversation]);
+  }, [selectedChatId, fetchMessagesForConversation, fetchAllConversations]);
 
   const selectedChat = useMemo(() => 
     conversations.find(c => c.id === selectedChatId), 
@@ -335,6 +348,7 @@ const ChatPage = () => {
             <ConversationList 
               conversations={conversations}
               onSelectChat={handleSelectChat}
+              isLoading={isLoadingConversations}
             />
           </div>
           
