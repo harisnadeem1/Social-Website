@@ -121,12 +121,21 @@ const ChatPage = () => {
                 }))
               : [];
 
+            // Format last message with "You:" prefix if sent by current user
+            const lastMsg = messages[messages.length - 1];
+            let formattedLastMessage = 'Tap to continue...';
+            if (lastMsg) {
+              formattedLastMessage = lastMsg.senderId === user?.id 
+                ? `You: ${lastMsg.text}` 
+                : lastMsg.text;
+            }
+
             return {
               id: conv.conversation_id,
               girlId: conv.girl_id,
               name: conv.girl_name,
               avatar: conv.avatar || '/default-avatar.jpg',
-              lastMessage: messages[messages.length - 1]?.text || 'Tap to continue...',
+              lastMessage: formattedLastMessage,
               timestamp: 'now',
               unread: 0,
               online: true,
@@ -349,6 +358,7 @@ const ChatPage = () => {
               conversations={conversations}
               onSelectChat={handleSelectChat}
               isLoading={isLoadingConversations}
+              currentUserId={user?.id}
             />
           </div>
           

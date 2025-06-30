@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ConversationList = ({ conversations, onSelectChat, isLoading = false }) => {
+const ConversationList = ({ conversations, onSelectChat, isLoading = false, currentUserId }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const sortedConversations = [...conversations].sort(
@@ -37,6 +37,15 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false }) =>
     }
   };
 
+  // Function to check if conversation has new messages from other person
+  const hasNewMessages = (conversation) => {
+    if (!conversation.messages || conversation.messages.length === 0) return false;
+    
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+    // Check if the last message was sent by someone other than current user
+    return lastMessage.senderId !== currentUserId;
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-gray-200">
@@ -62,17 +71,11 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false }) =>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-gray-500">Refreshing conversations...</p>
-            </div>
-          </div>
-        ) 
-        : ( */}
-          <AnimatePresence>
-            {filteredConversations.map((conversation, index) => (
+        <AnimatePresence>
+          {filteredConversations.map((conversation, index) => {
+            const showNewMessagesBadge = hasNewMessages(conversation);
+            
+            return (
               <motion.div 
                 key={conversation.id}
                 initial={{ opacity: 0, x: -10 }}
@@ -98,19 +101,26 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false }) =>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className={`font-medium text-gray-900 truncate ${conversation.unread > 0 ? 'font-semibold' : ''}`}>
+                      <h3 className={`font-medium text-gray-900 truncate ${showNewMessagesBadge ? 'font-semibold' : ''}`}>
                         {conversation.name}
                       </h3>
-                      <span className="text-xs text-gray-500 ml-2">
-                        {formatTime(conversation.lastActivity)}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500">
+                          {formatTime(conversation.lastActivity)}
+                        </span>
+                        {showNewMessagesBadge && (
+                          <Badge className="bg-pink-500 text-white text-xs px-2 py-1">
+                            New
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <p className={`text-sm text-gray-600 truncate ${conversation.unread > 0 ? 'font-medium' : ''}`}>
+                      <p className={`text-sm text-gray-600 truncate ${showNewMessagesBadge ? 'font-medium' : ''}`}>
                         {conversation.lastMessage}
                       </p>
                       {conversation.unread > 0 && (
-                        <Badge className="bg-pink-500 text-white text-xs ml-2">
+                        <Badge className="bg-red-500 text-white text-xs ml-2">
                           {conversation.unread}
                         </Badge>
                       )}
@@ -118,9 +128,9 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false }) =>
                   </div>
                 </div>
               </motion.div>
-            ))}
-          </AnimatePresence>
-        {/* )} */}
+            );
+          })}
+        </AnimatePresence>
 
         {!isLoading && filteredConversations.length === 0 && (
           <div className="flex items-center justify-center py-8">
