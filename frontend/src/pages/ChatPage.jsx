@@ -72,7 +72,6 @@ useEffect(() => {
 
 
 
-
 useEffect(() => {
   socket.on("receive_message", (incomingMessage) => {
     setConversations((prevConvs) =>
@@ -104,7 +103,6 @@ useEffect(() => {
     socket.off("receive_message");
   };
 }, [selectedChatId]);
-
 
 
 
@@ -145,6 +143,9 @@ useEffect(() => {
                   status: 'delivered',
                 }))
               : [];
+              console.log(conv);
+              console.log("========0000000conv");
+
 
             return {
               id: conv.conversation_id,
@@ -214,92 +215,6 @@ useEffect(() => {
     setShowInbox(true);
     setSelectedChatId(null);
   }, []);
-
-  // const handleSendMessage = useCallback(() => {
-  //   if (!message.trim() || !selectedChatId || !user) return;
-
-  //   const messageCost = 5;
-
-  //   if (coins < messageCost) {
-  //     toast({
-  //       title: "Insufficient Coins",
-  //       description: `You need ${messageCost} coins to send a message. Buy coins now!`,
-  //       variant: "destructive",
-  //       action: (
-  //         <Button 
-  //           size="sm" 
-  //           onClick={() => window.location.href = '/coins'}
-  //           className="bg-yellow-500 hover:bg-yellow-600 text-white"
-  //         >
-  //           Buy Coins
-  //         </Button>
-  //       )
-  //     });
-  //     return;
-  //   }
-
-  //   updateCoins(coins - messageCost);
-  //   toast({
-  //     title: "Message Sent! 💬",
-  //     description: `Message sent! (${messageCost} coins used)`,
-  //   });
-
-  //   const newMessage = {
-  //     id: Date.now(),
-  //     text: message,
-  //     senderId: user.id,
-  //     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  //     status: 'sent'
-  //   };
-
-  //   setConversations(prevConvs => 
-  //     prevConvs.map(conv => {
-  //       if (conv.id === selectedChatId) {
-  //         return {
-  //           ...conv,
-  //           messages: [...conv.messages, newMessage],
-  //           lastMessage: `You: ${message}`,
-  //           timestamp: 'now',
-  //           lastActivity: Date.now()
-  //         };
-  //       }
-  //       return conv;
-  //     }).sort((a, b) => b.lastActivity - a.lastActivity)
-  //   );
-
-  //   setMessage('');
-
-  //   setTimeout(() => {
-  //     setIsTyping(true);
-  //     setTimeout(() => {
-  //       setIsTyping(false);
-  //       const replyMessage = {
-  //         id: Date.now() + 1,
-  //         text: 'Thanks for your message! 😊',
-  //         senderId: 'girl001', // This would be dynamic in a real app
-  //         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  //         status: 'delivered'
-  //       };
-        
-  //       setConversations(prevConvs => 
-  //         prevConvs.map(conv => {
-  //           if (conv.id === selectedChatId) {
-  //             return {
-  //               ...conv,
-  //               messages: [...conv.messages, replyMessage],
-  //               lastMessage: replyMessage.text,
-  //               timestamp: 'now',
-  //               lastActivity: Date.now()
-  //             };
-  //           }
-  //           return conv;
-  //         }).sort((a, b) => b.lastActivity - a.lastActivity)
-  //       );
-  //     }, 2000);
-  //   }, 1000);
-  // }, [message, selectedChatId, coins, updateCoins, toast, user]);
-
-
 
 
 
@@ -401,7 +316,7 @@ useEffect(() => {
             <ConversationList 
               conversations={conversations}
               onSelectChat={handleSelectChat}
-              formatTime={formatTime}
+              
             />
           </div>
           

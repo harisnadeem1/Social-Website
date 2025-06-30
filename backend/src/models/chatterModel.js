@@ -52,15 +52,38 @@ const getMessagesByConversationId = async (conversationId) => {
 
 
 const sendMessageFromGirl = async (conversationId, girlId, content) => {
-  const query = `
-    INSERT INTO messages (conversation_id, sender_id, content, sent_at)
-    VALUES ($1, $2, $3, NOW())
-    RETURNING *;
-  `;
-  const values = [conversationId, girlId, content];
-  const { rows } = await db.query(query, values);
-  return rows[0];
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Insert the new message
+    const insertQuery = `
+      INSERT INTO messages (conversation_id, sender_id, content, sent_at)
+      VALUES ($1, $2, $3, NOW())
+      RETURNING *;
+    `;
+    const insertValues = [conversationId, girlId, content];
+    const { rows } = await client.query(insertQuery, insertValues);
+    const newMessage = rows[0];
+
+    // Update last_activity in conversations table
+    const updateQuery = `
+      UPDATE conversations
+      SET last_activity = NOW()
+      WHERE id = $1;
+    `;
+    await client.query(updateQuery, [conversationId]);
+
+    await client.query('COMMIT');
+    return newMessage;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
+
 
 
 
