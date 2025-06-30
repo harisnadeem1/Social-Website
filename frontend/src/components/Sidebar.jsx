@@ -43,14 +43,15 @@ const Sidebar = ({ onBoostClick }) => {
             Buy Coins
           </Button>
         </Link>
-        <Button
+        {/* <Button
           variant="outline"
           onClick={() => handleQuickAction('likes')}
           className="w-full border-red-300 text-red-700 hover:bg-red-50 rounded-full"
         >
           <Heart className="w-4 h-4 mr-2" />
           View Likes
-        </Button>
+        </Button> */}
+         <Link to="/chat" className="block">
         <Button
           variant="outline"
           onClick={() => handleQuickAction('messages')}
@@ -59,6 +60,7 @@ const Sidebar = ({ onBoostClick }) => {
           <MessageCircle className="w-4 h-4 mr-2" />
           Messages
         </Button>
+        </Link>
       </CardContent>
     </Card>
   );

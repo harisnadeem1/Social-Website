@@ -101,7 +101,7 @@ const ChatWindow = ({
     setMessage(e.target.value);
   };
 
-  if (!selectedChat) {
+  if (!selectedChat ) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -152,7 +152,9 @@ const ChatWindow = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/profile/${selectedChat.girlId}`)}>
+            
+                <DropdownMenuItem onClick={() => navigate(`/profile/${selectedChat.id}`)}>
+                  
                   View Profile
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

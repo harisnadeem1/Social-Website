@@ -18,18 +18,6 @@ const allUsersData = [
   { id: 'user004', name: 'David Wilson', avatar: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=150&h=150&fit=crop&crop=face' }
 ];
 
-const now = Date.now();
-const initialConversations = [
-  { id: 1, participants: { user: allUsersData[0], girl: girlProfilesData[0] }, lastMessage: 'Hey! How was your day? 😊', timestamp: '2 min ago', unread: 2, online: true, lastActivity: now - 120000, hasWinked: true, messages: [{ id: 1, text: 'Hi there!', senderId: 'girl001', timestamp: '10:30 AM' }, { id: 2, text: 'Hey! How was your day? 😊', senderId: 'user001', timestamp: '10:32 AM' }], locked_by: null, lock_time: null },
-  { id: 2, participants: { user: allUsersData[1], girl: girlProfilesData[1] }, lastMessage: 'Would love to grab coffee!', timestamp: '1 hour ago', unread: 0, online: false, lastActivity: now - 3600000, hasWinked: false, messages: [{ id: 3, text: 'Would love to grab coffee!', senderId: 'user002', timestamp: '9:30 AM' }], locked_by: null, lock_time: null },
-  { id: 3, participants: { user: allUsersData[2], girl: girlProfilesData[0] }, lastMessage: 'You look amazing!', timestamp: '3 hours ago', unread: 1, online: true, lastActivity: now - 10800000, hasWinked: true, messages: [{ id: 4, text: 'You look amazing!', senderId: 'user003', timestamp: '7:30 AM' }], locked_by: 'other.chatter@flirtduo.com', lock_time: now - 60000 },
-];
-
-const initialWinks = [
-  { id: 'wink001', user: allUsersData[3], girl: girlProfilesData[2], timestamp: '5 min ago' },
-  { id: 'wink002', user: allUsersData[0], girl: girlProfilesData[0], timestamp: '1 hour ago' },
-];
-
 const LOCK_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useChatterState = () => {
@@ -38,98 +26,154 @@ export const useChatterState = () => {
   const [girlProfiles] = useState(girlProfilesData);
   const [allUsers] = useState(allUsersData);
   const [activeGirl, setActiveGirl] = useState(girlProfilesData[0]);
-  // const [conversations, setConversations] = useState(initialConversations);
-  const [winks] = useState(initialWinks);
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState('');
   const [activeView, setActiveView] = useState('conversations');
-
   const [conversations, setConversations] = useState([]);
-const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [isLockedByYou, setIsLockedByYou] = useState(false);
+  const [isLockedByOther, setIsLockedByOther] = useState(false);
+  const [lockHolderName, setLockHolderName] = useState('');
+  const [lockedChatId, setLockedChatId] = useState(null);
 
-
-
-const [isLockedByYou, setIsLockedByYou] = useState(false);
-const [isLockedByOther, setIsLockedByOther] = useState(false);
-const [lockHolderName, setLockHolderName] = useState('');
-
-const [lockedChatId, setLockedChatId] = useState(null);
-
-
-
-
-useEffect(() => {
-  const fetchConversations = async () => {
+  // Function to fetch all conversations with messages and format last message
+  const fetchAllConversations = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token'); // or from context
+      const token = localStorage.getItem('token');
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chatter/conversations`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
-      console.log("data GOT----------------")
-      console.log(res.data);
-      setConversations(res.data.conversations);
+
+      if (res.data.conversations) {
+        const conversationsWithMessages = await Promise.all(
+          res.data.conversations.map(async (conv) => {
+            // Fetch messages for each conversation
+            const messagesRes = await axios.get(
+              `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conv.conversation_id}/messages`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            const messages = Array.isArray(messagesRes.data)
+              ? messagesRes.data.map((msg) => ({
+                  id: msg.id,
+                  text: msg.content,
+                  senderId: msg.sender_id,
+                  timestamp: formatTime(msg.sent_at),
+                  status: 'delivered',
+                }))
+              : [];
+
+            // Format last message with proper prefix
+            const lastMsg = messages[messages.length - 1];
+            let formattedLastMessage = 'Tap to continue...';
+            if (lastMsg) {
+              // For chatter: show "You:" if message was sent by the girl (chatter), no prefix if sent by user
+              formattedLastMessage = lastMsg.senderId === conv.girl_id 
+                ? `You: ${lastMsg.text}` 
+                : lastMsg.text;
+            }
+
+            return {
+              conversation_id: conv.conversation_id,
+              user_id: conv.user_id,
+              girl_id: conv.girl_id,
+              user_name: conv.user_name,
+              girl_name: conv.girl_name,
+              user_image: conv.user_image,
+              girl_image: conv.girl_image,
+              last_message: formattedLastMessage,
+              last_message_time: conv.last_message_time,
+              locked_by: conv.locked_by,
+              messages: messages,
+              participants: {
+                user: { id: conv.user_id, name: conv.user_name },
+                girl: { id: conv.girl_id, name: conv.girl_name }
+              },
+              lastActivity: new Date(conv.last_message_time).getTime(),
+            };
+          })
+        );
+
+        setConversations(conversationsWithMessages);
+        console.log('Chatter conversation list reloaded');
+      }
     } catch (err) {
-      console.error('Failed to load conversations:', err);
-      toast({ variant: 'destructive', title: 'Failed to Load Chats', description: 'Try refreshing the page.' });
+      console.error('Failed to fetch chatter conversations:', err);
+      toast({
+        title: "Error",
+        description: "Failed to reload conversation list. Please try again.",
+        variant: "destructive"
+      });
     }
-  };
+  }, [toast]);
 
-  fetchConversations();
-}, []);
+  // Function to fetch messages for a specific conversation
+  const fetchMessagesForConversation = useCallback(async (conversationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const messagesRes = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conversationId}/messages`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
+      const messages = Array.isArray(messagesRes.data)
+        ? messagesRes.data.map((msg) => ({
+            id: msg.id,
+            text: msg.content,
+            senderId: msg.sender_id,
+            timestamp: formatTime(msg.sent_at),
+            status: 'delivered',
+          }))
+        : [];
 
+      // Update the specific conversation with new messages
+      setConversations(prevConvs =>
+        prevConvs.map(conv => {
+          if (conv.conversation_id === conversationId) {
+            // Format last message with proper prefix
+            const lastMsg = messages[messages.length - 1];
+            let formattedLastMessage = 'Tap to continue...';
+            if (lastMsg) {
+              // For chatter: show "You:" if message was sent by the girl (chatter), no prefix if sent by user
+              formattedLastMessage = lastMsg.senderId === conv.girl_id 
+                ? `You: ${lastMsg.text}` 
+                : lastMsg.text;
+            }
 
+            return {
+              ...conv,
+              messages: messages,
+              last_message: formattedLastMessage,
+            };
+          }
+          return conv;
+        })
+      );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      console.log(`Chatter messages reloaded for conversation ${conversationId}`);
+    } catch (err) {
+      console.error(`Failed to fetch chatter messages for conversation ${conversationId}:`, err);
+      toast({
+        title: "Error",
+        description: "Failed to load messages. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
 
   const sortedConversations = useMemo(() => {
     return [...conversations].sort((a, b) => b.lastActivity - a.lastActivity);
   }, [conversations]);
 
-  // const selectedChat = useMemo(() => {
-  //   return conversations.find(c => c.id === selectedChatId);
-  // }, [conversations, selectedChatId]);
-
-  // const isLockedByOther = useMemo(() => {
-  //   if (!selectedChat || !selectedChat.locked_by) return false;
-  //   return selectedChat.locked_by !== user.email;
-  // }, [selectedChat, user.email]);
-
-  // const isLockedByYou = useMemo(() => {
-  //   if (!selectedChat || !selectedChat.locked_by) return false;
-  //   return selectedChat.locked_by === user.email;
-  // }, [selectedChat, user.email]);
-
-  // const lockHolderName = useMemo(() => {
-  //   if (!isLockedByOther || !selectedChat) return '';
-  //   // In a real app, you'd look up the chatter's name.
-  //   return selectedChat.locked_by.split('@')[0];
-  // }, [isLockedByOther, selectedChat]);
-
   const lockConversation = useCallback((chatId, chatterId) => {
     setConversations(prev => prev.map(c => 
-      c.id === chatId ? { ...c, locked_by: chatterId, lock_time: Date.now() } : c
+      c.conversation_id === chatId ? { ...c, locked_by: chatterId, lock_time: Date.now() } : c
     ));
   }, []);
 
   const unlockConversation = useCallback((chatId) => {
     setConversations(prev => prev.map(c => 
-      c.id === chatId ? { ...c, locked_by: null, lock_time: null } : c
+      c.conversation_id === chatId ? { ...c, locked_by: null, lock_time: null } : c
     ));
   }, []);
 
@@ -138,258 +182,268 @@ useEffect(() => {
       const now = Date.now();
       conversations.forEach(c => {
         if (c.locked_by && c.lock_time && (now - c.lock_time > LOCK_DURATION)) {
-          unlockConversation(c.id);
-          toast({ title: 'Chat Unlocked', description: `Conversation with ${c.participants.user.name} is now available.` });
+          unlockConversation(c.conversation_id);
+          toast({ title: 'Chat Unlocked', description: `Conversation with ${c.user_name} is now available.` });
         }
       });
     }, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
   }, [conversations, unlockConversation, toast]);
 
-  // const handleSelectChat = useCallback((chat) => {
-  //   const now = Date.now();
-  //   const isLockExpired = chat.lock_time && (now - chat.lock_time > LOCK_DURATION);
-
-  //   if (!chat.locked_by || isLockExpired) {
-  //     lockConversation(chat.id, user.email);
-  //     setActiveGirl(chat.participants.girl);
-  //     setSelectedChatId(chat.id);
-  //     toast({ title: 'Chat Locked', description: `You have locked the conversation with ${chat.participants.user.name}.` });
-  //   } else if (chat.locked_by === user.email) {
-  //     // It's already locked by me, just open it and refresh lock
-  //     lockConversation(chat.id, user.email);
-  //     setActiveGirl(chat.participants.girl);
-  //     setSelectedChatId(chat.id);
-  //   } else {
-  //     // Locked by someone else
-  //     setSelectedChatId(chat.id);
-  //     setActiveGirl(chat.participants.girl);
-  //     toast({ variant: 'destructive', title: 'Chat is Locked', description: `This chat is currently handled by another team member.` });
-  //   }
-  // }, [user.email, lockConversation, toast]);
-
-
-
-
-
-
+  // Initial fetch of conversations
   useEffect(() => {
-  let interval;
+    fetchAllConversations();
+  }, [fetchAllConversations]);
 
-  if (selectedChat) {
-    interval = setInterval(async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${selectedChat.conversation_id}/messages`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+  // Updated handleSelectChat function with reload functionality
+  const handleSelectChat = useCallback(async (conversation) => {
+    try {
+      const token = localStorage.getItem('token');
+      const currentUserId = JSON.parse(localStorage.getItem('userId'));
 
-        const updatedMessages = res.data.map(msg => ({
-          id: msg.id,
-          senderId: msg.sender_id,
-          text: msg.content,
-          timestamp: formatTime(msg.sent_at),
-        }));
-
-        setSelectedChat(prev => ({
-          ...prev,
-          messages: updatedMessages,
-        }));
-      } catch (err) {
-        console.error("Polling failed", err);
+      // 🔓 Unlock previous chat (if switching to a different one)
+      if (lockedChatId && lockedChatId !== conversation.conversation_id) {
+        await unlockChat(lockedChatId, token);
+        console.log("Unlocked chat:", lockedChatId);
       }
-    }, 3000); // every 3 seconds
-  }
 
-  return () => clearInterval(interval); // clean up
-}, [selectedChat?.conversation_id]);
+      // Reload all conversations first
+      await fetchAllConversations();
 
+      // 📨 Load messages for the selected conversation
+      await fetchMessagesForConversation(conversation.conversation_id);
 
-
-
-
-
-
-
-
-
-const handleSelectChat = async (conversation) => {
-  try {
-    const token = localStorage.getItem('token');
-    const currentUserId = JSON.parse(localStorage.getItem('userId'));
-
-    // 🔓 Unlock previous chat (if switching to a different one)
-    if (lockedChatId && lockedChatId !== conversation.conversation_id) {
-      await unlockChat(lockedChatId, token);
-      console.log("Unlocked chat:", lockedChatId);
-    }
-
-    // 📨 Load messages
-    const res = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conversation.conversation_id}/messages`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    const messages = res.data;
-
-    const selectedChatData = {
-      ...conversation,
-      participants: {
-        user: { id: conversation.user_id, name: conversation.user_name },
-        girl: { id: conversation.girl_id, name: conversation.girl_name },
-      },
-      messages: messages.map(msg => ({
-        id: msg.id,
-        senderId: msg.sender_id,
-        senderName: msg.sender_name,
-        senderImage: msg.sender_image,
-        text: msg.content,
-        timestamp: formatTime(msg.sent_at),
-      })),
-    };
-
-    setSelectedChat(selectedChatData);
-
-    // 🔒 Lock this conversation
-    await lockChat(conversation.conversation_id, token);
-    setLockedChatId(conversation.conversation_id);
-    console.log("Locked chat:", conversation.conversation_id);
-
-    // ✅ Check lock status
-    const lockData = await checkLockStatus(conversation.conversation_id, token);
-
-    if (lockData.locked_by === currentUserId) {
-      setIsLockedByYou(true);
-      setIsLockedByOther(false);
-    } else if (lockData.locked_by) {
-      setIsLockedByOther(true);
-      setIsLockedByYou(false);
-      setLockHolderName(lockData.lock_holder_name || 'Another chatter');
-    } else {
-      setIsLockedByOther(false);
-      setIsLockedByYou(false);
-    }
-
-  } catch (err) {
-    console.error("Failed to load messages or lock chat", err);
-    toast({ title: "Error", description: "Could not open or lock the chat." });
-  }
-};
-
-
-
-const handleBackToInbox = async () => {
-  const token = localStorage.getItem('token');
-  try {
-    if (selectedChat) {
-      await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/chatter-lock/unlock/${selectedChat.conversation_id}`,
-        {},
+      // Get the updated conversation data
+      const messagesRes = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conversation.conversation_id}/messages`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      const messages = messagesRes.data;
+
+      const selectedChatData = {
+        ...conversation,
+        participants: {
+          user: { id: conversation.user_id, name: conversation.user_name },
+          girl: { id: conversation.girl_id, name: conversation.girl_name },
+        },
+        messages: messages.map(msg => ({
+          id: msg.id,
+          senderId: msg.sender_id,
+          senderName: msg.sender_name,
+          senderImage: msg.sender_image,
+          text: msg.content,
+          timestamp: formatTime(msg.sent_at),
+        })),
+      };
+
+      setSelectedChat(selectedChatData);
+
+      // 🔒 Lock this conversation
+      await lockChat(conversation.conversation_id, token);
+      setLockedChatId(conversation.conversation_id);
+      console.log("Locked chat:", conversation.conversation_id);
+
+      // ✅ Check lock status
+      const lockData = await checkLockStatus(conversation.conversation_id, token);
+
+      if (lockData.locked_by === currentUserId) {
+        setIsLockedByYou(true);
+        setIsLockedByOther(false);
+      } else if (lockData.locked_by) {
+        setIsLockedByOther(true);
+        setIsLockedByYou(false);
+        setLockHolderName(lockData.lock_holder_name || 'Another chatter');
+      } else {
+        setIsLockedByOther(false);
+        setIsLockedByYou(false);
+      }
+
+    } catch (err) {
+      console.error("Failed to load messages or lock chat", err);
+      toast({ title: "Error", description: "Could not open or lock the chat." });
     }
+  }, [lockedChatId, fetchAllConversations, fetchMessagesForConversation, toast]);
 
-    setSelectedChat(null);
-    setIsLockedByYou(false);
-    setIsLockedByOther(false);
-    setLockHolderName('');
-  } catch (err) {
-    console.error("Failed to unlock conversation", err);
-    toast({ title: "Error", description: "Failed to release lock." });
-  }
-};
-
-
-
-  const handleSendMessage = async (socket) => {
-  if (!message.trim() || !selectedChat) return;
-
-  const token = localStorage.getItem('token');
-  const conversationId = selectedChat.conversation_id;
-  const girlId = selectedChat.girl_id;
-
-  try {
-    const res = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/chatter/${conversationId}/messages`,
-      { content: message, girlId },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    const newMsg = res.data.message;
-
-    const formattedMessage = {
-      id: newMsg.id,
-      senderId: newMsg.sender_id,
-      text: newMsg.content,
-      timestamp: formatTime(newMsg.sent_at),
-    };
-
-    // Append to chat immediately
-    setSelectedChat((prev) => ({
-      ...prev,
-      messages: [...prev.messages, formattedMessage],
-    }));
-
-    // Emit real-time update
-    if (socket) {
-      socket.emit("newMessage", {
-        conversation_id: conversationId,
-        ...newMsg
+  // Reload messages and conversation list whenever selectedChatId changes
+  useEffect(() => {
+    if (selectedChatId) {
+      // Reload the conversation list first
+      fetchAllConversations().then(() => {
+        // Then reload messages for the selected chat
+        fetchMessagesForConversation(selectedChatId);
       });
-    } else {
-      console.warn("Socket is undefined when trying to emit message");
+    }
+  }, [selectedChatId, fetchMessagesForConversation, fetchAllConversations]);
+
+  // Your existing polling logic - keeping it as is
+  useEffect(() => {
+    let interval;
+
+    if (selectedChat) {
+      interval = setInterval(async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await axios.get(
+            `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${selectedChat.conversation_id}/messages`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          const updatedMessages = res.data.map(msg => ({
+            id: msg.id,
+            senderId: msg.sender_id,
+            text: msg.content,
+            timestamp: formatTime(msg.sent_at),
+          }));
+
+          setSelectedChat(prev => ({
+            ...prev,
+            messages: updatedMessages,
+          }));
+        } catch (err) {
+          console.error("Polling failed", err);
+        }
+      }, 3000); // every 3 seconds
     }
 
-    setMessage('');
-  } catch (err) {
-    console.error('Send message error:', err);
-    toast({ title: 'Error', description: 'Failed to send message.' });
-  }
-};
+    return () => clearInterval(interval); // clean up
+  }, [selectedChat?.conversation_id]);
 
+  const handleBackToInbox = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      if (selectedChat) {
+        await unlockChat(selectedChat.conversation_id, token);
+      }
 
+      setSelectedChat(null);
+      setIsLockedByYou(false);
+      setIsLockedByOther(false);
+      setLockHolderName('');
+      setLockedChatId(null);
+    } catch (err) {
+      console.error("Failed to unlock conversation", err);
+      toast({ title: "Error", description: "Failed to release lock." });
+    }
+  };
 
+  // Updated handleSendMessage to format the last message correctly
+  const handleSendMessage = async (socket) => {
+    if (!message.trim() || !selectedChat) return;
 
+    const token = localStorage.getItem('token');
+    const conversationId = selectedChat.conversation_id;
+    const girlId = selectedChat.girl_id;
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/chatter/${conversationId}/messages`,
+        { content: message, girlId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const newMsg = res.data.message;
+
+      const formattedMessage = {
+        id: newMsg.id,
+        senderId: newMsg.sender_id,
+        text: newMsg.content,
+        timestamp: formatTime(newMsg.sent_at),
+      };
+
+      setMessage('');
+
+      // Update conversations with the new message
+      setConversations(prevConvs =>
+        prevConvs.map(conv => {
+          if (conv.conversation_id === selectedChat.conversation_id) {
+            return {
+              ...conv,
+              messages: [...conv.messages, formattedMessage],
+              // For chatter sending message: show "You: message"
+              last_message: `You: ${formattedMessage.text}`,
+              last_message_time: newMsg.sent_at,
+              lastActivity: Date.now()
+            };
+          }
+          return conv;
+        }).sort((a, b) => b.lastActivity - a.lastActivity)
+      );
+
+      // Update selected chat
+      setSelectedChat(prev => ({
+        ...prev,
+        messages: [...prev.messages, formattedMessage]
+      }));
+
+      // Emit real-time update (keeping your existing socket logic)
+      if (socket) {
+        socket.emit("newMessage", {
+          conversation_id: conversationId,
+          ...newMsg
+        });
+      } else {
+        console.warn("Socket is undefined when trying to emit message");
+      }
+
+    } catch (err) {
+      console.error('Send message error:', err);
+      toast({ title: 'Error', description: 'Failed to send message.' });
+    }
+  };
 
   const handleStartNewChat = useCallback((selectedUserId, newChatMessage) => {
     if (!selectedUserId || !newChatMessage.trim()) return;
     const userToChat = allUsers.find(u => u.id === selectedUserId);
     const newConversation = {
-      id: Date.now(),
-      participants: { user: userToChat, girl: activeGirl },
-      lastMessage: newChatMessage,
-      timestamp: 'now',
-      unread: 0,
-      online: Math.random() > 0.5,
-      lastActivity: Date.now(),
-      hasWinked: false,
-      messages: [{ id: Date.now(), text: newChatMessage, senderId: activeGirl.id, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }],
+      conversation_id: Date.now(),
+      user_id: userToChat.id,
+      girl_id: activeGirl.id,
+      user_name: userToChat.name,
+      girl_name: activeGirl.name,
+      user_image: userToChat.avatar,
+      girl_image: activeGirl.avatar,
+      last_message: `You: ${newChatMessage}`,
+      last_message_time: new Date().toISOString(),
       locked_by: user.email,
-      lock_time: Date.now(),
+      messages: [{ 
+        id: Date.now(), 
+        text: newChatMessage, 
+        senderId: activeGirl.id, 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      }],
+      participants: { user: userToChat, girl: activeGirl },
+      lastActivity: Date.now(),
     };
     setConversations(prev => [newConversation, ...prev]);
-    setSelectedChatId(newConversation.id);
+    setSelectedChatId(newConversation.conversation_id);
     toast({ title: 'New Chat Started!', description: `Started conversation as ${activeGirl.name} with ${userToChat.name}.` });
   }, [activeGirl, allUsers, user.email, toast]);
 
   const handleWinkResponse = useCallback((wink) => {
     const newConversation = {
-      id: Date.now(),
-      participants: { user: wink.user, girl: wink.girl },
-      lastMessage: "Thanks for the wink! 😊",
-      timestamp: 'now',
-      unread: 0,
-      online: true,
-      lastActivity: Date.now(),
-      hasWinked: true,
-      messages: [{ id: Date.now(), text: "Thanks for the wink! 😊", senderId: wink.girl.id, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }],
+      conversation_id: Date.now(),
+      user_id: wink.user.id,
+      girl_id: wink.girl.id,
+      user_name: wink.user.name,
+      girl_name: wink.girl.name,
+      user_image: wink.user.avatar,
+      girl_image: wink.girl.avatar,
+      last_message: "You: Thanks for the wink! 😊",
+      last_message_time: new Date().toISOString(),
       locked_by: user.email,
-      lock_time: Date.now(),
+      messages: [{ 
+        id: Date.now(), 
+        text: "Thanks for the wink! 😊", 
+        senderId: wink.girl.id, 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      }],
+      participants: { user: wink.user, girl: wink.girl },
+      lastActivity: Date.now(),
     };
     setConversations(prev => [newConversation, ...prev]);
     setActiveView('conversations');
-    setSelectedChatId(newConversation.id);
+    setSelectedChatId(newConversation.conversation_id);
     setActiveGirl(wink.girl);
     toast({ title: 'Wink Response Sent!', description: `You responded as ${wink.girl.name} to ${wink.user.name}'s wink.` });
   }, [user.email, toast]);
@@ -397,7 +451,8 @@ const handleBackToInbox = async () => {
   const formatTime = useCallback((timestamp) => {
     if (timestamp === 'now') return 'now';
     if (timestamp.includes('min ago') || timestamp.includes('hour ago')) return timestamp;
-    return timestamp;
+    if (timestamp === 'Yesterday') return timestamp;
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }, []);
 
   return {
@@ -407,7 +462,6 @@ const handleBackToInbox = async () => {
     activeGirl,
     setActiveGirl,
     conversations: sortedConversations,
-    winks,
     selectedChat,
     message,
     setMessage,
@@ -424,5 +478,6 @@ const handleBackToInbox = async () => {
     setSelectedChatId,
     handleBackToInbox,
     lockedChatId,
+    fetchAllConversations, // Export for potential use in dashboard
   };
 };

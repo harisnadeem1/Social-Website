@@ -21,11 +21,8 @@ const ChatterSidebar = ({
   activeGirl,
 }) => {
 
-
-    const [winks, setWinks] = useState([]);
-
-
-    const [likes, setLikes] = useState([]);
+  const [winks, setWinks] = useState([]);
+  const [likes, setLikes] = useState([]);
 
 useEffect(() => {
   const fetchLikes = async () => {
@@ -69,10 +66,8 @@ const handleLikeResponse = async (like) => {
   }
 };
 
-
 const handleWinkResponse = async (wink) => {
-
-    console.log(wink);
+  console.log(wink);
   try {
     await fetch(`${import.meta.env.VITE_API_BASE_URL}/winks/respond/${wink.id}`, {
       method: 'POST',
@@ -82,23 +77,12 @@ const handleWinkResponse = async (wink) => {
       }
     });
 
-    // toast({
-    //   title: "Wink Responded",
-    //   description: `You responded to ${wink.user_name}`,
-    // });
-
     // Optional: update state to remove wink from UI
     setWinks(prev => prev.filter(w => w.id !== wink.id));
   } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to respond to wink.",
-      variant: "destructive"
-    });
     console.error(error);
   }
 };
-
 
   const renderContent = () => {
     switch (activeView) {
@@ -111,6 +95,7 @@ const handleWinkResponse = async (wink) => {
             allUsers={allUsers}
             girlProfiles={girlProfiles}
             currentChatterId={currentChatterId}
+            activeGirl={activeGirl}
           />
         );
         case 'likes':
@@ -132,10 +117,6 @@ const handleWinkResponse = async (wink) => {
         return null;
     }
   };
-
-
-
-
 
   return (
     <div className="h-full flex flex-col w-full lg:w-96 border-r border-gray-200 bg-white">

@@ -24,24 +24,20 @@ const ChatPage = () => {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const hasHandledSearchParams = useRef(false);
+  
+  // ✅ Use ref to store socket instance
+  const socketRef = useRef(null);
 
-  // Socket setup
-  const socket = io(import.meta.env.VITE_SOCKET_URL, {
-    withCredentials: true,
-  });
-
-  // Join chat room when selectedChatId changes
+  // ✅ Create socket connection once and clean up properly
   useEffect(() => {
-    console.log("====================")
-    console.log(selectedChatId);
-    if (selectedChatId) {
-      console.log("in join chat")
-      socket.emit("join_chat", `chat-${selectedChatId}`);
-    }
-  }, [selectedChatId]);
+    // Create socket connection
+    const socket = io(import.meta.env.VITE_SOCKET_URL, {
+      withCredentials: true,
+    });
 
-  // Socket connection handlers
-  useEffect(() => {
+    socketRef.current = socket;
+
+    // Connection handlers
     socket.on("connect", () => {
       console.log("✅ Socket connected to server with ID:", socket.id);
     });
@@ -50,42 +46,65 @@ const ChatPage = () => {
       console.log("❌ Socket disconnected");
     });
 
+    // Cleanup function
     return () => {
+      console.log("🧹 Cleaning up socket connection");
       socket.off("connect");
       socket.off("disconnect");
+      socket.disconnect();
+      socketRef.current = null;
     };
-  }, []);
+  }, []); // Empty dependency array - runs once on mount
+
+  // Join chat room when selectedChatId changes
+  useEffect(() => {
+    if (selectedChatId && socketRef.current) {
+      console.log("in join chat");
+      socketRef.current.emit("join_chat", `chat-${selectedChatId}`);
+    }
+  }, [selectedChatId]);
 
   // Handle incoming messages
   useEffect(() => {
-    socket.on("receive_message", (incomingMessage) => {
+    if (!socketRef.current) return;
+
+    const handleReceiveMessage = (incomingMessage) => {
       setConversations((prevConvs) =>
         prevConvs.map((conv) => {
           if (conv.id === selectedChatId) {
+            const updatedMessages = [
+              ...conv.messages,
+              {
+                id: incomingMessage.id,
+                text: incomingMessage.text,
+                senderId: incomingMessage.senderId,
+                timestamp: new Date(incomingMessage.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                status: 'delivered'
+              }
+            ];
+
             return {
               ...conv,
-              messages: [
-                ...conv.messages,
-                {
-                  id: incomingMessage.id,
-                  text: incomingMessage.text,
-                  senderId: incomingMessage.senderId,
-                  timestamp: new Date(incomingMessage.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }),
-                  status: 'delivered'
-                }
-              ],
+              messages: updatedMessages,
+              // Incoming message from other person, don't add "You:" prefix
+              lastMessage: incomingMessage.text,
+              lastActivity: Date.now()
             };
           }
           return conv;
         })
       );
-    });
+    };
+
+    socketRef.current.on("receive_message", handleReceiveMessage);
 
     return () => {
-      socket.off("receive_message");
+      if (socketRef.current) {
+        socketRef.current.off("receive_message", handleReceiveMessage);
+      }
     };
   }, [selectedChatId]);
 
@@ -158,7 +177,7 @@ const ChatPage = () => {
     } finally {
       setIsLoadingConversations(false);
     }
-  }, [toast]);
+  }, [toast, user?.id]);
 
   // Function to fetch messages for a specific conversation
   const fetchMessagesForConversation = useCallback(async (conversationId) => {
@@ -186,10 +205,19 @@ const ChatPage = () => {
       setConversations(prevConvs =>
         prevConvs.map(conv => {
           if (conv.id === conversationId) {
+            // Format last message with "You:" prefix if sent by current user
+            const lastMsg = messages[messages.length - 1];
+            let formattedLastMessage = 'Tap to continue...';
+            if (lastMsg) {
+              formattedLastMessage = lastMsg.senderId === user?.id 
+                ? `You: ${lastMsg.text}` 
+                : lastMsg.text;
+            }
+
             return {
               ...conv,
               messages: messages,
-              lastMessage: messages[messages.length - 1]?.text || 'Tap to continue...',
+              lastMessage: formattedLastMessage,
             };
           }
           return conv;
@@ -207,7 +235,7 @@ const ChatPage = () => {
     } finally {
       setIsLoadingMessages(false);
     }
-  }, [toast]);
+  }, [toast, user?.id]);
 
   // Initial fetch of conversations
   useEffect(() => {
