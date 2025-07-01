@@ -273,7 +273,7 @@ const ChatWindow = ({
           <Button
             onClick={onSendMessage}
             disabled={!message.trim() || isLoadingMessages}
-            className="bg-pink-500 hover:bg-pink-600 text-white rounded-full p-2"
+            className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-3 py-0"
             title={isChatter ? "Send Reply" : "Costs 5 coins per message"}
           >
             <Send className="w-4 h-4" />

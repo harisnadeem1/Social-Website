@@ -40,7 +40,7 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
   // Function to check if conversation has new messages from other person
   const hasNewMessages = (conversation) => {
     if (!conversation.messages || conversation.messages.length === 0) return false;
-    
+
     const lastMessage = conversation.messages[conversation.messages.length - 1];
     // Check if the last message was sent by someone other than current user
     return lastMessage.senderId !== currentUserId;
@@ -48,16 +48,17 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center">
-            Messages
-            {isLoading && (
-              <Loader2 className="w-5 h-5 ml-2 animate-spin text-gray-500" />
-            )}
-          </h2>
-        </div>
-      </div>
+      <div className="p-4 border-b border-gray-200 bg-white sticky top-16 z-40">
+  <div className="flex justify-center items-center">
+    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+      Messages
+      {isLoading && (
+        <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
+      )}
+    </h2>
+  </div>
+</div>
+
 
       <div className="mb-2 px-2">
         <input
@@ -74,9 +75,9 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
         <AnimatePresence>
           {filteredConversations.map((conversation, index) => {
             const showNewMessagesBadge = hasNewMessages(conversation);
-            
+
             return (
-              <motion.div 
+              <motion.div
                 key={conversation.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
