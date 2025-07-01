@@ -17,6 +17,7 @@ const chatterLockRoutes = require('./src/routes/chatterLockRoutes');
 
 const chatterLikeRoutes = require('./src/routes/chatterLikes');
 const boostRoutes = require('./src/routes/boostRoutes');
+const notificationRoutes = require('./src/routes/notificationRoutes');
 
 
 
@@ -28,7 +29,7 @@ const app = express();
 
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "http://91.99.139.75"],
   credentials: true
 }));
 
@@ -56,6 +57,7 @@ app.use('/api/chatter-lock', chatterLockRoutes);
 
 app.use('/api/chatter/likes', chatterLikeRoutes);
 app.use('/api/boost-profile', boostRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 

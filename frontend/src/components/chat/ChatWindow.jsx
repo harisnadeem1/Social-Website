@@ -101,7 +101,7 @@ const ChatWindow = ({
     setMessage(e.target.value);
   };
 
-  if (!selectedChat ) {
+  if (!selectedChat) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -152,9 +152,9 @@ const ChatWindow = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-            
+
                 <DropdownMenuItem onClick={() => navigate(`/profile/${selectedChat.id}`)}>
-                  
+
                   View Profile
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -242,9 +242,12 @@ const ChatWindow = ({
 
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
-            <Smile className="w-5 h-5 text-gray-500" />
-          </Button>
+          <div className="hidden lg:flex">
+            <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
+              <Smile className="w-5 h-5 text-gray-500" />
+            </Button>
+          </div>
+
           <Input
             value={message}
             onChange={handleInputChange}

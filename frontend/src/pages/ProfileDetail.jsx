@@ -193,7 +193,7 @@ const authToken = localStorage.getItem('token');
 
 
   const handleMessage = () => {
-    navigate(`/chat?user=${profile.id}&name=${encodeURIComponent(profile.name)}`);
+    navigate(`/chat?user=${profile.user_id}&name=${encodeURIComponent(profile.name)}`);
   };
 
   const handleBack = () => {
