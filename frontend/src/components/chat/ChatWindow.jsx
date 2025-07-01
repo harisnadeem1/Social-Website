@@ -248,22 +248,11 @@ const ChatWindow = ({
             </Button>
           </div>
 
-          {/* <Input
-            value={message}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder={isChatter ? `Replying as ${selectedChat.participants.girl.name}...` : "Each message costs 5 coins..."}
-            className="flex-1 border-gray-300 rounded-full text-base"
-            disabled={isLoadingMessages}
-          /> */}
-
           <Input
             value={message}
             onChange={handleInputChange}
-            onFocus={() => setTimeout(() => scrollToBottom(), 300)} // delay allows keyboard to open
             onKeyPress={handleKeyPress}
             placeholder={isChatter ? `Replying as ${selectedChat.participants.girl.name}...` : "Each message costs 5 coins..."}
-
             className="flex-1 border-gray-300 rounded-full text-base"
             disabled={isLoadingMessages}
           />
