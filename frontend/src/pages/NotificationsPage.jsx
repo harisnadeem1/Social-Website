@@ -105,35 +105,23 @@ const NotificationsPage = () => {
     onClick={() => handleNotificationClick(notif)}
     className="flex items-start bg-gray-100 p-3 rounded-lg shadow-sm cursor-pointer"
   >
-    {/* Profile Image + Icon Overlay */}
-    <div className="relative mr-3">
-      <img
-        src={notif.profile_image_url || "/default-avatar.jpg"}
-        alt="Profile"
-        className="w-12 h-12 rounded-full object-cover"
-      />
-
-      {/* Notification Icon Overlay */}
-      <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-md">
-        {notif.type === 'like' && (
-          <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 18.343l-6.828-6.829a4 4 0 010-5.656z" />
-          </svg>
-        )}
-        {notif.type === 'wink' && (
+    {/* ✅ Only show image if it's a wink */}
+    {['wink', 'like', 'message'].includes(notif.type) &&  (
+      <div className="relative mr-3">
+        <img
+          src={notif.profile_image_url || "/default-avatar.jpg"}
+          alt="Profile"
+          className="w-12 h-12 rounded-full object-cover"
+        />
+        <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-md">
           <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM7 9H5v2h2V9zm8 0h-2v2h2V9zM6.293 13.707a1 1 0 011.414 0A4.978 4.978 0 0010 15c.89 0 1.735-.234 2.293-.707a1 1 0 011.414 1.414A6.978 6.978 0 0110 17a6.978 6.978 0 01-4.707-1.793 1 1 0 010-1.414z" />
           </svg>
-        )}
-        {notif.type === 'message' && (
-          <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v7a2 2 0 01-2 2H8l-4 4v-4H4a2 2 0 01-2-2V5z" />
-          </svg>
-        )}
+        </div>
       </div>
-    </div>
+    )}
 
-    {/* Notification Content */}
+    {/* ✅ Main content */}
     <div className="flex-1 text-sm text-gray-800">
       <div className="font-medium mb-0.5">
         {notif.type === 'wink' ? 'New Wink' :
@@ -147,7 +135,6 @@ const NotificationsPage = () => {
       </div>
     </div>
 
-    {/* Delete Button */}
     <button
       onClick={(e) => {
         e.stopPropagation();
