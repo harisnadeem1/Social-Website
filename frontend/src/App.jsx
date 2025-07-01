@@ -17,6 +17,7 @@ import ChatterRoute from '@/components/routes/ChatterRoute';
 import PrivateRoute from '@/components/routes/PrivateRoute';
 import AuthContext from '@/contexts/AuthContext';
 import ProfileCreation from '@/pages/CreateProfilePage';
+import BottomNav from './components/BottomNav';
 
 const HomeRedirect = () => {
   const { user, loading } = React.useContext(AuthContext);
@@ -79,7 +80,7 @@ function App() {
   return (
     <AuthContext.Provider value={{ user, login, logout, coins, updateCoins, loading }}>
       <Router>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 pb-16">
           <Helmet>
             <title>FlirtDuo - Find Your Perfect Match Today</title>
             <meta name="description" content="Join FlirtDuo, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment." />
@@ -106,7 +107,7 @@ function App() {
               </ChatterRoute>
             } />
           </Routes>
-          
+          <BottomNav /> {/* <== place it here just above Toaster */}
           <Toaster />
         </div>
       </Router>

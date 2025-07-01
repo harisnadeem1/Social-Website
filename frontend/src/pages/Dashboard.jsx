@@ -91,14 +91,14 @@ const Dashboard = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="mb-6 lg:mb-8">
+              {/* <div className="mb-6 lg:mb-8">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
                   Discover People Near You
                 </h1>
                 <p className="text-base lg:text-lg text-gray-600">
                   Find your perfect match among {filteredProfiles.length} incredible singles
                 </p>
-              </div>
+              </div> */}
               <div className="mb-4">
                 <input
                   type="text"

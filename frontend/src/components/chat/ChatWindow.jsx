@@ -79,7 +79,41 @@ const ChatWindow = ({
     fetchProfileId();
   }, [selectedChat?.girlId]);
 
-  console.log("selected chat")
+
+
+  const handleShowProfile = async (userId) => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (data?.profileId) {
+      navigate(`/profile/${data.profileId}`);
+    } else {
+      toast({
+        title: "Error",
+        description: "Profile not found.",
+        variant: "destructive",
+      });
+    }
+  } catch (error) {
+    console.error("Failed to fetch profile ID", error);
+    toast({
+      title: "Error",
+      description: "Something went wrong while fetching profile.",
+      variant: "destructive",
+    });
+  }
+};
+
+
+  console.log("========selected chat")
   console.log(selectedChat)
 
   useEffect(() => {
@@ -153,10 +187,9 @@ const ChatWindow = ({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
 
-                <DropdownMenuItem onClick={() => navigate(`/profile/${selectedChat.id}`)}>
-
-                  View Profile
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShowProfile(selectedChat.girlId)}>
+  View Profile
+</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => handleDeleteChat(selectedChat.id)}
