@@ -72,7 +72,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
-        <title>Dashboard - FlirtDuo</title>
+        <title>Dashboard - Liebenly</title>
         <meta name="description" content="Discover amazing people and find your perfect match on FlirtDuo. Browse profiles, connect with singles, and start meaningful conversations." />
       </Helmet>
 
@@ -99,16 +99,20 @@ const Dashboard = () => {
                   Find your perfect match among {filteredProfiles.length} incredible singles
                 </p>
               </div> */}
-              <div className="mb-4">
+              {/* <div className="mb-4">
                 <input
                   type="text"
                   placeholder="Search by name..."
                   className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
                   onChange={(e) => handleSearchChange(e.target.value)}
                 />
-              </div>
+              </div> */}
 
-              <FilterPanel onFiltersChange={handleFiltersChange} />
+              <FilterPanel 
+  onFiltersChange={handleFiltersChange} 
+  onSearchChange={handleSearchChange}
+  searchTerm={searchTerm}
+/>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {filteredProfiles.map((profile, index) => (
