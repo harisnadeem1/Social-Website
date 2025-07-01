@@ -260,7 +260,7 @@ const ChatWindow = ({
           <Input
             value={message}
             onChange={handleInputChange}
-            onFocus={() => setTimeout(() => scrollToBottom(), 300)} // delay allows keyboard to open
+            onFocus={() => setTimeout(() => scrollToBottom(), 200)} // delay allows keyboard to open
             onKeyPress={handleKeyPress}
             placeholder={isChatter ? `Replying as ${selectedChat.participants.girl.name}...` : "Each message costs 5 coins..."}
 
