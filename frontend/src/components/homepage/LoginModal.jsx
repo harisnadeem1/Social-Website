@@ -125,7 +125,7 @@ else {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full pr-10"
+                className="w-full pr-10 text-base"
               />
               <button
                 type="button"

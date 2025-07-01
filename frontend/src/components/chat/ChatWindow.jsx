@@ -240,7 +240,7 @@ const ChatWindow = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-20">
         <div className="flex items-center space-x-2">
           <div className="hidden lg:flex">
             <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
@@ -248,14 +248,6 @@ const ChatWindow = ({
             </Button>
           </div>
 
-          {/* <Input
-            value={message}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder={isChatter ? `Replying as ${selectedChat.participants.girl.name}...` : "Each message costs 5 coins..."}
-            className="flex-1 border-gray-300 rounded-full text-base"
-            disabled={isLoadingMessages}
-          /> */}
 
           <Input
             value={message}
