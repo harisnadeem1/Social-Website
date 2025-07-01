@@ -15,7 +15,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://91.99.139.75"], // ✅ Add your frontend production domain here later
+    origin: ["http://localhost:5173", "http://91.99.139.75","https://liebenly.com"], // ✅ Add your frontend production domain here later
     methods: ["GET", "POST"],
     credentials: true
   }

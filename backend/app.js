@@ -29,7 +29,7 @@ const app = express();
 
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://91.99.139.75"],
+  origin: ["http://localhost:5173", "http://91.99.139.75","https://liebenly.com"],
   credentials: true
 }));
 
