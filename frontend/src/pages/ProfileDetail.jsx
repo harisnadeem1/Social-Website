@@ -19,7 +19,7 @@ const ProfileDetail = () => {
   const [profile, setProfile] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(false);
 
 
 
@@ -31,12 +31,13 @@ const [liked, setLiked] = useState(false);
         if (!res.ok) throw new Error("Profile not found");
         const data = await res.json();
 
-
         setProfile(data);
         if (data.isLikedByCurrentUser) {
-  setLiked(true);
-}
+          setLiked(true);
+        }
 
+        // ✅ Scroll to top after profile is set
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
         console.log(data);
       } catch (error) {
@@ -48,106 +49,75 @@ const [liked, setLiked] = useState(false);
     fetchProfile();
   }, [id]);
 
-  // const handleLike = () => {
-  //   toast({
-  //     title: "❤️ Like sent!",
-  //     description: `You liked ${profile.name}'s profile!`,
-  //   });
-  // };
 
-  // const handleWink = () => {
-  //   const winkCost = 2;
 
-  //   if (coins >= winkCost) {
-  //     updateCoins(coins - winkCost);
-  //     toast({
-  //       title: "👀 Wink sent successfully!",
-  //       description: `You winked at ${profile.name}! (${winkCost} coins used)`,
-  //     });
-  //   } else {
-  //     toast({
-  //       title: "Insufficient Coins",
-  //       description: `You need at least ${winkCost} coins to wink. Buy coins now!`,
-  //       variant: "destructive",
-  //       action: (
-  //         <Button
-  //           size="sm"
-  //           onClick={() => navigate('/coins')}
-  //           className="bg-yellow-500 hover:bg-yellow-600 text-white"
-  //         >
-  //           Buy Coins
-  //         </Button>
-  //       )
-  //     });
-  //   }
-  // };
 
 
 
   const handleWink = async () => {
-  const winkCost = 2;
+    const winkCost = 2;
 
-  if (coins < winkCost) {
-    toast({
-      title: 'Not enough coins',
-      description: 'You need at least 2 coins to wink. Please buy coins.',
-      variant: 'destructive',
-      action: (
-        <Button
-          size="sm"
-          onClick={() => navigate('/coins')}
-          className="bg-yellow-500 hover:bg-yellow-600 text-white"
-        >
-          Buy Coins
-        </Button>
-      )
-    });
-    return;
-  }
+    if (coins < winkCost) {
+      toast({
+        title: 'Not enough coins',
+        description: 'You need at least 2 coins to wink. Please buy coins.',
+        variant: 'destructive',
+        action: (
+          <Button
+            size="sm"
+            onClick={() => navigate('/coins')}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white"
+          >
+            Buy Coins
+          </Button>
+        )
+      });
+      return;
+    }
 
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/winks/${profile.user_id}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/winks/${profile.user_id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'already_winked') {
+        toast({
+          title: '👀 Already Winked',
+          description: `You've already winked at ${profile.name}.`,
+        });
+      } else if (data.status === 'wink_sent') {
+        toast({
+          title: '👀 Wink sent successfully!',
+          description: `You winked at ${profile.name} and 2 coins were used.`,
+        });
+
+        updateCoins(coins - winkCost); // Optimistically update UI
+      } else {
+        toast({
+          title: 'Wink failed',
+          description: data.error || 'Something went wrong.',
+          variant: 'destructive'
+        });
       }
-    });
-
-    const data = await res.json();
-
-    if (data.status === 'already_winked') {
+    } catch (err) {
+      console.error(err);
       toast({
-        title: '👀 Already Winked',
-        description: `You've already winked at ${profile.name}.`,
-      });
-    } else if (data.status === 'wink_sent') {
-      toast({
-        title: '👀 Wink sent successfully!',
-        description: `You winked at ${profile.name} and 2 coins were used.`,
-      });
-
-      updateCoins(coins - winkCost); // Optimistically update UI
-    } else {
-      toast({
-        title: 'Wink failed',
-        description: data.error || 'Something went wrong.',
-        variant: 'destructive'
+        title: 'Wink Failed',
+        description: 'Could not send wink due to a network or server error.',
+        variant: 'destructive',
       });
     }
-  } catch (err) {
-    console.error(err);
-    toast({
-      title: 'Wink Failed',
-      description: 'Could not send wink due to a network or server error.',
-      variant: 'destructive',
-    });
-  }
-};
+  };
 
-const authToken = localStorage.getItem('token');
+  const authToken = localStorage.getItem('token');
 
- const handleLike = async (e) => {
+  const handleLike = async (e) => {
     e.stopPropagation();
     const authToken = localStorage.getItem('token');
 
@@ -225,7 +195,7 @@ const authToken = localStorage.getItem('token');
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
-        <title>{profile.name} - Profile | FlirtDuo</title>
+        <title>{profile.name} - Profile | Liebenly</title>
         <meta name="description" content={`View ${profile.name}'s profile on FlirtDuo. ${profile.bio}`} />
       </Helmet>
 
@@ -238,13 +208,13 @@ const authToken = localStorage.getItem('token');
           transition={{ duration: 0.6 }}
         >
           <Button
-            variant="ghost"
             onClick={handleBack}
-            className="mb-6 hover:bg-pink-50"
+            className="mb-6 flex items-center px-4 py-2 text-sm font-medium text-pink-600 bg-pink-100 hover:bg-pink-200 rounded-lg transition-all duration-200 shadow-sm"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Profiles
           </Button>
+
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -258,7 +228,7 @@ const authToken = localStorage.getItem('token');
                   />
 
                   {/* Online status (optional field — check first) */}
-                  {profile.isOnline && (
+                  {(
                     <div className="absolute top-4 right-4 flex items-center space-x-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm">
                       <div className="w-2 h-2 bg-white rounded-full" />
                       <span>Online</span>
@@ -274,41 +244,52 @@ const authToken = localStorage.getItem('token');
                 </div>
 
 
-                <div className="lg:hidden p-6">
-                  <div className="space-y-4">
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <div className="lg:hidden p-4">
+                  <div className="grid grid-cols-3 gap-6">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center"
+                    >
                       <Button
                         onClick={handleLike}
-                        className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 hover:text-red-700 transition-all duration-200 rounded-full border-0"
-                        size="lg"
+                        className="w-16 h-16 bg-transparent hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-200 rounded-full border-4 border-red-500 hover:border-red-600 mb-2"
                       >
-                        <Heart className="w-5 h-5 mr-2" />
-                        Like Profile
+                        <Heart className="w-8 h-8 fill-current" />
                       </Button>
+                      <span className="text-base font-medium text-gray-700">Like</span>
                     </motion.div>
 
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center"
+                    >
                       <Button
                         onClick={handleWink}
-                        className="w-full bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 hover:text-orange-700 transition-all duration-200 rounded-full border-0"
-                        size="lg"
+                        className="w-16 h-16 bg-transparent hover:bg-orange-50 text-orange-600 hover:text-orange-700 transition-all duration-200 rounded-full border-4 border-orange-500 hover:border-orange-600 mb-2"
                         title="Costs 2 coins to Wink"
                       >
-                        <Eye className="w-5 h-5 mr-2" />
-                        Send Wink (2 coins)
+                        <Eye className="w-8 h-8" />
                       </Button>
+                      <span className="text-base font-medium text-gray-700">Wink</span>
+                      <span className="text-sm text-orange-500/80">2 coins</span>
                     </motion.div>
 
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center"
+                    >
                       <Button
                         onClick={handleMessage}
-                        className="w-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 hover:text-purple-700 transition-all duration-200 rounded-full border-0"
-                        size="lg"
+                        className="w-16 h-16 bg-transparent hover:bg-purple-50 text-purple-600 hover:text-purple-700 transition-all duration-200 rounded-full border-4 border-purple-500 hover:border-purple-600 mb-2"
                         title="Costs 5 coins to Chat"
                       >
-                        <MessageCircle className="w-5 h-5 mr-2" />
-                        Send Message (5 coins)
+                        <MessageCircle className="w-8 h-8" />
                       </Button>
+                      <span className="text-base font-medium text-gray-700">Message</span>
+                      <span className="text-sm text-purple-500/80">5 coins</span>
                     </motion.div>
                   </div>
                 </div>
@@ -328,11 +309,34 @@ const authToken = localStorage.getItem('token');
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-2">Interests</h3>
                       <div className="flex flex-wrap gap-2">
-                        {(profile.interests?.split(',') || []).map((interest, index) => (
-                          <Badge key={index} variant="secondary" className="bg-pink-100 text-pink-700">
-                            {interest.trim()}
-                          </Badge>
-                        ))}
+                        {(profile.interests?.split(',') || []).map((interest, index) => {
+                          const colorClasses = [
+                            "bg-pink-100 text-pink-700",
+                            "bg-blue-100 text-blue-700",
+                            "bg-green-100 text-green-700",
+                            "bg-purple-100 text-purple-700",
+                            "bg-orange-100 text-orange-700",
+                            "bg-red-100 text-red-700",
+                            "bg-indigo-100 text-indigo-700",
+                            "bg-yellow-100 text-yellow-700",
+                            "bg-teal-100 text-teal-700",
+                            "bg-rose-100 text-rose-700",
+                            "bg-cyan-100 text-cyan-700",
+                            "bg-emerald-100 text-emerald-700"
+                          ];
+
+                          const colorClass = colorClasses[index % colorClasses.length];
+
+                          return (
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className={colorClass}
+                            >
+                              {interest.trim()}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -354,7 +358,11 @@ const authToken = localStorage.getItem('token');
                           <Calendar className="w-4 h-4 text-gray-500" />
                           <div>
                             <span className="text-xs text-gray-500">Joined</span>
-                            <div className="font-medium text-sm">{profile.created_at}</div>
+                            <div className="font-medium text-sm">{new Date(profile.created_at).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}</div>
                           </div>
                         </div>
                       </div>
@@ -438,46 +446,46 @@ const authToken = localStorage.getItem('token');
               </Card>
 
               <Card className="border-0 shadow-lg">
-  <CardContent className="p-6">
-    <h2 className="text-xl font-bold text-gray-900 mb-4">Profile Details</h2>
-    <div className="space-y-4">
-      
-      {/* Age */}
-      <div className="flex items-center space-x-3">
-        <Calendar className="w-5 h-5 text-gray-500" />
-        <div>
-          <span className="text-sm text-gray-500">Age</span>
-          <div className="font-medium">{profile.age}</div>
-        </div>
-      </div>
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Profile Details</h2>
+                  <div className="space-y-4">
 
-      {/* Height */}
-      <div className="flex items-center space-x-3">
-        <Ruler className="w-5 h-5 text-gray-500" />
-        <div>
-          <span className="text-sm text-gray-500">Height</span>
-          <div className="font-medium">{profile.height}</div>
-        </div>
-      </div>
+                    {/* Age */}
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <span className="text-sm text-gray-500">Age</span>
+                        <div className="font-medium">{profile.age}</div>
+                      </div>
+                    </div>
 
-      {/* Joined Date */}
-      <div className="flex items-center space-x-3">
-        <Calendar className="w-5 h-5 text-gray-500" />
-        <div>
-          <span className="text-sm text-gray-500">Joined</span>
-          <div className="font-medium">
-            {new Date(profile.created_at).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </div>
-        </div>
-      </div>
+                    {/* Height */}
+                    <div className="flex items-center space-x-3">
+                      <Ruler className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <span className="text-sm text-gray-500">Height</span>
+                        <div className="font-medium">{profile.height}</div>
+                      </div>
+                    </div>
 
-    </div>
-  </CardContent>
-</Card>
+                    {/* Joined Date */}
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <span className="text-sm text-gray-500">Joined</span>
+                        <div className="font-medium">
+                          {new Date(profile.created_at).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </CardContent>
+              </Card>
 
             </div>
           </div>
