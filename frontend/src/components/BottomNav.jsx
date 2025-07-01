@@ -1,10 +1,15 @@
 import { NavLink } from 'react-router-dom';
 import { Globe, MessageCircle, Users, Bell } from 'lucide-react';
+import AuthContext from '@/contexts/AuthContext';
+import React, { useContext } from 'react';
 
 const BottomNav = () => {
+  const { user, logout, coins } = useContext(AuthContext);
+   if (!user || user.role !== 'user') return null;
   return (
     <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50 lg:hidden">
       <div className="flex justify-around items-center h-14">
+         
         <NavLink
           to="/"
           className="flex flex-col items-center text-xs text-gray-600 hover:text-pink-500"
@@ -40,6 +45,7 @@ const BottomNav = () => {
             3
           </span>
         </NavLink>
+         
       </div>
     </nav>
   );

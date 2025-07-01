@@ -83,7 +83,7 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50 pb-14 lg:pb-0">
           <Helmet>
-            <title>FlirtDuo - Find Your Perfect Match Today</title>
+            <title>Liebenly - Find Your Perfect Match Today</title>
             <meta name="description" content="Join FlirtDuo, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment." />
           </Helmet>
           
