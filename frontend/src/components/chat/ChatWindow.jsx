@@ -114,7 +114,7 @@ const ChatWindow = ({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200 bg-white sticky top-0 z-20">
+      <div className="p-4 border-b border-gray-200 bg-white sticky top-16 z-40">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Button
