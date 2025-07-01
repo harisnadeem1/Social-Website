@@ -21,13 +21,13 @@ const BottomNav = () => {
           Chat
         </NavLink>
 
-        <NavLink
+        {/* <NavLink
           to="/interactions"
           className="flex flex-col items-center text-xs text-gray-600 hover:text-pink-500"
         >
           <Users className="w-5 h-5 mb-1" />
           Interact
-        </NavLink>
+        </NavLink> */}
 
         <NavLink
           to="/notifications"

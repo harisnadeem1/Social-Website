@@ -213,93 +213,90 @@ const ProfileCard = ({ profile, onClick }) => {
 
 
   return (
-    <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="group"
+  <motion.div
+    whileHover={{ y: -4, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+    className="group"
+  >
+    <Card
+      className="relative overflow-hidden cursor-pointer bg-white shadow-lg hover:shadow-2xl border-0 transition-all duration-300 rounded-2xl h-[500px] sm:h-[480px] sm:w-80"
+      onClick={() => onClick(profile)}
     >
-      <Card
-        className="relative overflow-hidden cursor-pointer bg-white shadow-lg hover:shadow-2xl border-0 transition-all duration-300 rounded-2xl h-80 sm:h-96"
-        onClick={() => onClick(profile)}
-      >
-        <div className="absolute inset-0">
-          <img
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            alt={`${profile.name}, ${profile.age} years old from ${profile.city}`}
-            src={profile.profile_image_url || "/fallback.jpg"}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "/fallback.jpg";
-            }}
-          />
+      <div className="absolute inset-0">
+        <img
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          alt={`${profile.name}, ${profile.age} years old from ${profile.city}`}
+          src={profile.profile_image_url || "/fallback.jpg"}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/fallback.jpg";
+          }}
+        />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-all duration-300"></div>
-        </div>
+        {/* Smooth Blur at Bottom */}
+       <div className="absolute inset-0 bg-gradient-to-t from-gray-900/35 via-transparent to-transparent backdrop-blur-[1px] [mask-image:linear-gradient(to_top,black_0%,black_25%,transparent_50%)] group-hover:backdrop-blur-[2px] group-hover:from-gray-900/45 transition-all duration-300"></div>
+      </div>
 
-        {profile.isOnline && (
-          <div className="absolute top-4 right-4 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-lg z-10"></div>
-        )}
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white z-10">
+        <div className="mb-6 text-center sm:text-left">
+          {/* Name + Age */}
+          <h3 className="text-2xl font-bold mb-1 drop-shadow-lg">
+            {profile.name}
+            {profile.age && (
+              <span className="ml-2 text-2xl font-semibold text-white/80">
+                , {profile.age}
+              </span>
+            )}
+          </h3>
 
-        <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm z-10">
-          {profile.age}
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white z-10">
-          <div className="mb-4">
-            <h3 className="text-xl sm:text-2xl font-bold mb-2 drop-shadow-lg">
-              {profile.name}
-            </h3>
-            <div className="flex items-center text-white/90 text-sm sm:text-base drop-shadow-md">
-              <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+          {/* Location */}
+          {profile.city && (
+            <div className="flex justify-center sm:justify-start items-center text-white/90 text-base sm:text-lg drop-shadow-md">
+              <MapPin className="w-5 h-5 mr-1 flex-shrink-0" />
               <span>{profile.city}</span>
             </div>
-          </div>
-
-          <div className="flex justify-center space-x-2 sm:space-x-3">
-            <div className="mt-6 flex justify-center gap-6">
-  {/* Like Button */}
-  <button
-    onClick={handleLike}
-    className="w-14 h-14 rounded-full border-2 border-red-500 flex items-center justify-center bg-transparent group transition-all duration-200"
-    title="Like"
-  >
-    <Heart
-      className={`w-7 h-7 transition-all duration-200 ${
-        liked ? 'fill-red-500 text-red-500' : 'fill-none text-red-500 '
-      }`}
-    />
-  </button>
-
-  {/* Wink Button */}
-  <button
-    onClick={handleWink}
-    className="w-14 h-14 rounded-full border-2 border-yellow-500 text-yellow-500 flex items-center justify-center bg-transparent group transition-all duration-200"
-    title="Wink"
-  >
-    <Smile className="w-7 h-7 transition-all duration-200 " />
-  </button>
-
-  {/* Message Button */}
-  <button
-    onClick={handleMessage}
-    className="w-14 h-14 rounded-full border-2 border-blue-500 text-blue-500 flex items-center justify-center bg-transparent group transition-all duration-200"
-    title="Message"
-  >
-    <MessageSquare className="w-7 h-7 transition-all duration-200 " />
-  </button>
-</div>
-
-
-          </div>
+          )}
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      </Card>
-    </motion.div>
-  );
+        {/* Action Buttons */}
+        <div className="mt-4 flex justify-center gap-6">
+{/* Like Button */}
+<button
+  onClick={handleLike}
+  className="w-14 h-14 rounded-full border-4 border-red-500 flex items-center justify-center bg-transparent group transition-all duration-200"
+  title="Like"
+>
+  <Heart
+    className={`w-7 h-7 transition-all duration-200 ${liked ? 'fill-red-500 text-red-500' : 'fill-none text-red-500'}`}
+  />
+</button>
+
+{/* Wink Button */}
+<button
+  onClick={handleWink}
+  className="w-14 h-14 rounded-full border-4 border-yellow-500 text-yellow-500 flex items-center justify-center bg-transparent group transition-all duration-200"
+  title="Wink"
+>
+  <Smile className="w-7 h-7 transition-all duration-200 " />
+</button>
+
+{/* Message Button */}
+<button
+  onClick={handleMessage}
+  className="w-14 h-14 rounded-full border-4 border-blue-500 text-blue-500 flex items-center justify-center bg-transparent group transition-all duration-200"
+  title="Message"
+>
+  <MessageSquare className="w-7 h-7 transition-all duration-200 " />
+</button>
+</div>
+      </div>
+    </Card>
+
+  </motion.div>
+);
 };
 
 export default ProfileCard;

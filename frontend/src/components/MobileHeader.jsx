@@ -84,33 +84,47 @@ const MobileHeader = () => {
             <div className="flex items-center space-x-3">
               {user.role === 'user' && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative"
-                    onClick={() => setShowNotificationModal(true)}
-                  >
-                    <Bell className="w-5 h-5" />
-                    {notifications.length > 0 && (
-                      <Badge className="absolute -top-1 -right-1 w-4 h-4 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
-                        {notifications.length}
-                      </Badge>
-                    )}
-                  </Button>
-
-                  <Link to="/chat">
+                  <div className="flex items-center space-x-1 ">
+                    {/* Boost Button */}
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="relative"
-                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center space-x-2"
+                      onClick={() => handleMenuItemClick('boost')}
                     >
-                      <MessageCircle className="w-5 h-5" />
-                      <Badge className="absolute -top-1 -right-1 w-4 h-4 p-0 bg-green-500 text-white text-xs flex items-center justify-center">
-                        3
-                      </Badge>
+                      <Zap className="w-6 h-6 text-purple-600" />
                     </Button>
-                  </Link>
+
+                    {/* Coin Icon + Count */}
+                    <Link to="/coins" onClick={() => setIsMenuOpen(false)} className="relative">
+                      <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-inner">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="gold"
+                          viewBox="0 0 24 24"
+                          stroke="orange"
+                          className="w-8 h-8"
+                        >
+                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                          <text
+                            x="12"
+                            y="16"
+                            textAnchor="middle"
+                            fontSize="10"
+                            fill="orange"
+                            fontWeight="bold"
+                          >
+                            $
+                          </text>
+                        </svg>
+                      </div>
+
+                      {/* Coin Count Badge */}
+                      <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-blue-400 text-white text-[10px] font-semibold px-2 py-[1px] rounded-full shadow-md">
+                        {coins}
+                      </div>
+                    </Link>
+                  </div>
+
                 </>
               )}
 
@@ -129,61 +143,26 @@ const MobileHeader = () => {
 
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white border-b border-gray-200 overflow-hidden"
-            >
-              <div className="px-4 py-4 space-y-3">
-                {user.role === 'user' && (
-                  <>
-                    {/* <Button
-                      variant="ghost"
-                      className="w-full justify-start relative"
-                      onClick={() => handleMenuItemClick('notifications')}
-                    >
-                      <Bell className="w-5 h-5 mr-3" />
-                      Notifications
-                      <Badge className="ml-auto bg-red-500 text-white text-xs">3</Badge>
-                    </Button>
+            <>
+              {/* Background Overlay */}
+              <motion.div
+                className="fixed inset-0 bg-black bg-opacity-40 z-40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMenuOpen(false)}
+              />
 
-                    <Link to="/search" onClick={() => setIsMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      <Search className="w-5 h-5 mr-3" />
-                      Search
-                    </Button>
-                  </Link>
+              {/* Slide-Up Menu Box */}
+              <motion.div
+                className="fixed bottom-14 left-0 w-full bg-white rounded-t-2xl shadow-xl z-50 px-6 py-6"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
 
-                    <Link to="/chat" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start relative">
-                        <MessageCircle className="w-5 h-5 mr-3" />
-                        Messages
-                        <Badge className="ml-auto bg-green-500 text-white text-xs">3</Badge>
-                      </Button>
-                    </Link> */}
-
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => handleMenuItemClick('boost')}
-                    >
-                      <Zap className="w-5 h-5 mr-3 text-yellow-500" />
-                      Boost Profile
-                    </Button>
-
-                    <Link to="/coins" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start">
-                        <Coins className="w-5 h-5 mr-3 text-yellow-500" />
-                        Coins ({coins})
-                      </Button>
-                    </Link>
-                  </>
-                )}
-
-
-                <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="space-y-4">
                   {user.role === 'admin' && (
                     <Link to="/admin" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">
@@ -217,16 +196,6 @@ const MobileHeader = () => {
                       </Link>
                     </>
                   )}
-
-                  {/* <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => handleMenuItemClick('theme')}
-                  >
-                    <Moon className="w-5 h-5 mr-3" />
-                    Theme Mode
-                  </Button> */}
-
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -236,53 +205,14 @@ const MobileHeader = () => {
                     Logout
                   </Button>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
+
       </header>
 
       <BoostModal open={showBoostModal} onOpenChange={setShowBoostModal} />
-      <Dialog open={showNotificationModal} onOpenChange={setShowNotificationModal}>
-        <DialogContent className="max-w-sm mx-auto">
-          <h2 className="text-lg font-semibold mb-2">Notifications</h2>
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <p className="text-sm text-gray-500">No notifications yet.</p>
-            ) : (
-              notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className="bg-gray-100 p-3 rounded-md text-sm text-gray-800"
-                >
-                  <div>{notif.content}</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {new Date(notif.created_at).toLocaleString()}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="mt-4">
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                try {
-                  await axios.delete(`${BASE_URL}/notifications/clear/${user.id}`, {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                  });
-                  setNotifications([]);
-                  toast({ title: "Notifications cleared." });
-                } catch {
-                  toast({ title: "Failed to clear notifications." });
-                }
-              }}
-            >
-              Clear All
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };
