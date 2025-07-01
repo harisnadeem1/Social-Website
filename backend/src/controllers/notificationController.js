@@ -25,6 +25,19 @@ const clearNotificationsByUser = async (req, res) => {
   }
 };
 
+
+const deleteNotifications = async (req, res) => {
+  const { notifId } = req.params;
+
+  try {
+    await NotificationModel.deleteNotifications(notifId);
+    res.status(200).json({ message: 'Notification Deleted' });
+  } catch (err) {
+    console.error('Error deleting notification:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
-  getNotificationsByUser,clearNotificationsByUser
+  getNotificationsByUser,clearNotificationsByUser, deleteNotifications
 };

@@ -18,6 +18,7 @@ import PrivateRoute from '@/components/routes/PrivateRoute';
 import AuthContext from '@/contexts/AuthContext';
 import ProfileCreation from '@/pages/CreateProfilePage';
 import BottomNav from './components/BottomNav';
+import NotificationsPage from '@/pages/NotificationsPage';
 
 const HomeRedirect = () => {
   const { user, loading } = React.useContext(AuthContext);
@@ -80,7 +81,7 @@ function App() {
   return (
     <AuthContext.Provider value={{ user, login, logout, coins, updateCoins, loading }}>
       <Router>
-        <div className="min-h-screen bg-gray-50 pb-16">
+        <div className="min-h-screen bg-gray-50 pb-14 lg:pb-0">
           <Helmet>
             <title>FlirtDuo - Find Your Perfect Match Today</title>
             <meta name="description" content="Join FlirtDuo, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment." />
@@ -96,6 +97,7 @@ function App() {
             <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
             <Route path="/my-profile" element={<PrivateRoute><MyProfile /></PrivateRoute>} />
             <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+            <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminPanel />
