@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { Save, Mail, Lock, HelpCircle, FileText, Shield, MessageSquare, Building } from 'lucide-react';
@@ -10,13 +10,17 @@ import Header from '@/components/Header';
 import MobileHeader from '@/components/MobileHeader';
 import { useToast } from '@/components/ui/use-toast';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    const authToken = localStorage.getItem('token');
+
+
 const Settings = () => {
   const { toast } = useToast();
-  const [emailData, setEmailData] = useState({
-    currentEmail: 'alex.johnson@email.com',
-    newEmail: '',
-    isEditing: false
-  });
+const [emailData, setEmailData] = useState({
+  currentEmail: '',
+  newEmail: '',
+  isEditing: false
+});
   
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -24,6 +28,113 @@ const Settings = () => {
     confirmPassword: '',
     isEditing: false
   });
+
+  useEffect(() => {
+  const fetchEmail = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/users/settings`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+
+      const data = await res.json();
+      setEmailData((prev) => ({
+        ...prev,
+        currentEmail: data.email || '',
+      }));
+    } catch (err) {
+      console.error("Failed to load user email", err);
+      toast({
+        title: "Error",
+        description: "Failed to load current email",
+        variant: "destructive",
+      });
+    }
+  };
+
+  
+    fetchEmail();
+  
+}, []);
+
+
+
+
+const handleEmailUpdate = async (e) => {
+  e.preventDefault();
+  const email=emailData.newEmail;
+  if (!email) {
+      toast({
+        title: "Please enter a new email address",
+        variant: "destructive"
+      });
+      return;
+    }
+  try {
+    const res = await fetch(`${BASE_URL}/users/settings/update-email`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update email");
+
+    toast({ title: "Success", description: "Email updated successfully" });
+    setEmailData({
+  currentEmail: emailData.newEmail,
+  newEmail: '',
+  isEditing: false
+});
+  } catch (err) {
+    toast({ title: "Error", description: err.message, variant: "destructive" });
+  }
+};
+
+
+
+const handlePasswordUpdate = async (e) => {
+  e.preventDefault();
+  if (passwordData.newPassword !== passwordData.confirmPassword) {
+    toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+    return;
+  }
+  const currentPassword=passwordData.currentPassword;
+  const newPassword=passwordData.newPassword;
+
+  try {
+    const res = await fetch(`${BASE_URL}/users/settings/update-password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update password");
+
+    toast({ title: "Success", description: "Password updated successfully" });
+   setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+      isEditing: false
+    });
+  } catch (err) {
+    toast({ title: "Error", description: err.message, variant: "destructive" });
+  }
+};
+
+
+
+
 
   const handleEmailSave = () => {
     if (!emailData.newEmail) {
@@ -87,7 +198,7 @@ const Settings = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
-        <title>Settings - FlirtDuo</title>
+        <title>Settings - Liebenly</title>
         <meta name="description" content="Manage your FlirtDuo account settings, privacy preferences, and access help resources." />
       </Helmet>
 
@@ -156,7 +267,7 @@ const Settings = () => {
                         </div>
                         <div className="flex space-x-2">
                           <Button 
-                            onClick={handleEmailSave}
+                            onClick={handleEmailUpdate}
                             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
                           >
                             <Save className="w-4 h-4 mr-2" />
@@ -229,7 +340,7 @@ const Settings = () => {
                           </div>
                           <div className="flex space-x-2">
                             <Button 
-                              onClick={handlePasswordSave}
+                              onClick={handlePasswordUpdate}
                               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
                             >
                               <Save className="w-4 h-4 mr-2" />
