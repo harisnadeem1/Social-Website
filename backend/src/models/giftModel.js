@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 // Fetch all available gifts
-exports.fetchAllGifts = async () => {
+const fetchAllGifts = async () => {
   const { rows } = await db.query(
     `SELECT id, name, image_path, coin_cost FROM gift_catalog ORDER BY coin_cost ASC`
   );
@@ -9,7 +9,7 @@ exports.fetchAllGifts = async () => {
 };
 
 // Get a single gift by ID
-exports.getGiftById = async (id) => {
+const getGiftById = async (id) => {
   const { rows } = await db.query(
     `SELECT * FROM gift_catalog WHERE id = $1`,
     [id]
@@ -18,7 +18,7 @@ exports.getGiftById = async (id) => {
 };
 
 // Get user's current coin balance
-exports.getUserCoinBalance = async (userId) => {
+const getUserCoinBalance = async (userId) => {
   const { rows } = await db.query(
     `SELECT balance FROM coins WHERE user_id = $1`,
     [userId]
@@ -27,7 +27,7 @@ exports.getUserCoinBalance = async (userId) => {
 };
 
 // Deduct coins from user's balance
-exports.deductUserCoins = async (userId, amount) => {
+const deductUserCoins = async (userId, amount) => {
   await db.query(
     `UPDATE coins
      SET balance = balance - $1,
@@ -39,7 +39,7 @@ exports.deductUserCoins = async (userId, amount) => {
 };
 
 // Log transaction for gift send
-exports.logGiftTransaction = async (userId, amount, purpose) => {
+const logGiftTransaction = async (userId, amount, purpose) => {
   await db.query(
     `INSERT INTO transactions (user_id, amount, type, purpose)
      VALUES ($1, $2, 'spend', $3)`,
@@ -48,12 +48,36 @@ exports.logGiftTransaction = async (userId, amount, purpose) => {
 };
 
 // Insert message of type "gift"
-exports.insertGiftMessage = async ({ conversationId, senderId, giftId }) => {
+const insertGiftMessage = async ({ conversationId, senderId, giftId }) => {
   const { rows } = await db.query(
-    `INSERT INTO messages (conversation_id, sender_id, message_type, gift_id, status)
-     VALUES ($1, $2, 'gift', $3, 'sent')
-     RETURNING *`,
+    `
+    INSERT INTO messages (conversation_id, sender_id, message_type, gift_id, status)
+    VALUES ($1, $2, 'gift', $3, 'sent')
+    RETURNING *;
+    `,
     [conversationId, senderId, giftId]
   );
-  return rows[0];
+
+  const message = rows[0];
+
+  // Join with gift_catalog to get name + image
+  const { rows: giftRows } = await db.query(
+    `
+    SELECT name AS gift_name, image_path AS gift_image_path
+    FROM gift_catalog
+    WHERE id = $1
+    `,
+    [giftId]
+  );
+
+  if (giftRows.length > 0) {
+    message.gift_name = giftRows[0].gift_name;
+    message.gift_image_path = giftRows[0].gift_image_path;
+  }
+
+  return message;
 };
+
+
+
+module.exports = {getGiftById, insertGiftMessage , logGiftTransaction, deductUserCoins , fetchAllGifts , getUserCoinBalance}

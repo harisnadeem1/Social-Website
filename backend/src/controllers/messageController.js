@@ -4,18 +4,32 @@ const getMessagesByConversation = async (req, res) => {
   const conversationId = parseInt(req.params.conversationId);
   try {
     const result = await db.query(
-      `SELECT id, sender_id, content, status, sent_at
-       FROM messages
-       WHERE conversation_id = $1
-       ORDER BY sent_at ASC`,
+      `
+      SELECT 
+        m.id,
+        m.sender_id,
+        m.content,
+        m.status,
+        m.sent_at,
+        m.message_type,
+        m.gift_id,
+        g.name AS gift_name,
+        g.image_path AS gift_image_path
+      FROM messages m
+      LEFT JOIN gift_catalog g ON m.gift_id = g.id
+      WHERE m.conversation_id = $1
+      ORDER BY m.sent_at ASC
+      `,
       [conversationId]
     );
+
     res.status(200).json({ messages: result.rows });
   } catch (err) {
     console.error('Fetch messages error:', err);
     res.status(500).json({ message: 'Failed to fetch messages' });
   }
 };
+
 
 
 

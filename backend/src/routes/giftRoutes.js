@@ -8,6 +8,6 @@ const {verifyToken} = require('../middleware/authMiddleware'); // JWT auth
 router.get('/catalog', getGiftCatalog);
 
 // POST /gifts/send
-router.post('/send', verifyToken, sendGift);
+router.post('/send-gift', verifyToken, sendGift);
 
 module.exports = router;

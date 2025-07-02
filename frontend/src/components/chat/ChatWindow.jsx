@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Loader2, Gift ,X} from 'lucide-react';
+import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Loader2, Gift, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,7 +33,7 @@ const ChatWindow = ({
   setConversations,
   isLoadingMessages = false
 }) => {
-  const { user, coins } = useContext(AuthContext);
+  const { user, coins , updateCoins} = useContext(AuthContext);
   const { toast } = useToast();
   const messagesEndRef = useRef(null);
 
@@ -156,42 +156,68 @@ const ChatWindow = ({
 
 
 
+const handleSendGift = async (gift) => {
+  // Optimistically reduce coin count in UI
+ updateCoins(Math.max(coins - gift.coin_cost, 0));
 
-  const handleSendGift = async (gift) => {
-    try {
-      const res = await axios.post(`${BASE_URL}/messages/send-gift`, {
-        conversationId: selectedChat.id,
-        receiverId: selectedChat.participants.girl.id, // or selectedChat.girlId
-        giftId: gift.id,
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+  try {
+    const res = await axios.post(`${BASE_URL}/gifts/send-gift`, {
+      conversationId: selectedChat.id,
+      receiverId: selectedChat.girlId,
+      giftId: gift.id,
+    }, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
+    });
+
+    const updatedCoins = res.data.updatedBalance;
+   updateCoins(updatedCoins);
+
+    setShowGiftPopup(false);
+    toast({ title: "Gift Sent 🎁", description: `You sent ${gift.name}!` });
+
+    const msg = res.data.message;
+
+    const formattedMessage = {
+      id: msg.id,
+      senderId: msg.sender_id,
+      text: '',
+      message_type: msg.message_type,
+      gift_id: msg.gift_id,
+      gift_name: msg.gift_name,
+      gift_image_path: msg.gift_image_path,
+      timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'sent'
+    };
+
+    setConversations(prev => {
+      return prev.map(convo => {
+        if (convo.id === selectedChat.id) {
+          return {
+            ...convo,
+            messages: [...convo.messages, formattedMessage]
+          };
         }
+        return convo;
       });
+    });
 
-      setShowGiftPopup(false);
-      toast({ title: "Gift Sent 🎁", description: `You sent ${gift.name}!` });
+  } catch (err) {
+    // Revert coin balance if gift failed
+    setUser(prev => ({
+      ...prev,
+      coins: prev.coins + gift.coin_cost
+    }));
 
-      // Optionally add to local chat messages
-      setConversations(prev => {
-        return prev.map(convo => {
-          if (convo.id === selectedChat.id) {
-            return {
-              ...convo,
-              messages: [...convo.messages, res.data.message] // if backend returns message
-            };
-          }
-          return convo;
-        });
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Not enough coins or failed to send.",
-        variant: "destructive"
-      });
-    }
-  };
+    toast({
+      title: "Gift failed",
+      description: "Could not send gift. Please try again.",
+      variant: "destructive"
+    });
+  }
+};
+
 
 
 
@@ -299,7 +325,18 @@ const ChatWindow = ({
                     ? 'bg-pink-500 text-white rounded-br-md'
                     : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
                     }`}>
-                    <p className="text-sm">{msg.text}</p>
+                    {msg.message_type === 'gift' ? (
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <img
+                          src={`/gifts/${msg.gift_image_path}`}
+                          alt={msg.gift_name || 'Gift'}
+                          className="w-16 h-16 object-contain mb-1"
+                        />
+                        <p className="text-xs font-medium">{msg.gift_name || 'Gift 🎁'}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm">{msg.text}</p>
+                    )}
                     <div className={`flex items-center justify-between mt-1 text-xs ${isMyMessage ? 'text-pink-100' : 'text-gray-500'
                       }`}>
                       <span>{msg.timestamp}</span>
@@ -338,7 +375,7 @@ const ChatWindow = ({
       </div>
 
       <div ref={inputBarRef} className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-20">
-       <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
           {/* Emoji button - only on desktop */}
           <div className="hidden lg:flex">
             <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
@@ -367,7 +404,7 @@ const ChatWindow = ({
               className="border-gray-300 rounded-full text-base pr-12" // Added right padding for gift button
               disabled={isLoadingMessages}
             />
-            
+
             {/* Gift button inside input - shows on both mobile and desktop */}
             <Button
               variant="ghost"
@@ -431,7 +468,7 @@ const ChatWindow = ({
                         <X className="w-4 h-4 text-gray-500" />
                       </Button>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-3">
                       {giftList.map(gift => (
                         <div
@@ -439,7 +476,7 @@ const ChatWindow = ({
                           className="flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition"
                           onClick={() => handleSendGift(gift)}
                         >
-                          <img src={`/gifts/${gift.image_path}`} alt={gift.name} className="w-12 h-12 object-contain" />
+                    <img src={`/gifts/${gift.image_path}`} alt={gift.name} className="w-12 h-12 object-contain" />
                           <p className="text-xs mt-1 text-center">{gift.coin_cost} 💰</p>
                         </div>
                       ))}
@@ -467,7 +504,7 @@ const ChatWindow = ({
                         <X className="w-4 h-4 text-gray-500" />
                       </Button>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-4">
                       {giftList.map(gift => (
                         <div

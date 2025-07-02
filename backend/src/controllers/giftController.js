@@ -12,10 +12,14 @@ exports.getGiftCatalog = async (req, res) => {
 
 exports.sendGift = async (req, res) => {
   try {
+    console.log("in gift controller");
     const senderId = req.user.id;
     const { conversationId, receiverId, giftId } = req.body;
 
+    console.log(senderId, conversationId, receiverId, giftId);
+
     const gift = await GiftModel.getGiftById(giftId);
+    console.log(gift);
     if (!gift) return res.status(404).json({ message: "Gift not found" });
 
     const balance = await GiftModel.getUserCoinBalance(senderId);
@@ -30,8 +34,10 @@ exports.sendGift = async (req, res) => {
       senderId,
       giftId
     });
+    console.log(message);
 
-    res.status(200).json({ message });
+    const updatedBalance = await GiftModel.getUserCoinBalance(senderId);
+res.status(200).json({ message, updatedBalance });
   } catch (err) {
     console.error("Send gift error:", err);
     res.status(500).json({ message: "Failed to send gift" });

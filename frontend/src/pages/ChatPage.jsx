@@ -134,6 +134,10 @@ const ChatPage = () => {
               ? messagesData.messages.map((msg) => ({
                   id: msg.id,
                   text: msg.content,
+message_type: msg.message_type,
+gift_id: msg.gift_id,
+gift_name: msg.gift_name,
+gift_image_path: msg.gift_image_path,
                   senderId: msg.sender_id,
                   timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                   status: 'delivered',
@@ -194,7 +198,11 @@ const ChatPage = () => {
       const messages = Array.isArray(messagesData.messages)
         ? messagesData.messages.map((msg) => ({
             id: msg.id,
-            text: msg.content,
+           text: msg.content,
+message_type: msg.message_type,
+gift_id: msg.gift_id,
+gift_name: msg.gift_name,
+gift_image_path: msg.gift_image_path,
             senderId: msg.sender_id,
             timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             status: 'delivered',
@@ -391,16 +399,18 @@ const ChatPage = () => {
           </div>
           
           <div className={`${!showInbox ? 'block' : 'hidden'} lg:block flex-1`}>
-            <ChatWindow
-              selectedChat={selectedChat}
-              message={message}
-              setMessage={setMessage}
-              isTyping={isTyping}
-              onSendMessage={handleSendMessage}
-              onBackToInbox={handleBackToInbox}
-              currentUserId={user?.id}
-              isLoadingMessages={isLoadingMessages}
-            />
+           <ChatWindow
+  selectedChat={selectedChat}
+  message={message}
+  setMessage={setMessage}
+  isTyping={isTyping}
+  onSendMessage={handleSendMessage}
+  onBackToInbox={handleBackToInbox}
+  currentUserId={user?.id}
+  isChatter={user?.role === 'chatter'}
+  isLoadingMessages={isLoadingMessages}
+  setConversations={setConversations} // ✅ ADD THIS
+/>
           </div>
         </div>
       </div>
