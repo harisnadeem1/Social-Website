@@ -338,7 +338,7 @@ const ChatWindow = ({
       </div>
 
       <div ref={inputBarRef} className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-20">
-        <div className="flex items-center space-x-2">
+       <div className="flex items-center space-x-2">
           {/* Emoji button - only on desktop */}
           <div className="hidden lg:flex">
             <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
@@ -381,7 +381,7 @@ const ChatWindow = ({
                 }
               }}
             >
-              <Gift className="w-6 h-6 text-pink-500" />
+              <Gift className="w-5 h-5 text-pink-500" />
             </Button>
           </div>
 
@@ -406,7 +406,7 @@ const ChatWindow = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-black/50 z-90 lg:hidden"
+                  className="fixed inset-0 bg-black/50 z-50 lg:hidden"
                   onClick={() => setShowGiftPopup(false)}
                 />
 
@@ -416,30 +416,30 @@ const ChatWindow = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: '100%' }}
                   transition={{ type: 'spring', damping: 25, stiffness: 500 }}
-                  className="fixed bottom-20 left-4 right-4 bg-white rounded-3xl z-50 max-h-[70vh] overflow-y-auto lg:hidden shadow-2xl"
+                  className="fixed bottom-20 left-4 right-4 bg-white rounded-3xl z-50 max-h-[45vh] overflow-y-auto lg:hidden shadow-2xl"
                 >
-                  <div className="p-4">
+                  <div className="p-3">
                     {/* Header with close button */}
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Send a Gift 🎁</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-base font-semibold text-gray-900">Send a Gift 🎁</h3>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 hover:bg-gray-100"
+                        className="h-7 w-7 p-0 hover:bg-gray-100"
                         onClick={() => setShowGiftPopup(false)}
                       >
-                        <X className="w-5 h-5 text-gray-500" />
+                        <X className="w-4 h-4 text-gray-500" />
                       </Button>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       {giftList.map(gift => (
                         <div
                           key={gift.id}
                           className="flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition"
                           onClick={() => handleSendGift(gift)}
                         >
-                          <img src={`/gifts/${gift.image_path}`} alt={gift.name} className="w-14 h-14 object-contain" />
+                          <img src={`/gifts/${gift.image_path}`} alt={gift.name} className="w-12 h-12 object-contain" />
                           <p className="text-xs mt-1 text-center">{gift.coin_cost} 💰</p>
                         </div>
                       ))}
