@@ -158,6 +158,8 @@ const ChatWindow = ({
 
 const handleSendGift = async (gift) => {
   // Optimistically reduce coin count in UI
+    setShowGiftPopup(false);
+
  updateCoins(Math.max(coins - gift.coin_cost, 0));
 
   try {
