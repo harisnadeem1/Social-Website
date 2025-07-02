@@ -38,6 +38,19 @@ const deleteNotifications = async (req, res) => {
   }
 };
 
+
+const fetchUnreadCount = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const count = await NotificationModel.getUnreadNotificationCount(userId);
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({ error: 'Failed to fetch notification count' });
+  }
+};
+
 module.exports = {
-  getNotificationsByUser,clearNotificationsByUser, deleteNotifications
+  getNotificationsByUser,clearNotificationsByUser, deleteNotifications , fetchUnreadCount
 };

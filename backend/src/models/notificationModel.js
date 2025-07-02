@@ -29,6 +29,19 @@ const deleteNotifications = async (notifId) => {
   await db.query('DELETE FROM notifications WHERE id = $1', [notifId]);
 };
 
+
+
+
+
+const getUnreadNotificationCount = async (userId) => {
+  const query = `
+    SELECT COUNT(*) FROM notifications 
+    WHERE user_id = $1 AND is_read = FALSE
+  `;
+  const result = await db.query(query, [userId]);
+  return parseInt(result.rows[0].count, 10);
+};
+
 module.exports = {
-  getNotificationsByUserId,deleteNotificationsByUserId, deleteNotifications
+  getNotificationsByUserId,deleteNotificationsByUserId, deleteNotifications ,getUnreadNotificationCount
 };
