@@ -77,11 +77,12 @@ function App() {
     setCoins(newCoins);
     localStorage.setItem('flirtduo_coins', newCoins.toString());
   };
-
+const showBottomNav = user && user.role === 'user';
   return (
+    
     <AuthContext.Provider value={{ user, login, logout, coins, updateCoins, loading }}>
       <Router>
-        <div className="min-h-screen bg-gray-50 pb-14 lg:pb-0">
+        <div className={`min-h-screen bg-gray-50 ${showBottomNav ? 'pb-14' : ''} lg:pb-0`}>
           <Helmet>
             <title>Liebenly - Find Your Perfect Match Today</title>
             <meta name="description" content="Join FlirtDuo, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment." />
@@ -109,7 +110,7 @@ function App() {
               </ChatterRoute>
             } />
           </Routes>
-          <BottomNav /> {/* <== place it here just above Toaster */}
+          {showBottomNav && <BottomNav />}
           <Toaster />
         </div>
       </Router>
