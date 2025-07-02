@@ -40,6 +40,8 @@ const ChatWindow = ({
   const identity = currentUserId || user?.id;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+const inputBarRef = useRef(null);
+
   const navigate = useNavigate();
 
   const handleDeleteChat = async (chatId) => {
@@ -82,35 +84,35 @@ const ChatWindow = ({
 
 
   const handleShowProfile = async (userId) => {
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data?.profileId) {
+        navigate(`/profile/${data.profileId}`);
+      } else {
+        toast({
+          title: "Error",
+          description: "Profile not found.",
+          variant: "destructive",
+        });
       }
-    });
-
-    const data = await response.json();
-
-    if (data?.profileId) {
-      navigate(`/profile/${data.profileId}`);
-    } else {
+    } catch (error) {
+      console.error("Failed to fetch profile ID", error);
       toast({
         title: "Error",
-        description: "Profile not found.",
+        description: "Something went wrong while fetching profile.",
         variant: "destructive",
       });
     }
-  } catch (error) {
-    console.error("Failed to fetch profile ID", error);
-    toast({
-      title: "Error",
-      description: "Something went wrong while fetching profile.",
-      variant: "destructive",
-    });
-  }
-};
+  };
 
 
   console.log("========selected chat")
@@ -188,8 +190,8 @@ const ChatWindow = ({
               <DropdownMenuContent align="end">
 
                 <DropdownMenuItem onClick={() => handleShowProfile(selectedChat.girlId)}>
-  View Profile
-</DropdownMenuItem>
+                  View Profile
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => handleDeleteChat(selectedChat.id)}
@@ -273,46 +275,56 @@ const ChatWindow = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-20">
-        <div className="flex items-center space-x-2">
-          <div className="hidden lg:flex">
-            <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
-              <Smile className="w-5 h-5 text-gray-500" />
-            </Button>
-          </div>
+      <div ref={inputBarRef} className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-20">
+  <div className="flex items-center space-x-2">
+    <div className="hidden lg:flex">
+      <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
+        <Smile className="w-5 h-5 text-gray-500" />
+      </Button>
+    </div>
 
+    <Input
+      value={message}
+      onChange={handleInputChange}
+      onFocus={() => {
+        // Delay allows iOS keyboard to slide up before scrolling
+        setTimeout(() => {
+          inputBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          scrollToBottom(); // Also helps for Android
+        }, 400);
+      }}
+      onKeyPress={handleKeyPress}
+      placeholder={
+        isChatter
+          ? `Replying as ${selectedChat.participants.girl.name}...`
+          : "Each message costs 5 coins..."
+      }
+      className="flex-1 border-gray-300 rounded-full text-base"
+      disabled={isLoadingMessages}
+    />
 
-          <Input
-            value={message}
-            onChange={handleInputChange}
-            onFocus={() => setTimeout(() => scrollToBottom(), 200)} // delay allows keyboard to open
-            onKeyPress={handleKeyPress}
-            placeholder={isChatter ? `Replying as ${selectedChat.participants.girl.name}...` : "Each message costs 5 coins..."}
-
-            className="flex-1 border-gray-300 rounded-full text-base"
-            disabled={isLoadingMessages}
-          />
-
-          {showEmojiPicker && (
-            <div className="absolute bottom-20 z-10">
-              <EmojiPicker
-                onEmojiClick={(emojiData) => {
-                  setMessage((prev) => prev + emojiData.emoji);
-                  setShowEmojiPicker(false);
-                }}
-              />
-            </div>
-          )}
-          <Button
-            onClick={onSendMessage}
-            disabled={!message.trim() || isLoadingMessages}
-            className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-3 py-0"
-            title={isChatter ? "Send Reply" : "Costs 5 coins per message"}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+    {showEmojiPicker && (
+      <div className="absolute bottom-20 z-10">
+        <EmojiPicker
+          onEmojiClick={(emojiData) => {
+            setMessage((prev) => prev + emojiData.emoji);
+            setShowEmojiPicker(false);
+          }}
+        />
       </div>
+    )}
+
+    <Button
+      onClick={onSendMessage}
+      disabled={!message.trim() || isLoadingMessages}
+      className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-3 py-0"
+      title={isChatter ? "Send Reply" : "Costs 5 coins per message"}
+    >
+      <Send className="w-4 h-4" />
+    </Button>
+  </div>
+</div>
+
     </div>
   );
 };
