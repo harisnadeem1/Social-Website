@@ -37,7 +37,7 @@ const PublicHomepage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-25 via-white to-purple-25">
       <Helmet>
-        <title>FlirtDuo - Find Real Connections Today</title>
+        <title>Liebenly - Find Real Connections Today</title>
         <meta name="description" content="Meet singles near you who are serious about finding love. Join FlirtDuo, the trusted dating platform where real connections happen in a safe and private environment." />
       </Helmet>
 
@@ -48,7 +48,7 @@ const PublicHomepage = () => {
               <Heart className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              FlirtDuo
+              Liebenly
             </span>
           </div>
           

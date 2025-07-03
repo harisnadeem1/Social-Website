@@ -8,49 +8,48 @@ const WomenGallery = ({ onSignUp }) => {
       id: 1,
       name: 'Emma',
       age: 28,
+      Image:'https://i.ibb.co/zVDSG611/profile.jpg',
       description: 'Beautiful young woman with blonde hair smiling outdoors in natural lighting'
     },
     {
       id: 2,
       name: 'Sofia',
       age: 26,
+      Image:'https://i.ibb.co/RTzz4r0C/profile.jpg',
+
       description: 'Latina woman with dark hair and warm smile in urban setting'
     },
     {
       id: 3,
       name: 'Aria',
       age: 27,
+            Image:'https://i.ibb.co/dwc5r4nn/profile.jpg',
+
       description: 'Indian woman with long black hair, elegant and professional look'
     },
     {
       id: 4,
       name: 'Isabella',
       age: 25,
+            Image:'https://i.ibb.co/7tLmZDhV/profile.jpg',
+
       description: 'Hispanic woman with curly hair and bright smile at the beach'
     },
     {
       id: 5,
       name: 'Chloe',
       age: 29,
+            Image:'https://i.ibb.co/2Y1QTCvC/profile.jpg',
+
       description: 'Blonde woman with blue eyes in casual summer outfit'
     },
     {
       id: 6,
       name: 'Maya',
       age: 24,
+            Image:'https://i.ibb.co/jvmDKCG5/singlefoto.jpg',
+
       description: 'Asian woman with stylish haircut and modern fashion sense'
-    },
-    {
-      id: 7,
-      name: 'Zoe',
-      age: 30,
-      description: 'Redhead woman with freckles and genuine smile'
-    },
-    {
-      id: 8,
-      name: 'Luna',
-      age: 26,
-      description: 'Brunette woman with artistic style and creative background'
     }
   ];
 
@@ -72,7 +71,7 @@ const WomenGallery = ({ onSignUp }) => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
           {womenProfiles.map((profile, index) => (
             <motion.div
               key={profile.id}
@@ -88,7 +87,7 @@ const WomenGallery = ({ onSignUp }) => {
                   <img  
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     alt={`${profile.name}, ${profile.age} years old - beautiful woman smiling`}
-                   src="https://images.unsplash.com/photo-1666892666066-abe5c4865e9c" />
+                   src={`${profile.Image}`}/>
                 </div>
                 
                 <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

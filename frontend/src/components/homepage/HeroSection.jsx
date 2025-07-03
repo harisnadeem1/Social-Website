@@ -7,12 +7,23 @@ const HeroSection = ({ onLogin, onSignUp }) => {
   return (
     <section className="relative overflow-hidden min-h-[85vh] flex items-center">
       <div className="absolute inset-0">
-        <img  
-          className="w-full h-full object-cover"
-          alt="Happy couple laughing together in a romantic setting with soft lighting"
-         src="https://images.unsplash.com/photo-1676012102015-54c38d04fe8f" />
-        <div className="absolute inset-0 bg-gradient-to-r from-pink-900/60 via-purple-900/40 to-pink-900/60"></div>
-      </div>
+  {/* Desktop Image */}
+  <img
+    className="hidden md:block w-full h-full object-cover"
+    alt="Happy couple laughing together in a romantic setting with soft lighting"
+    src="https://i.ibb.co/gLXf83ky/Copy-of-Untitled-9.jpg"
+  />
+
+  {/* Mobile Image */}
+  <img
+    className="block md:hidden w-full h-full object-cover"
+    alt="Happy couple on mobile background"
+    src="https://i.ibb.co/FLjvCNf7/photo-1605381942640-0a262ce59788.jpg"
+  />
+
+  <div className="absolute inset-0 bg-gradient-to-r from-pink-900/60 via-purple-900/40 to-pink-900/60"></div>
+</div>
+
       
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 text-center">
         <motion.div
