@@ -6,9 +6,14 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PublicHeader from './PublicHeader';
 import MobileHeader from '../MobileHeader';
+import { useEffect } from 'react';
+
 
 
 const InfoPageLayout = ({ children, title, subtitle }) => {
+  useEffect(() => {
+  window.scrollTo(0, 0);
+}, []);
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <main className="flex-grow">

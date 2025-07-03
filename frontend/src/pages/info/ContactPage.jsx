@@ -43,7 +43,7 @@ const ContactPage = () => {
                 <Mail className="w-6 h-6 text-pink-500 mt-1 mr-4 flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold">General Inquiries</h3>
-                  <a href="mailto:hello@liebenly.com" className="text-purple-600 hover:underline">hello@liebenly.com</a>
+                  <a href="mailto:hello@liebenly.com" className="text-purple-600 hover:underline">liebenlysupport@gmail.com</a>
                 </div>
               </div>
               {/* <div className="flex items-start">
