@@ -57,15 +57,15 @@ const ContactPage = () => {
               <div className="flex items-start">
                 <MapPin className="w-6 h-6 text-pink-500 mt-1 mr-4 flex-shrink-0" />
                 <div>
-  <h3 className="font-semibold">Our Office</h3>
-  <p>30 N GOULD ST STE 9240</p>
-  <p>SHERIDAN, WY 82801, USA</p>
-</div>
+                  <h3 className="font-semibold">Our Office</h3>
+                  <p>30 N GOULD ST STE 9240</p>
+                  <p>SHERIDAN, WY 82801, USA</p>
+                </div>
 
               </div>
             </div>
           </motion.div>
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
@@ -98,13 +98,12 @@ const ContactPage = () => {
                 Send Message
               </Button>
             </form>
-          </motion.div>
+          </motion.div> */}
         </div>
       </InfoPageLayout>
-      
+
     </>
   );
 };
 
 export default ContactPage;
-  
