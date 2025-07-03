@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Loader2, Gift, X } from 'lucide-react';
+import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Loader2, Gift, X, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -33,7 +33,7 @@ const ChatWindow = ({
   setConversations,
   isLoadingMessages = false
 }) => {
-  const { user, coins , updateCoins} = useContext(AuthContext);
+  const { user, coins, updateCoins } = useContext(AuthContext);
   const { toast } = useToast();
   const messagesEndRef = useRef(null);
 
@@ -156,69 +156,189 @@ const ChatWindow = ({
 
 
 
-const handleSendGift = async (gift) => {
-  // Optimistically reduce coin count in UI
+  const handleSendGift = async (gift) => {
+    // Optimistically reduce coin count in UI
     setShowGiftPopup(false);
 
- updateCoins(Math.max(coins - gift.coin_cost, 0));
+    updateCoins(Math.max(coins - gift.coin_cost, 0));
+
+    try {
+      const res = await axios.post(`${BASE_URL}/gifts/send-gift`, {
+        conversationId: selectedChat.id,
+        receiverId: selectedChat.girlId,
+        giftId: gift.id,
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+
+      const updatedCoins = res.data.updatedBalance;
+      updateCoins(updatedCoins);
+
+      setShowGiftPopup(false);
+      toast({ title: "Gift Sent 🎁", description: `You sent ${gift.name}!` });
+
+      const msg = res.data.message;
+
+      const formattedMessage = {
+        id: msg.id,
+        senderId: msg.sender_id,
+        text: '',
+        message_type: msg.message_type,
+        gift_id: msg.gift_id,
+        gift_name: msg.gift_name,
+        gift_image_path: msg.gift_image_path,
+        timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'sent'
+      };
+
+      setConversations(prev => {
+        return prev.map(convo => {
+          if (convo.id === selectedChat.id) {
+            return {
+              ...convo,
+              messages: [...convo.messages, formattedMessage]
+            };
+          }
+          return convo;
+        });
+      });
+
+    } catch (err) {
+      // Revert coin balance if gift failed
+      setUser(prev => ({
+        ...prev,
+        coins: prev.coins + gift.coin_cost
+      }));
+
+      toast({
+        title: "Gift failed",
+        description: "Could not send gift. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+
+
+
+
+
+
+
+  const fileInputRef = useRef(null);
+  const imgbbApiKey = import.meta.env.VITE_IMGBB_API_KEY;
+
+  const handleImageUploadClick = () => {
+    fileInputRef.current.click();
+  };
+
+ const handleImageChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const tempMessageId = Date.now(); // Unique ID for temporary message
+
+  // Step 1: Add temporary message with loading state
+  setConversations(prev => {
+    return prev.map(convo => {
+      if (convo.id === selectedChat.id) {
+        return {
+          ...convo,
+          messages: [
+            ...convo.messages,
+            {
+              id: tempMessageId,
+              senderId: user.id,
+              message_type: 'image',
+              image_url: null,
+              status: 'uploading',
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            }
+          ]
+        };
+      }
+      return convo;
+    });
+  });
 
   try {
-    const res = await axios.post(`${BASE_URL}/gifts/send-gift`, {
-      conversationId: selectedChat.id,
-      receiverId: selectedChat.girlId,
-      giftId: gift.id,
-    }, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`
-      }
+    // Step 2: Upload to imgBB
+    const imgbbRes = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+      method: 'POST',
+      body: formData,
     });
+    const imgbbData = await imgbbRes.json();
+    const imageUrl = imgbbData.data.url;
 
-    const updatedCoins = res.data.updatedBalance;
-   updateCoins(updatedCoins);
-
-    setShowGiftPopup(false);
-    toast({ title: "Gift Sent 🎁", description: `You sent ${gift.name}!` });
+    // Step 3: Save image & message in your DB
+    const res = await axios.post(`${BASE_URL}/images/upload`, {
+      profile_id: user?.id,
+      conversation_id: selectedChat.id,
+      image_url: imageUrl,
+    }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
 
     const msg = res.data.message;
 
-    const formattedMessage = {
-      id: msg.id,
-      senderId: msg.sender_id,
-      text: '',
-      message_type: msg.message_type,
-      gift_id: msg.gift_id,
-      gift_name: msg.gift_name,
-      gift_image_path: msg.gift_image_path,
-      timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'sent'
-    };
-
+    // Step 4: Replace the temporary message with the real message
     setConversations(prev => {
       return prev.map(convo => {
         if (convo.id === selectedChat.id) {
           return {
             ...convo,
-            messages: [...convo.messages, formattedMessage]
+            messages: convo.messages.map(m =>
+              m.id === tempMessageId
+                ? {
+                    id: msg.id,
+                    senderId: msg.sender_id,
+                    message_type: msg.message_type,
+                    image_id: msg.image_id,
+                    image_url: msg.image_url,
+                    status: 'sent',
+                    timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    text: '',
+                  }
+                : m
+            )
           };
         }
         return convo;
       });
     });
 
-  } catch (err) {
-    // Revert coin balance if gift failed
-    setUser(prev => ({
-      ...prev,
-      coins: prev.coins + gift.coin_cost
-    }));
+    toast({ title: "Image sent!" });
+
+  } catch (error) {
+    console.error(error);
+
+    // Optional: Remove the temp message if upload fails
+    setConversations(prev => {
+      return prev.map(convo => {
+        if (convo.id === selectedChat.id) {
+          return {
+            ...convo,
+            messages: convo.messages.filter(m => m.id !== tempMessageId)
+          };
+        }
+        return convo;
+      });
+    });
 
     toast({
-      title: "Gift failed",
-      description: "Could not send gift. Please try again.",
-      variant: "destructive"
+      title: "Upload Failed",
+      description: "Could not send image.",
+      variant: "destructive",
     });
   }
 };
+
+
 
 
 
@@ -327,18 +447,32 @@ const handleSendGift = async (gift) => {
                     ? 'bg-pink-500 text-white rounded-br-md'
                     : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
                     }`}>
-                    {msg.message_type === 'gift' ? (
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <img
-                          src={`/gifts/${msg.gift_image_path}`}
-                          alt={msg.gift_name || 'Gift'}
-                          className="w-16 h-16 object-contain mb-1"
-                        />
-                        <p className="text-xs font-medium">{msg.gift_name || 'Gift 🎁'}</p>
-                      </div>
-                    ) : (
-                      <p className="text-sm">{msg.text}</p>
-                    )}
+                   {msg.message_type === 'gift' ? (
+  <div className="flex flex-col items-center justify-center text-center">
+    <img
+      src={`/gifts/${msg.gift_image_path}`}
+      alt={msg.gift_name || 'Gift'}
+      className="w-16 h-16 object-contain mb-1"
+    />
+    <p className="text-xs font-medium">{msg.gift_name || 'Gift 🎁'}</p>
+  </div>
+) : msg.message_type === 'image' ? (
+  msg.status === 'uploading' ? (
+    <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded-md">
+      <Loader2 className="animate-spin text-gray-500 w-6 h-6" />
+    </div>
+  ) : (
+    <img
+      src={msg.image_url}
+      alt="Sent Image"
+      className="w-48 h-auto rounded-md object-cover"
+    />
+  )
+) : (
+  <p className="text-sm">{msg.text}</p>
+)}
+
+
                     <div className={`flex items-center justify-between mt-1 text-xs ${isMyMessage ? 'text-pink-100' : 'text-gray-500'
                       }`}>
                       <span>{msg.timestamp}</span>
@@ -391,10 +525,9 @@ const handleSendGift = async (gift) => {
               value={message}
               onChange={handleInputChange}
               onFocus={() => {
-                // Delay allows iOS keyboard to slide up before scrolling
                 setTimeout(() => {
                   inputBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                  scrollToBottom(); // Also helps for Android
+                  scrollToBottom();
                 }, 400);
               }}
               onKeyPress={handleKeyPress}
@@ -403,25 +536,44 @@ const handleSendGift = async (gift) => {
                   ? `Replying as ${selectedChat.participants.girl.name}...`
                   : "Each message costs 5 coins..."
               }
-              className="border-gray-300 rounded-full text-base pr-12" // Added right padding for gift button
+              className="border-gray-300 rounded-full text-base pr-20"
               disabled={isLoadingMessages}
             />
 
-            {/* Gift button inside input - shows on both mobile and desktop */}
+            {/* Image Upload Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-12 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+              onClick={handleImageUploadClick}
+            >
+              <ImageIcon className="w-5 h-5 text-pink-500" />
+            </Button>
+
+            {/* Gift Button */}
             <Button
               variant="ghost"
               size="sm"
               className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
               onClick={() => {
                 setShowGiftPopup(prev => !prev);
-                setShowEmojiPicker(false); // close emoji if open
+                setShowEmojiPicker(false);
                 if (document.activeElement instanceof HTMLElement) {
-                  document.activeElement.blur(); // close keyboard on mobile
+                  document.activeElement.blur();
                 }
               }}
             >
               <Gift className="w-5 h-5 text-pink-500" />
             </Button>
+
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleImageChange}
+              style={{ display: 'none' }}
+            />
           </div>
 
           {/* Emoji picker */}
@@ -478,7 +630,7 @@ const handleSendGift = async (gift) => {
                           className="flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition"
                           onClick={() => handleSendGift(gift)}
                         >
-                    <img src={`/gifts/${gift.image_path}`} alt={gift.name} className="w-12 h-12 object-contain" />
+                          <img src={`/gifts/${gift.image_path}`} alt={gift.name} className="w-12 h-12 object-contain" />
                           <p className="text-xs mt-1 text-center">{gift.coin_cost} 💰</p>
                         </div>
                       ))}

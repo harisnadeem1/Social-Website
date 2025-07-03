@@ -20,6 +20,8 @@ const boostRoutes = require('./src/routes/boostRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const giftRoutes = require('./src/routes/giftRoutes');
+const imageRoutes = require('./src/routes/imagesRoutes');
+
 
 
 
@@ -62,6 +64,8 @@ app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/users/settings', userRoutes);
 app.use('/api/gifts', giftRoutes);
+
+app.use('/api/images', imageRoutes);
 
 
 module.exports = app;

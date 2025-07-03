@@ -49,15 +49,15 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-gray-200 bg-white sticky top-16 z-40">
-  <div className="flex justify-center items-center">
-    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-      Messages
-      {isLoading && (
-        <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
-      )}
-    </h2>
-  </div>
-</div>
+        <div className="flex justify-center items-center">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            Messages
+            {isLoading && (
+              <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
+            )}
+          </h2>
+        </div>
+      </div>
 
 
       <div className="mb-2 px-2">
@@ -117,9 +117,11 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <p className={`text-sm text-gray-600 truncate ${showNewMessagesBadge ? 'font-medium' : ''}`}>
-                        {conversation.lastMessage}
-                      </p>
+                    <p className={`text-sm text-gray-600 truncate ${showNewMessagesBadge ? 'font-medium' : ''}`}>
+  {conversation.lastMessage === 'You: null'
+    ? '🎁 You sent a gift'
+    : conversation.lastMessage}
+</p>
                       {conversation.unread > 0 && (
                         <Badge className="bg-red-500 text-white text-xs ml-2">
                           {conversation.unread}

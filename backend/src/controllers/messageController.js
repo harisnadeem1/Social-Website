@@ -14,9 +14,12 @@ const getMessagesByConversation = async (req, res) => {
         m.message_type,
         m.gift_id,
         g.name AS gift_name,
-        g.image_path AS gift_image_path
+        g.image_path AS gift_image_path,
+        m.image_id,
+        i.image_url AS image_url
       FROM messages m
       LEFT JOIN gift_catalog g ON m.gift_id = g.id
+      LEFT JOIN images i ON m.image_id = i.id
       WHERE m.conversation_id = $1
       ORDER BY m.sent_at ASC
       `,
@@ -29,6 +32,7 @@ const getMessagesByConversation = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch messages' });
   }
 };
+
 
 
 
