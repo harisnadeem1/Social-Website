@@ -30,8 +30,9 @@ const Dashboard = () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
         const data = await res.json();
-        setProfiles(data);
-        setFilteredProfiles(data);
+        const randomized =shuffleArray(data);
+        setProfiles(randomized);
+        setFilteredProfiles(randomized);
         console.log(data);
       } catch (error) {
         console.error("Failed to fetch profiles", error);
@@ -40,6 +41,15 @@ const Dashboard = () => {
 
     fetchProfiles();
   }, []);
+
+  const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
   const handleFiltersChange = (newFilters) => {
     setFilters(newFilters); // store filters
