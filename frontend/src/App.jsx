@@ -20,6 +20,17 @@ import ProfileCreation from '@/pages/CreateProfilePage';
 import BottomNav from './components/BottomNav';
 import NotificationsPage from '@/pages/NotificationsPage';
 
+
+
+import AboutUsPage from '@/pages/info/AboutUsPage';
+import ContactPage from '@/pages/info/ContactPage';
+import CareersPage from '@/pages/info/CareersPage';
+import BlogPage from '@/pages/info/BlogPage';
+import PrivacyPolicyPage from '@/pages/info/PrivacyPolicyPage';
+import TermsAndConditionsPage from '@/pages/info/TermsAndConditionsPage';
+import CookiePolicyPage from '@/pages/info/CookiePolicyPage';
+import SafetyTipsPage from '@/pages/info/SafetyTipsPage';
+
 const HomeRedirect = () => {
   const { user, loading } = React.useContext(AuthContext);
 
@@ -109,6 +120,16 @@ const showBottomNav = user && user.role === 'user';
                 <ChatterDashboard />
               </ChatterRoute>
             } />
+
+
+             <Route path="/about" element={<AboutUsPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/careers" element={<CareersPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+            <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+            <Route path="/safety-tips" element={<SafetyTipsPage />} />
           </Routes>
           {showBottomNav && <BottomNav />}
           <Toaster />
