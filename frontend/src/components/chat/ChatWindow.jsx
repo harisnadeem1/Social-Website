@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useContext, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Loader2, Gift, X, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Loader2, Gift, X, ImageIcon, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -221,6 +221,21 @@ const ChatWindow = ({
   };
 
 
+  const CoinIcon = ({ className }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor">₵</text>
+    </svg>
+  );
 
 
 
@@ -234,67 +249,67 @@ const ChatWindow = ({
     fileInputRef.current.click();
   };
 
- const handleImageChange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const formData = new FormData();
-  formData.append('image', file);
+    const formData = new FormData();
+    formData.append('image', file);
 
-  const tempMessageId = Date.now(); // Unique ID for temporary message
+    const tempMessageId = Date.now(); // Unique ID for temporary message
 
-  // Step 1: Add temporary message with loading state
-  setConversations(prev => {
-    return prev.map(convo => {
-      if (convo.id === selectedChat.id) {
-        return {
-          ...convo,
-          messages: [
-            ...convo.messages,
-            {
-              id: tempMessageId,
-              senderId: user.id,
-              message_type: 'image',
-              image_url: null,
-              status: 'uploading',
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            }
-          ]
-        };
-      }
-      return convo;
-    });
-  });
-
-  try {
-    // Step 2: Upload to imgBB
-    const imgbbRes = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
-      method: 'POST',
-      body: formData,
-    });
-    const imgbbData = await imgbbRes.json();
-    const imageUrl = imgbbData.data.url;
-
-    // Step 3: Save image & message in your DB
-    const res = await axios.post(`${BASE_URL}/images/upload`, {
-      profile_id: user?.id,
-      conversation_id: selectedChat.id,
-      image_url: imageUrl,
-    }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-    });
-
-    const msg = res.data.message;
-
-    // Step 4: Replace the temporary message with the real message
+    // Step 1: Add temporary message with loading state
     setConversations(prev => {
       return prev.map(convo => {
         if (convo.id === selectedChat.id) {
           return {
             ...convo,
-            messages: convo.messages.map(m =>
-              m.id === tempMessageId
-                ? {
+            messages: [
+              ...convo.messages,
+              {
+                id: tempMessageId,
+                senderId: user.id,
+                message_type: 'image',
+                image_url: null,
+                status: 'uploading',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }
+            ]
+          };
+        }
+        return convo;
+      });
+    });
+
+    try {
+      // Step 2: Upload to imgBB
+      const imgbbRes = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, {
+        method: 'POST',
+        body: formData,
+      });
+      const imgbbData = await imgbbRes.json();
+      const imageUrl = imgbbData.data.url;
+
+      // Step 3: Save image & message in your DB
+      const res = await axios.post(`${BASE_URL}/images/upload`, {
+        profile_id: user?.id,
+        conversation_id: selectedChat.id,
+        image_url: imageUrl,
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+
+      const msg = res.data.message;
+
+      // Step 4: Replace the temporary message with the real message
+      setConversations(prev => {
+        return prev.map(convo => {
+          if (convo.id === selectedChat.id) {
+            return {
+              ...convo,
+              messages: convo.messages.map(m =>
+                m.id === tempMessageId
+                  ? {
                     id: msg.id,
                     senderId: msg.sender_id,
                     message_type: msg.message_type,
@@ -304,39 +319,39 @@ const ChatWindow = ({
                     timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     text: '',
                   }
-                : m
-            )
-          };
-        }
-        return convo;
+                  : m
+              )
+            };
+          }
+          return convo;
+        });
       });
-    });
 
-    toast({ title: "Image sent!" });
+      toast({ title: "Image sent!" });
 
-  } catch (error) {
-    console.error(error);
+    } catch (error) {
+      console.error(error);
 
-    // Optional: Remove the temp message if upload fails
-    setConversations(prev => {
-      return prev.map(convo => {
-        if (convo.id === selectedChat.id) {
-          return {
-            ...convo,
-            messages: convo.messages.filter(m => m.id !== tempMessageId)
-          };
-        }
-        return convo;
+      // Optional: Remove the temp message if upload fails
+      setConversations(prev => {
+        return prev.map(convo => {
+          if (convo.id === selectedChat.id) {
+            return {
+              ...convo,
+              messages: convo.messages.filter(m => m.id !== tempMessageId)
+            };
+          }
+          return convo;
+        });
       });
-    });
 
-    toast({
-      title: "Upload Failed",
-      description: "Could not send image.",
-      variant: "destructive",
-    });
-  }
-};
+      toast({
+        title: "Upload Failed",
+        description: "Could not send image.",
+        variant: "destructive",
+      });
+    }
+  };
 
 
 
@@ -447,30 +462,30 @@ const ChatWindow = ({
                     ? 'bg-pink-500 text-white rounded-br-md'
                     : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
                     }`}>
-                   {msg.message_type === 'gift' ? (
-  <div className="flex flex-col items-center justify-center text-center">
-    <img
-      src={`/gifts/${msg.gift_image_path}`}
-      alt={msg.gift_name || 'Gift'}
-      className="w-16 h-16 object-contain mb-1"
-    />
-    <p className="text-xs font-medium">{msg.gift_name || 'Gift 🎁'}</p>
-  </div>
-) : msg.message_type === 'image' ? (
-  msg.status === 'uploading' ? (
-    <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded-md">
-      <Loader2 className="animate-spin text-gray-500 w-6 h-6" />
-    </div>
-  ) : (
-    <img
-      src={msg.image_url}
-      alt="Sent Image"
-      className="w-48 h-auto rounded-md object-cover"
-    />
-  )
-) : (
-  <p className="text-sm">{msg.text}</p>
-)}
+                    {msg.message_type === 'gift' ? (
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <img
+                          src={`/gifts/${msg.gift_image_path}`}
+                          alt={msg.gift_name || 'Gift'}
+                          className="w-16 h-16 object-contain mb-1"
+                        />
+                        <p className="text-xs font-medium">{msg.gift_name || 'Gift 🎁'}</p>
+                      </div>
+                    ) : msg.message_type === 'image' ? (
+                      msg.status === 'uploading' ? (
+                        <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded-md">
+                          <Loader2 className="animate-spin text-gray-500 w-6 h-6" />
+                        </div>
+                      ) : (
+                        <img
+                          src={msg.image_url}
+                          alt="Sent Image"
+                          className="w-48 h-auto rounded-md object-cover"
+                        />
+                      )
+                    ) : (
+                      <p className="text-sm">{msg.text}</p>
+                    )}
 
 
                     <div className={`flex items-center justify-between mt-1 text-xs ${isMyMessage ? 'text-pink-100' : 'text-gray-500'
@@ -534,7 +549,7 @@ const ChatWindow = ({
               placeholder={
                 isChatter
                   ? `Replying as ${selectedChat.participants.girl.name}...`
-                  : "Each message costs 5 coins..."
+                  : "Write Message .."
               }
               className="border-gray-300 rounded-full text-base pr-20"
               disabled={isLoadingMessages}
@@ -678,14 +693,25 @@ const ChatWindow = ({
           </AnimatePresence>
 
           {/* Send button */}
-          <Button
-            onClick={onSendMessage}
-            disabled={!message.trim() || isLoadingMessages}
-            className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-3 py-0"
-            title={isChatter ? "Send Reply" : "Costs 5 coins per message"}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+          <div className="relative">
+            <Button
+              onClick={onSendMessage}
+              disabled={!message.trim() || isLoadingMessages}
+              className="bg-pink-500 hover:bg-pink-600 text-white rounded-full px-3 py-0"
+              title={isChatter ? "Send Reply" : "Costs 5 coins per message"}
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+
+            {/* Coin Badge in Bottom-Right */}
+            {!isChatter && (
+              <div className="absolute -bottom-2 -right-2 flex items-center bg-yellow-400 rounded-full px-1 py-0.5 text-xs font-bold shadow">
+                <CoinIcon className="w-3 h-3 mr-0.5 text-yellow-900" />
+                5
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
