@@ -31,7 +31,8 @@ const ChatWindow = ({
   currentUserId,
   isChatter = false,
   setConversations,
-  isLoadingMessages = false
+  isLoadingMessages = false,
+  refreshConversations
 }) => {
   const { user, coins, updateCoins } = useContext(AuthContext);
   const { toast } = useToast();
@@ -58,6 +59,7 @@ const ChatWindow = ({
         description: "The conversation has been removed.",
       });
       onBackToInbox();
+      refreshConversations();
     } catch (err) {
       console.error("Failed to delete chat:", err);
       toast({

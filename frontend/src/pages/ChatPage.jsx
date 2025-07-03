@@ -24,7 +24,7 @@ const ChatPage = () => {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const hasHandledSearchParams = useRef(false);
-  
+
   // ✅ Use ref to store socket instance
   const socketRef = useRef(null);
 
@@ -132,25 +132,25 @@ const ChatPage = () => {
             const messagesData = await messagesRes.json();
             const messages = Array.isArray(messagesData.messages)
               ? messagesData.messages.map((msg) => ({
-                  id: msg.id,
-                  text: msg.content,
-message_type: msg.message_type,
-gift_id: msg.gift_id,
-gift_name: msg.gift_name,
-gift_image_path: msg.gift_image_path,
-image_url:msg.image_url,
-                  senderId: msg.sender_id,
-                  timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  status: 'delivered',
-                }))
+                id: msg.id,
+                text: msg.content,
+                message_type: msg.message_type,
+                gift_id: msg.gift_id,
+                gift_name: msg.gift_name,
+                gift_image_path: msg.gift_image_path,
+                image_url: msg.image_url,
+                senderId: msg.sender_id,
+                timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                status: 'delivered',
+              }))
               : [];
 
             // Format last message with "You:" prefix if sent by current user
             const lastMsg = messages[messages.length - 1];
             let formattedLastMessage = 'Tap to continue...';
             if (lastMsg) {
-              formattedLastMessage = lastMsg.senderId === user?.id 
-                ? `You: ${lastMsg.text}` 
+              formattedLastMessage = lastMsg.senderId === user?.id
+                ? `You: ${lastMsg.text}`
                 : lastMsg.text;
             }
 
@@ -198,17 +198,17 @@ image_url:msg.image_url,
       const messagesData = await messagesRes.json();
       const messages = Array.isArray(messagesData.messages)
         ? messagesData.messages.map((msg) => ({
-            id: msg.id,
-           text: msg.content,
-message_type: msg.message_type,
-gift_id: msg.gift_id,
-gift_name: msg.gift_name,
-gift_image_path: msg.gift_image_path,
-image_url:msg.image_url,
-            senderId: msg.sender_id,
-            timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            status: 'delivered',
-          }))
+          id: msg.id,
+          text: msg.content,
+          message_type: msg.message_type,
+          gift_id: msg.gift_id,
+          gift_name: msg.gift_name,
+          gift_image_path: msg.gift_image_path,
+          image_url: msg.image_url,
+          senderId: msg.sender_id,
+          timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'delivered',
+        }))
         : [];
 
       // Update the specific conversation with new messages
@@ -219,8 +219,8 @@ image_url:msg.image_url,
             const lastMsg = messages[messages.length - 1];
             let formattedLastMessage = 'Tap to continue...';
             if (lastMsg) {
-              formattedLastMessage = lastMsg.senderId === user?.id 
-                ? `You: ${lastMsg.text}` 
+              formattedLastMessage = lastMsg.senderId === user?.id
+                ? `You: ${lastMsg.text}`
                 : lastMsg.text;
             }
 
@@ -278,8 +278,8 @@ image_url:msg.image_url,
     }
   }, [selectedChatId, fetchMessagesForConversation, fetchAllConversations]);
 
-  const selectedChat = useMemo(() => 
-    conversations.find(c => c.id === selectedChatId), 
+  const selectedChat = useMemo(() =>
+    conversations.find(c => c.id === selectedChatId),
     [conversations, selectedChatId]
   );
 
@@ -312,8 +312,8 @@ image_url:msg.image_url,
         description: `You need ${messageCost} coins to send a message. Buy coins now!`,
         variant: "destructive",
         action: (
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={() => window.location.href = '/coins'}
             className="bg-yellow-500 hover:bg-yellow-600 text-white"
           >
@@ -392,27 +392,28 @@ image_url:msg.image_url,
       <div className="h-[calc(100vh-4rem)] lg:h-[calc(100vh-5rem)]">
         <div className="h-full flex">
           <div className={`${showInbox ? 'block' : 'hidden'} lg:block w-full lg:w-80 border-r border-gray-200 bg-white`}>
-            <ConversationList 
+            <ConversationList
               conversations={conversations}
               onSelectChat={handleSelectChat}
               isLoading={isLoadingConversations}
               currentUserId={user?.id}
             />
           </div>
-          
+
           <div className={`${!showInbox ? 'block' : 'hidden'} lg:block flex-1`}>
-           <ChatWindow
-  selectedChat={selectedChat}
-  message={message}
-  setMessage={setMessage}
-  isTyping={isTyping}
-  onSendMessage={handleSendMessage}
-  onBackToInbox={handleBackToInbox}
-  currentUserId={user?.id}
-  isChatter={user?.role === 'chatter'}
-  isLoadingMessages={isLoadingMessages}
-  setConversations={setConversations} // ✅ ADD THIS
-/>
+            <ChatWindow
+              selectedChat={selectedChat}
+              message={message}
+              setMessage={setMessage}
+              isTyping={isTyping}
+              onSendMessage={handleSendMessage}
+              onBackToInbox={handleBackToInbox}
+              currentUserId={user?.id}
+              isChatter={user?.role === 'chatter'}
+              isLoadingMessages={isLoadingMessages}
+              setConversations={setConversations} // ✅ ADD THIS
+              refreshConversations={fetchAllConversations}
+            />
           </div>
         </div>
       </div>
