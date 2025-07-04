@@ -67,7 +67,9 @@ const ChatPage = () => {
     const handleReceiveMessage = (incomingMessage) => {
       setConversations((prevConvs) =>
         prevConvs.map((conv) => {
+          
           if (conv.id === selectedChatId) {
+            if(conv.girlId === incomingMessage.senderId ){//&&  conv.receiverId === user?.id){
             const updatedMessages = [
               ...conv.messages,
               {
@@ -90,6 +92,7 @@ const ChatPage = () => {
               lastActivity: Date.now()
             };
           }
+        }
           return conv;
         })
       );
@@ -292,6 +295,7 @@ const ChatPage = () => {
   }, []);
 
   const handleBackToInbox = useCallback(() => {
+    fetchAllConversations();
     setShowInbox(true);
     setSelectedChatId(null);
   }, []);
@@ -376,7 +380,7 @@ const ChatPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>Messages - FlirtDuo</title>
+        <title>Messages - Liebenly</title>
         <meta name="description" content="Chat with your matches on FlirtDuo. Send messages, connect with singles, and build meaningful relationships." />
       </Helmet>
 
