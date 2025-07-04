@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
@@ -8,12 +8,15 @@ import ProfileCard from '@/components/ProfileCard';
 import FilterPanel from '@/components/FilterPanel';
 import Sidebar from '@/components/Sidebar';
 import BoostModal from '@/components/BoostModal';
+import AuthContext from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState([]);
   const [filteredProfiles, setFilteredProfiles] = useState([]);
   const [showBoostModal, setShowBoostModal] = useState(false);
+    const { user, logout } = useContext(AuthContext);
+  
   const [filters, setFilters] = useState({
     ageMin: 18,
     ageMax: 100,
@@ -26,22 +29,39 @@ const Dashboard = () => {
 
 
   useEffect(() => {
-    const fetchProfiles = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
-        const data = await res.json();
-        const randomized =shuffleArray(data);
-        setProfiles(randomized);
-        setFilteredProfiles(randomized);
-      } catch (error) {
-        console.error("Failed to fetch profiles", error);
-      }
-    };
+  const fetchProfiles = async () => {
+    try {
+      const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
+      const userprofile = await res1.json();
+      const userLocation = userprofile.profileLocation?.trim() || ""; // Handle null/undefined
 
-    fetchProfiles();
-  }, []);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
+      const data = await res.json();
 
-  const shuffleArray = (array) => {
+      // Split profiles based on city match
+      const sameLocation = data.filter(profile => profile.city?.trim() === userLocation);
+      const differentLocation = data.filter(profile => profile.city?.trim() !== userLocation);
+
+      // Shuffle both arrays independently
+      const randomizedSameLocation = sameLocation.length ? shuffleArray(sameLocation) : [];
+      const randomizedDifferentLocation = differentLocation.length ? shuffleArray(differentLocation) : [];
+
+      // Merge: same location first, then other locations
+      const finalProfiles = [...randomizedSameLocation, ...randomizedDifferentLocation];
+
+      console.log(finalProfiles);
+
+      setProfiles(finalProfiles);
+      setFilteredProfiles(finalProfiles);
+    } catch (error) {
+      console.error("Failed to fetch profiles", error);
+    }
+  };
+
+  fetchProfiles();
+}, []);
+
+const shuffleArray = (array) => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -49,6 +69,7 @@ const Dashboard = () => {
   }
   return shuffled;
 };
+
 
   const handleFiltersChange = (newFilters) => {
     setFilters(newFilters); // store filters

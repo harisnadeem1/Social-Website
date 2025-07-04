@@ -101,7 +101,7 @@ const getUserIdByProfileId = async (profileId) => {
 const getProfileIdByUserId = async (userId) => {
   
   const result = await db.query(
-    'SELECT id FROM profiles WHERE user_id = $1',
+    'SELECT * FROM profiles WHERE user_id = $1',
     [userId]
   );
   return result.rows[0]; // will return { id: ... } or undefined

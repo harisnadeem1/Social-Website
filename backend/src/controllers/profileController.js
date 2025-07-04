@@ -159,6 +159,7 @@ const deleteGalleryImage = async (req, res) => {
 // profileController.js
 const getProfileById = async (req, res) => {
   const { id } = req.params;
+  console.log(id);
   try {
     const profile = await profileModel.findById(id);
     if (!profile) return res.status(404).json({ message: "Profile not found" });
@@ -196,7 +197,7 @@ const getProfileId = async (req, res) => {
       return res.status(404).json({ message: 'Profile not found for user' });
     }
 
-    res.status(200).json({ profileId: profile.id });
+    res.status(200).json({ profileId: profile.id, profileLocation:profile.city });
   } catch (err) {
     console.error('Error fetching profile ID:', err);
     res.status(500).json({ message: 'Server error' });
