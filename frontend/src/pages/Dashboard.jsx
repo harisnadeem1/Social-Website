@@ -33,7 +33,6 @@ const Dashboard = () => {
         const randomized =shuffleArray(data);
         setProfiles(randomized);
         setFilteredProfiles(randomized);
-        console.log(data);
       } catch (error) {
         console.error("Failed to fetch profiles", error);
       }

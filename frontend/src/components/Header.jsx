@@ -35,7 +35,8 @@ const Header = () => {
 
 
   useEffect(() => {
-    if (user) {
+    if (user.role=="user") {
+      
       fetchCoins(user.id);
       fetchNotifications();
 
@@ -53,7 +54,7 @@ const Header = () => {
 
 
   useEffect(() => {
-    if (user) {
+    if (user.role=="user") {
       fetchCoins(user.id);
 
       const interval = setInterval(() => fetchCoins(user.id), 60000); // refresh every 60s

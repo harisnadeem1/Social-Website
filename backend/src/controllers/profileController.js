@@ -39,8 +39,6 @@ const createProfile = async (req, res) => {
 
 
 const getProfile = async (req, res) => {
-  console.log("in get profile");
-  console.log("User from token:", req.user);
   try {
     
     const profile = await profileModel.findByUserId(req.user.id);
@@ -90,7 +88,6 @@ const updateProfilePhoto = async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.log(err);
     console.error("Failed to update photo:", err);
     res.status(500).json({ error: "Failed to update photo" });
   }

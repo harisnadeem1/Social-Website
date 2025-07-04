@@ -16,7 +16,6 @@ const getActiveConversations = async (req, res) => {
 const getMessagesForConversation = async (req, res) => {
   const conversationId = req.params.id;
 
-  console.log(conversationId);
 
   try {
     const messages = await ChatterModel.getMessagesByConversationId(conversationId);

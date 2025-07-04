@@ -39,16 +39,13 @@ const ChatPage = () => {
 
     // Connection handlers
     socket.on("connect", () => {
-      console.log("✅ Socket connected to server with ID:", socket.id);
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ Socket disconnected");
     });
 
     // Cleanup function
     return () => {
-      console.log("🧹 Cleaning up socket connection");
       socket.off("connect");
       socket.off("disconnect");
       socket.disconnect();
@@ -59,7 +56,6 @@ const ChatPage = () => {
   // Join chat room when selectedChatId changes
   useEffect(() => {
     if (selectedChatId && socketRef.current) {
-      console.log("in join chat");
       socketRef.current.emit("join_chat", `chat-${selectedChatId}`);
     }
   }, [selectedChatId]);
@@ -170,7 +166,6 @@ const ChatPage = () => {
         );
 
         setConversations(conversationsWithMessages);
-        console.log('Conversation list reloaded');
       }
     } catch (err) {
       console.error('Failed to fetch conversations:', err);
@@ -234,7 +229,7 @@ const ChatPage = () => {
         })
       );
 
-      console.log(`Messages reloaded for conversation ${conversationId}`);
+      // console.log(`Messages reloaded for conversation ${conversationId}`);
     } catch (err) {
       console.error(`Failed to fetch messages for conversation ${conversationId}:`, err);
       toast({
@@ -303,7 +298,6 @@ const ChatPage = () => {
 
   const handleSendMessage = useCallback(async () => {
     if (!message.trim() || !selectedChatId || !user) return;
-    console.log(message);
 
     const messageCost = 5;
     if (coins < messageCost) {

@@ -132,8 +132,6 @@ const ChatWindow = ({
   };
 
 
-  console.log("========selected chat")
-  console.log(selectedChat)
 
   useEffect(() => {
     scrollToBottom();

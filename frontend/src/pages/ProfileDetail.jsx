@@ -39,7 +39,6 @@ const ProfileDetail = () => {
         // ✅ Scroll to top after profile is set
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        console.log(data);
       } catch (error) {
         console.error("Failed to fetch profile:", error);
         navigate('/'); // optionally redirect back

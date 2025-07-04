@@ -57,7 +57,7 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
         role: "user", // hardcoded
       });
 
-      console.log('Signup response:', res.data); // Debug log
+      // console.log('Signup response:', res.data); // Debug log
 
       // Close the modal first
       onOpenChange(false);

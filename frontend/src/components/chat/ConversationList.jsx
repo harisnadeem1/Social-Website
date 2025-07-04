@@ -16,8 +16,6 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
     conversation.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  console.log(conversations);
-  console.log("===========Conv");
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';

@@ -18,8 +18,6 @@ const NotificationsPage = () => {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
             const data = await res.json();
-            console.log("======notifications");
-            console.log(data);
             setNotifications(data);
         } catch (err) {
             toast({ title: 'Error', description: 'Failed to load notifications', variant: 'destructive' });

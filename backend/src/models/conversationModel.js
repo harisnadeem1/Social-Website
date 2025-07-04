@@ -4,7 +4,6 @@ const db = require('../config/db'); // PostgreSQL db instance
 
 const fetchUserConversations = async (userId) => {
 
-  console.log(userId);
   const query = `
    SELECT 
   c.id AS conversation_id,

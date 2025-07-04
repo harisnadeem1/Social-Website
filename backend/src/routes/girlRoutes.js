@@ -21,7 +21,6 @@ router.get("/public", async (req, res) => {
   WHERE u.role = 'girl'
 `);
     res.json(result.rows);
-    console.log(result)
   } catch (err) {
     console.error("Error fetching girl profiles:", err.message);
     res.status(500).json({ error: "Failed to fetch profiles" });

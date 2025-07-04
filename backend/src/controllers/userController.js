@@ -16,7 +16,6 @@ exports.updateEmail = async (req, res) => {
 exports.updatePassword = async (req, res) => {
   const userId  = req.user.id;
   const { currentPassword, newPassword } = req.body;
-  console.log(userId,currentPassword,newPassword);
 
   try {
     const user = await userModel.getUserById(userId);

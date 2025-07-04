@@ -150,7 +150,7 @@ export const useChatterState = () => {
         })
       );
 
-      console.log(`Chatter messages reloaded for conversation ${conversationId}`);
+      // console.log(`Chatter messages reloaded for conversation ${conversationId}`);
     } catch (err) {
       console.error(`Failed to fetch chatter messages for conversation ${conversationId}:`, err);
       toast({
@@ -204,7 +204,7 @@ export const useChatterState = () => {
       // 🔓 Unlock previous chat (if switching to a different one)
       if (lockedChatId && lockedChatId !== conversation.conversation_id) {
         await unlockChat(lockedChatId, token);
-        console.log("Unlocked chat:", lockedChatId);
+        // console.log("Unlocked chat:", lockedChatId);
       }
 
       // Reload all conversations first
@@ -242,7 +242,7 @@ export const useChatterState = () => {
       // 🔒 Lock this conversation
       await lockChat(conversation.conversation_id, token);
       setLockedChatId(conversation.conversation_id);
-      console.log("Locked chat:", conversation.conversation_id);
+      // console.log("Locked chat:", conversation.conversation_id);
 
       // ✅ Check lock status
       const lockData = await checkLockStatus(conversation.conversation_id, token);

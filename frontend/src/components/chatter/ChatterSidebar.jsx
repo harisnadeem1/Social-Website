@@ -67,7 +67,6 @@ const handleLikeResponse = async (like) => {
 };
 
 const handleWinkResponse = async (wink) => {
-  console.log(wink);
   try {
     await fetch(`${import.meta.env.VITE_API_BASE_URL}/winks/respond/${wink.id}`, {
       method: 'POST',

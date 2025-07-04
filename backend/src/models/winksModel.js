@@ -1,7 +1,6 @@
 const pool = require('../config/db');
 
 const respondToWink = async (winkId) => {
-    console.log(winkId);
   const client = await pool.connect();
 
 
@@ -9,7 +8,6 @@ const respondToWink = async (winkId) => {
     await client.query('BEGIN');
 
     // 1. Get wink info
-    console.log("in 1");
 
     const winkRes = await client.query(
       `SELECT w.*, u.full_name AS user_name, p.name AS girl_name
@@ -21,13 +19,11 @@ const respondToWink = async (winkId) => {
     );
     const wink = winkRes.rows[0];
     if (!wink) throw new Error("Wink not found");
-    console.log(wink);
 
     const userId = wink.sender_id;
     const girlProfileId = wink.receiver_id;
 
     // 2. Get girl user ID
-    console.log("in 2");
 
     const girlRes = await client.query(
       `SELECT id, name FROM profiles WHERE user_id = $1`,
@@ -37,12 +33,10 @@ const respondToWink = async (winkId) => {
     const girlName = girlRes.rows[0].name;
 
     // 3. Delete the wink
-    console.log("in 3");
 
     await client.query(`DELETE FROM winks WHERE id = $1`, [winkId]);
 
     // 4. Create a notification
-    console.log("in 4");
 
     await client.query(
       `INSERT INTO notifications (user_id, sender_id, type, content)
@@ -51,9 +45,7 @@ const respondToWink = async (winkId) => {
     );
 
     // 5. Check if conversation already exists
-    console.log("in 5");
 
-    console.log(girlUserId);
     
 
     const convoRes = await client.query(
@@ -74,7 +66,6 @@ const respondToWink = async (winkId) => {
     }
 
     // 6. Send predefined message
-    console.log("in 6");
 
     const message = "Hey! I noticed your wink 😊";
     await client.query(

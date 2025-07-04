@@ -51,9 +51,7 @@ const LoginModal = ({ open, onOpenChange, onSwitchToSignup }) => {
       onOpenChange(false);
 
       // Conditional navigation
-      console.log("==================================user");
 
-      console.log(user);
       
 //     if (!user.profile) {
 //   navigate("/create-profile", {

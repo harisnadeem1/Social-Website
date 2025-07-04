@@ -2,11 +2,9 @@ const Images = require('../models/imageModel');
 
 exports.uploadImageAndCreateMessage = async (req, res) => {
   try {
-    console.log(req.body);
     const { profile_id, conversation_id, image_url } = req.body;
     const sender_id = req.user.id; // Assuming you use authMiddleware to get the user
 
-    console.log(profile_id, conversation_id, image_url,sender_id);
 
 
     // Step 1: Save image

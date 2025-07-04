@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-
-
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import {
-  Users, Heart, MessageSquare, UserCheck, DollarSign, Coins, Zap, Shield, Eye, Edit, Trash2, MoreVertical, Plus, Search, Filter, BarChart2, UserPlus, Image as ImageIcon, Lock
+  Users, Heart, MessageSquare, UserCheck, DollarSign, Coins, Zap, Shield, Eye, Edit, Trash2, MoreVertical, Plus, Search, Filter, BarChart2, UserPlus, Image as ImageIcon, Lock, User, Info, FileText, Camera, Upload, X, MapPin
 } from 'lucide-react';
 import Header from '@/components/Header';
 import MobileHeader from '@/components/MobileHeader';
@@ -20,8 +18,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/use-toast';
 import debounce from 'lodash.debounce';
-
-
+import imageCompression from "browser-image-compression";
+import { uploadToCloudinary } from "../lib/cloudinaryUpload";
+import EnhancedDashboardSection from "../components/admin/EnhancedDashboardSection";
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
   <Card className="border-0 shadow-lg bg-white transition-transform hover:scale-105">
@@ -42,76 +41,89 @@ const AdminPanel = () => {
   const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '' });
   const [chatterForm, setChatterForm] = useState({ name: '', email: '', password: '' });
   const [users, setUsers] = useState([]);
-
-
   const [stats, setStats] = useState(null);
   const [roleFilter, setRoleFilter] = useState("All");
   const [boostFilter, setBoostFilter] = useState("All");
-
-
-
   const [profileImage, setProfileImage] = useState(null);
   const [galleryImages, setGalleryImages] = useState([]);
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
-
-
   const [searchTerm, setSearchTerm] = useState("");
-
-
-
-
   const [locationQuery, setLocationQuery] = useState("");
-const [locationInput, setLocationInput] = useState(""); // For input value
-const [locationSuggestions, setLocationSuggestions] = useState([]); // Suggestions from API
-const [selectedLocation, setSelectedLocation] = useState(""); // Final selected city
+  const [locationInput, setLocationInput] = useState(""); // For input value
+  const [locationSuggestions, setLocationSuggestions] = useState([]); // Suggestions from API
+  const [selectedLocation, setSelectedLocation] = useState(""); // Final selected city
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    const fetchStatsAndUsers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const [statsRes, usersRes] = await Promise.all([
+          axios.get(`${BASE_URL}/admin/stats`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BASE_URL}/admin/users`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        setStats(statsRes.data);
+        setUsers(usersRes.data);
+      } catch (err) {
+        console.error("Error loading admin data:", err);
+      }
+    };
+
+    fetchStatsAndUsers();
+  }, []);
 
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${BASE_URL}/admin/stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setStats(res.data);
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+      }
+    };
 
-const handleLocationSearch = async () => {
-  if (!locationInput.trim()) return;
+    fetchStats();
+  }, []);
 
-  try {
-    const res = await fetch(
-      `https://api.locationiq.com/v1/autocomplete?key=${import.meta.env.VITE_LOCATIONIQ_API_KEY}&q=${encodeURIComponent(locationInput)}&limit=5&normalizecity=1&tag=place:city`
-    );
-    const data = await res.json();
 
-    if (res.ok) {
-      const results = data.map(loc => {
-        const city = loc.address.name || loc.address.city || loc.address.town || loc.address.village;
-        const country = loc.address.country;
-        return `${city}, ${country}`;
-      });
-      setLocationSuggestions(results);
-    } else {
-      console.error("Location search failed:", data);
+  const handleLocationSearch = async () => {
+    if (!locationInput.trim()) return;
+
+    try {
+      const res = await fetch(
+        `https://api.locationiq.com/v1/autocomplete?key=${import.meta.env.VITE_LOCATIONIQ_API_KEY}&q=${encodeURIComponent(locationInput)}&limit=5&normalizecity=1&tag=place:city`
+      );
+      const data = await res.json();
+
+      if (res.ok) {
+        const results = data.map(loc => {
+          const city = loc.address.name || loc.address.city || loc.address.town || loc.address.village;
+          const country = loc.address.country;
+          return `${city}, ${country}`;
+        });
+        setLocationSuggestions(results);
+      } else {
+        console.error("Location search failed:", data);
+      }
+    } catch (error) {
+      console.error("Error fetching locations:", error);
     }
-  } catch (error) {
-    console.error("Error fetching locations:", error);
-  }
-};
+  };
 
-
-const searchLocation = async () => {
-  if (!locationQuery.trim()) return;
-  setSearchingLocation(true);
-
-  try {
-    const res = await fetch(`https://api.locationiq.com/v1/autocomplete?key=${import.meta.env.VITE_LOCATIONIQ_API_KEY}&q=${encodeURIComponent(locationQuery)}&limit=5&normalizecity=1&tag=place:city`);
-    const data = await res.json();
-
-    if (res.ok) {
-      setLocationResults(data);
-    } else {
-      console.error("Location search error:", data);
-    }
-  } catch (error) {
-    console.error("Fetch error:", error);
-  } finally {
-    setSearchingLocation(false);
-  }
-};
 
 
   const fetchLocationSuggestions = debounce(async (input) => {
@@ -138,26 +150,13 @@ const searchLocation = async () => {
     fetchLocationSuggestions(value);
   };
 
-
-
-
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === "All" || user.role === roleFilter;
     const matchesBoost = boostFilter === "All" || user.boost === boostFilter;
     return matchesSearch && matchesRole && matchesBoost;
   });
-
-
-  //   const filteredUsers = users.filter((user) => {
-  //   const roleMatch = roleFilter === "All" || user.role.toLowerCase() === roleFilter.toLowerCase();
-  //   const boostMatch = boostFilter === "All" || user.boost.toLowerCase() === boostFilter.toLowerCase();
-  //   return roleMatch && boostMatch;
-  // });
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const indexOfLast = currentPage * itemsPerPage;
@@ -167,11 +166,6 @@ const searchLocation = async () => {
   useEffect(() => {
     setCurrentPage(1); // Reset to page 1 on search or filter
   }, [searchTerm, roleFilter, boostFilter]);
-
-
-
-
-
 
 
   const [girlForm, setGirlForm] = useState({
@@ -188,8 +182,14 @@ const searchLocation = async () => {
 
 
   const uploadToImgBB = async (file) => {
+    // const formData = new FormData();
+    // formData.append("image", file);
+
+
+    const compressedFile = await imageCompression(file, { maxSizeMB: 0.5 }); // you can adjust maxSizeMB
+
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", compressedFile);
 
     const res = await fetch(`https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_API_KEY}`, {
       method: "POST",
@@ -201,61 +201,7 @@ const searchLocation = async () => {
   };
 
 
-  const handleCreateGirl = async () => {
-    setUploading(true);
-    try {
-      // Upload profile image
-      let profileImageUrl = "";
-      if (profileImage) {
-        const formData = new FormData();
-        formData.append("image", profileImage);
-        const res = await axios.post(
-          `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_API_KEY}`,
-          formData
-        );
-        profileImageUrl = res.data.data.url;
-      }
-
-      // Upload gallery images
-      const galleryImageUrls = [];
-      for (const img of galleryImages) {
-        const formData = new FormData();
-        formData.append("image", img);
-        const res = await axios.post(
-          `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_API_KEY}`,
-          formData
-        );
-        galleryImageUrls.push(res.data.data.url);
-      }
-
-      // Now send data to backend (update your API route accordingly)
-      await axios.post(`${BASE_URL}/admin/girl-profile/create`, {
-        ...girlForm,
-        profile_image_url: profileImageUrl,
-        gallery_images: galleryImageUrls,
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      toast({ title: "Profile created successfully!" });
-      // Reset state
-      setProfileImage(null);
-      setGalleryImages([]);
-      setGirlForm({});
-    } catch (error) {
-      console.error("Error creating girl profile:", error);
-      toast({ title: "Error creating profile", variant: "destructive" });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-
   const createGirlProfile = async () => {
-
-
     const requiredFields = [
       "name", "email", "age", "city", "height", "interests", "bio", "profileImage"
     ];
@@ -276,12 +222,21 @@ const searchLocation = async () => {
 
       const token = localStorage.getItem("token");
 
-      // Upload profile image
-      const profileImageUrl = await uploadToImgBB(girlForm.profileImage);
+      // // Upload profile image
+      // const profileImageUrl = await uploadToImgBB(girlForm.profileImage);
+      // // Upload gallery images in parallel
+      // const galleryUploadPromises = girlForm.gallery.map(file => uploadToImgBB(file));
+      // const galleryUrls = await Promise.all(galleryUploadPromises); // 🚀 Parallel upload
 
-      // Upload gallery images in parallel
-      const galleryUploadPromises = girlForm.gallery.map(file => uploadToImgBB(file));
-      const galleryUrls = await Promise.all(galleryUploadPromises); // 🚀 Parallel upload
+
+      //       const [profileImageUrl, galleryUrls] = await Promise.all([
+      //   uploadToImgBB(girlForm.profileImage),
+      //   Promise.all(girlForm.gallery.map(file => uploadToImgBB(file)))
+      // ]);
+
+
+      const profileImageUrl = girlForm.profileImage;  // Already a URL
+      const galleryUrls = girlForm.gallery;
 
       // Create profile + gallery
       await axios.post(`${BASE_URL}/admin/create-girl-profile`, {
@@ -322,39 +277,6 @@ const searchLocation = async () => {
   };
 
 
-
-
-
-
-
-
-
-
-  useEffect(() => {
-    const fetchStatsAndUsers = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const [statsRes, usersRes] = await Promise.all([
-          axios.get(`${BASE_URL}/admin/stats`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${BASE_URL}/admin/users`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        setStats(statsRes.data);
-        setUsers(usersRes.data);
-      } catch (err) {
-        console.error("Error loading admin data:", err);
-      }
-    };
-
-    fetchStatsAndUsers();
-  }, []);
-
-
   const handleAction = async (action, userId) => {
     if (action === 'Delete') {
       try {
@@ -375,30 +297,7 @@ const searchLocation = async () => {
   };
 
 
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(`${BASE_URL}/admin/stats`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        setStats(res.data);
-      } catch (err) {
-        console.log(err);
-        console.error("Failed to load stats:", err);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
   const createUser = async (formData, role) => {
-
-
-
     try {
       await axios.post(`${BASE_URL}/admin/create`, { ...formData, role }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -407,7 +306,6 @@ const searchLocation = async () => {
     }
     // ✅ clear the form
     catch (err) {
-      console.log(err);
       toast({
         title: `Failed to create ${role}`,
         description: err.response?.data?.error || "Unknown error",
@@ -416,27 +314,6 @@ const searchLocation = async () => {
     }
   };
 
-  // const handleAction = (action, name) => {
-  //   toast({
-  //     title: `${action} clicked for ${name}`,
-  //     description: "This feature is for demonstration purposes.",
-  //   });
-  // };
-
-  const handleCreate = (type) => {
-    toast({
-      title: `Create New ${type}`,
-      description: "In a real app, this would create a new entry.",
-    });
-  };
-
-  // const users = [
-  //   { id: 1, name: 'Emma Wilson', role: 'User', location: 'New York', coins: 150, boost: 'No' },
-  //   { id: 2, name: 'Sofia Rodriguez', role: 'User', location: 'Los Angeles', coins: 75, boost: 'Yes' },
-  //   { id: 3, name: 'Emma Chatter', role: 'Chatter', location: 'Virtual', coins: 0, boost: 'N/A' },
-  //   { id: 4, name: 'The Godfather', role: 'Admin', location: 'Sicily', coins: 0, boost: 'N/A' },
-  //   { id: 5, name: 'Isabella (AI)', role: 'User', location: 'Miami', coins: 0, boost: 'N/A' },
-  // ];
 
   const liveChats = [
     { id: 1, user: 'Alex Johnson', girl: 'Emma Wilson', status: 'Locked', lockedBy: 'chatter@flirtduo.com', lastActivity: '2 min ago' },
@@ -447,308 +324,24 @@ const searchLocation = async () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Helmet>
-        <title>Admin Panel - FlirtDuo</title>
+        <title>Admin Panel - Liebenly</title>
         <meta name="description" content="Administrator control panel for FlirtDuo." />
       </Helmet>
 
       <Header />
       <MobileHeader />
 
-      <main className="container mx-auto px-4 py-6 lg:py-8 pt-20 lg:pt-8">
+      <main className="container mx-auto px-4 py-6 lg:py-8 lg:pt-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="space-y-8"
         >
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center space-x-3">
-              <Shield className="w-8 h-8 text-purple-600" />
-              <span>Admin Control Center</span>
-            </h1>
-            <p className="text-lg text-gray-600">The Godfather's dashboard for FlirtDuo.</p>
-            {/* <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="font-semibold text-blue-900 mb-2">🔑 Test Chatter Login Credentials:</h3>
-              <p className="text-blue-800"><strong>Email:</strong> chatter@flirtduo.com</p>
-              <p className="text-blue-800"><strong>Password:</strong> chatter123</p>
-              <p className="text-sm text-blue-600 mt-1">Use these credentials to test the Chatter Dashboard functionality.</p>
-            </div> */}
-          </div>
+          
+          {stats && <EnhancedDashboardSection stats={stats} />}
 
-          {stats && (
-            <section id="dashboard-summary">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">📊 Dashboard Summary</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                <StatCard title="Total Users" value={stats.total_users} icon={Users} color="text-blue-500" />
-                <StatCard title="Total Chatters" value={stats.total_chatters} icon={MessageSquare} color="text-green-500" />
-                <StatCard title="Total Girls" value={stats.girls} icon={Heart} color="text-pink-500" />
-
-                <StatCard title="Total Admins" value={stats.total_admins} icon={UserCheck} color="text-purple-500" />
-                <StatCard title="Total Revenue" value={`$${Number(stats.total_revenue).toLocaleString()}`} icon={DollarSign} color="text-yellow-500" />
-                <StatCard title="Coins Purchased" value={Number(stats.coins_purchased).toLocaleString()} icon={Coins} color="text-orange-500" />
-              </div>
-            </section>
-          )}
-
-          <section id="create-girl-profile">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">👩 Create New Girl Profile</h2>
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <UserPlus className="mr-2 text-pink-500" />
-                  Create Girl Profile for Public Users
-                </CardTitle>
-                <CardDescription>
-                  Create attractive female profiles that will appear in the user homepage grid and be fully functional.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="girl-name">Name</Label>
-                      <Input
-                        id="girl-name"
-                        placeholder="e.g., Isabella Martinez"
-                        value={girlForm.name}
-                        onChange={(e) => setGirlForm({ ...girlForm, name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="girl-email">Email</Label>
-                      <Input
-                        id="girl-email"
-                        type="email"
-                        placeholder="e.g., bella@flirtduo.com"
-                        value={girlForm.email}
-                        onChange={(e) => setGirlForm({ ...girlForm, email: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="girl-age">Age</Label>
-                      <Input
-                        id="girl-age"
-                        type="number"
-                        placeholder="24"
-                        min="18"
-                        max="50"
-                        value={girlForm.age}
-                        onChange={(e) => setGirlForm({ ...girlForm, age: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-
-                    <div>
-                      <Label htmlFor="girl-height">Height</Label>
-                      <select
-                        id="girl-height"
-                        value={girlForm.height}
-                        onChange={(e) => setGirlForm({ ...girlForm, height: e.target.value })}
-                        className="w-full mt-1 p-2 border rounded-md text-gray-700 focus:outline-none focus:ring focus:border-blue-300"
-                      >
-                        <option value="">Select height</option>
-                        <option value="under 5ft">Under 5'0"</option>
-                        <option value="5'0 - 5'3">5'0" - 5'3"</option>
-                        <option value="5'4 - 5'7">5'4" - 5'7"</option>
-                        <option value="5'8 - 5'11">5'8" - 5'11"</option>
-                        <option value="6'0 - 6'3">6'0" - 6'3"</option>
-                        <option value="Over 6'3">Over 6'3"</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="girl-interests">Interests</Label>
-                      <Input
-                        id="girl-interests"
-                        placeholder="e.g., Yoga, Travel, Photography"
-                        value={girlForm.interests}
-                        onChange={(e) => setGirlForm({ ...girlForm, interests: e.target.value })}
-                      />
-                    </div>
-                   <div className="relative">
-  <Label className="mb-1 block">Location</Label>
-  <div className="relative">
-    <Input
-      placeholder="Enter city name..."
-      value={locationInput}
-      onChange={(e) => setLocationInput(e.target.value)}
-      className="pr-16"
-    />
-    <button
-      type="button"
-      onClick={handleLocationSearch}
-      className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded"
-    >
-      Search
-    </button>
-  </div>
-
-  {locationSuggestions.length > 0 && (
-    <ul className="absolute z-10 w-full border rounded p-2 mt-1 bg-white max-h-48 overflow-y-auto shadow">
-      {locationSuggestions.map((loc, index) => (
-        <li
-          key={index}
-          className="cursor-pointer hover:bg-gray-100 p-1 text-sm"
-          onClick={() => {
-            setSelectedLocation(loc);
-            setLocationInput(loc);
-            setLocationSuggestions([]);
-            setGirlForm({ ...girlForm, city: loc }); // ✅ only city + country
-          }}
-        >
-          {loc}
-        </li>
-      ))}
-    </ul>
-  )}
-</div>
-
-
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="girl-bio">Bio/Description</Label>
-                      <Input
-                        id="girl-bio"
-                        placeholder="A short, engaging bio..."
-                        value={girlForm.bio}
-                        onChange={(e) => setGirlForm({ ...girlForm, bio: e.target.value })}
-                      />
-                    </div>
-
-                    {/* Profile Image Upload */}
-                    <div>
-                      <Label>Profile Image</Label>
-                      <div className="flex items-center space-x-4">
-                        <Button variant="outline" className="w-full" disabled={uploadingProfile}>
-                          <label className="cursor-pointer w-full">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={async (e) => {
-                                const file = e.target.files[0];
-                                if (!file) return;
-
-                                setUploadingProfile(true);
-                                try {
-                                  const formData = new FormData();
-                                  formData.append("image", file);
-                                  const res = await axios.post(
-                                    `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_API_KEY}`,
-                                    formData
-                                  );
-                                  const imageUrl = res.data.data.url;
-
-                                  setGirlForm({
-                                    ...girlForm,
-                                    profileImage: imageUrl,
-                                    imagePreview: imageUrl,
-                                  });
-                                } catch (error) {
-                                  toast({ title: "Profile image upload failed", variant: "destructive" });
-                                } finally {
-                                  setUploadingProfile(false);
-                                }
-                              }}
-                              className="hidden"
-                            />
-                            <ImageIcon className="mr-2 h-4 w-4" />
-                            {uploadingProfile ? "Uploading..." : "Upload Profile Image"}
-                          </label>
-                        </Button>
-
-                        {girlForm.imagePreview && (
-                          <img
-                            src={girlForm.imagePreview}
-                            alt="Preview"
-                            className="h-16 w-16 object-cover rounded-md border"
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Gallery Upload */}
-                    <div>
-                      <Label>Additional Photos</Label>
-                      <div className="space-y-2">
-                        <Button variant="outline" className="w-full" disabled={uploadingGallery}>
-                          <label className="cursor-pointer w-full">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={async (e) => {
-                                const files = Array.from(e.target.files);
-                                if (files.length === 0) return;
-
-                                setUploadingGallery(true);
-                                const uploadedUrls = [];
-
-                                for (const file of files) {
-                                  try {
-                                    const formData = new FormData();
-                                    formData.append("image", file);
-                                    const res = await axios.post(
-                                      `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGBB_API_KEY}`,
-                                      formData
-                                    );
-                                    uploadedUrls.push(res.data.data.url);
-                                  } catch (err) {
-                                    toast({ title: "Gallery upload failed", variant: "destructive" });
-                                  }
-                                }
-
-                                setGirlForm((prev) => ({
-                                  ...prev,
-                                  gallery: [...(prev.gallery || []), ...uploadedUrls],
-                                  galleryPreviews: [...(prev.galleryPreviews || []), ...uploadedUrls],
-                                }));
-
-                                setUploadingGallery(false);
-                              }}
-                              className="hidden"
-                            />
-                            <ImageIcon className="mr-2 h-4 w-4" />
-                            {uploadingGallery ? "Uploading..." : "Upload Gallery Images"}
-                          </label>
-                        </Button>
-
-                        {girlForm.galleryPreviews?.length > 0 && (
-                          <div className="grid grid-cols-3 gap-2 pt-2">
-                            {girlForm.galleryPreviews.map((url, idx) => (
-                              <img
-                                key={idx}
-                                src={url}
-                                alt={`Gallery ${idx}`}
-                                className="h-16 w-full object-cover rounded-md border"
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <Button
-                    onClick={createGirlProfile}
-                    className="w-full md:w-auto bg-pink-500 hover:bg-pink-600 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Girl Profile
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-
+          
 
           <section id="management-controls">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">⚙️ Management Controls</h2>
@@ -841,6 +434,349 @@ const searchLocation = async () => {
                     <Plus className="w-4 h-4 mr-2" />
                     Create New Chatter
                   </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
+          <section id="create-girl-profile" className="py-8">
+            <div className=" mx-auto px-1">
+              {/* Header Section */}
+              {/* <div className="text-center mb-8">
+      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full mb-4">
+        <UserPlus className="w-8 h-8 text-white" />
+      </div>
+      <h2 className="text-4xl font-bold text-gray-900 mb-2">👩 Create New Girl Profile</h2>
+      <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        Create attractive female profiles that will appear in the user homepage grid and be fully functional.
+      </p>
+    </div> */}
+
+              <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-2xl">
+                    <UserPlus className="mr-3 text-pink-500" />
+                    Create Girl Profile for Public Users
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Create attractive female profiles that will appear in the user homepage grid and be fully functional.
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    {/* Left Column - Personal Info & Additional Info */}
+                    <div className="space-y-8">
+                      {/* Personal Information */}
+                      <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-100">
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                          <User className="w-4 h-4 mr-2 text-pink-500" />
+                          Personal Details
+                        </h3>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="girl-name">Name</Label>
+                            <Input
+                              id="girl-name"
+                              placeholder="e.g., Isabella Martinez"
+                              value={girlForm.name}
+                              onChange={(e) => setGirlForm({ ...girlForm, name: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="girl-email">Email</Label>
+                            <Input
+                              id="girl-email"
+                              type="email"
+                              placeholder="e.g., bella@flirtduo.com"
+                              value={girlForm.email}
+                              onChange={(e) => setGirlForm({ ...girlForm, email: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="girl-age">Age</Label>
+                              <Input
+                                id="girl-age"
+                                type="number"
+                                placeholder="24"
+                                min="18"
+                                max="50"
+                                value={girlForm.age}
+                                onChange={(e) => setGirlForm({ ...girlForm, age: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="girl-height">Height</Label>
+                              <select
+                                id="girl-height"
+                                value={girlForm.height}
+                                onChange={(e) => setGirlForm({ ...girlForm, height: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors text-gray-700"
+                              >
+                                <option value="">Select height</option>
+                                <option value="under 5ft">Under 5'0"</option>
+                                <option value="5'0 - 5'3">5'0" - 5'3"</option>
+                                <option value="5'4 - 5'7">5'4" - 5'7"</option>
+                                <option value="5'8 - 5'11">5'8" - 5'11"</option>
+                                <option value="6'0 - 6'3">6'0" - 6'3"</option>
+                                <option value="Over 6'3">Over 6'3"</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                          <Info className="w-4 h-4 mr-2 text-blue-500" />
+                          Additional Information
+                        </h3>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="girl-interests">Interests</Label>
+                            <Input
+                              id="girl-interests"
+                              placeholder="e.g., Yoga, Travel, Photography"
+                              value={girlForm.interests}
+                              onChange={(e) => setGirlForm({ ...girlForm, interests: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                            />
+                          </div>
+
+                          <div className="relative">
+                            <Label className="mb-2 block flex items-center">
+                              <MapPin className="w-4 h-4 mr-1 text-pink-500" />
+                              Location
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                placeholder="Enter city name..."
+                                value={locationInput}
+                                onChange={(e) => setLocationInput(e.target.value)}
+                                className="pr-20 w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleLocationSearch}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white text-sm px-4 py-2 rounded-md transition-all"
+                              >
+                                Search
+                              </button>
+                            </div>
+
+                            {locationSuggestions.length > 0 && (
+                              <ul className="absolute z-20 w-full border border-gray-200 rounded-lg mt-1 bg-white max-h-48 overflow-y-auto shadow-lg">
+                                {locationSuggestions.map((loc, index) => (
+                                  <li
+                                    key={index}
+                                    className="cursor-pointer hover:bg-pink-50 p-3 text-sm border-b border-gray-100 last:border-b-0 transition-colors"
+                                    onClick={() => {
+                                      setSelectedLocation(loc);
+                                      setLocationInput(loc);
+                                      setLocationSuggestions([]);
+                                      setGirlForm({ ...girlForm, city: loc });
+                                    }}
+                                  >
+                                    <div className="flex items-center">
+                                      <MapPin className="w-3 h-3 mr-2 text-gray-400" />
+                                      {loc}
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - Bio & Photos */}
+                    <div className="space-y-8">
+                      {/* Bio Section */}
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                          <FileText className="w-4 h-4 mr-2 text-purple-500" />
+                          About Me
+                        </h3>
+
+                        <div>
+                          <Label htmlFor="girl-bio">Bio/Description</Label>
+                          <textarea
+                            id="girl-bio"
+                            placeholder="A short, engaging bio..."
+                            value={girlForm.bio}
+                            onChange={(e) => setGirlForm({ ...girlForm, bio: e.target.value })}
+                            rows={4}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors text-gray-900 placeholder-gray-500 resize-none"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {girlForm.bio.length}/500 characters
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Media Upload Section */}
+                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-6 rounded-xl border border-emerald-100">
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                          <Camera className="w-4 h-4 mr-2 text-emerald-500" />
+                          Photos
+                        </h3>
+
+                        {/* Profile Image Upload */}
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Profile Image</Label>
+                            <div className="flex flex-col items-center space-y-4">
+                              {girlForm.imagePreview ? (
+                                <div className="relative">
+                                  <img
+                                    src={girlForm.imagePreview}
+                                    alt="Preview"
+                                    className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-lg"
+                                  />
+                                  <button
+                                    onClick={() => setGirlForm({ ...girlForm, profileImage: '', imagePreview: '' })}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-gray-50">
+                                  <Camera className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+
+                              <Button variant="outline" className="w-full border-2 border-gray-200 hover:border-pink-300 bg-white hover:bg-pink-50 text-gray-700 hover:text-pink-600 py-3" disabled={uploadingProfile}>
+                                <label className="cursor-pointer w-full flex items-center justify-center">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                      const file = e.target.files[0];
+                                      if (!file) return;
+
+                                      setUploadingProfile(true);
+                                      try {
+                                        const compressedFile = await imageCompression(file, { maxSizeMB: 0.5 });
+                                        const imageUrl = await uploadToCloudinary(compressedFile);
+
+                                        setGirlForm({
+                                          ...girlForm,
+                                          profileImage: imageUrl,
+                                          imagePreview: imageUrl,
+                                        });
+                                      } catch (error) {
+                                        toast({ title: "Profile image upload failed", variant: "destructive" });
+                                      } finally {
+                                        setUploadingProfile(false);
+                                      }
+                                    }}
+                                    className="hidden"
+                                  />
+                                  <Upload className="mr-2 h-4 w-4" />
+                                  {uploadingProfile ? "Uploading..." : "Upload Profile Image"}
+                                </label>
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Gallery Upload */}
+                          <div>
+                            <Label>Additional Photos</Label>
+                            <div className="space-y-4">
+                              <Button variant="outline" className="w-full border-2 border-gray-200 hover:border-pink-300 bg-white hover:bg-pink-50 text-gray-700 hover:text-pink-600 py-3" disabled={uploadingGallery}>
+                                <label className="cursor-pointer w-full flex items-center justify-center">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={async (e) => {
+                                      const files = Array.from(e.target.files);
+                                      if (files.length === 0) return;
+
+                                      setUploadingGallery(true);
+                                      try {
+                                        const uploadPromises = files.map(async (file) => {
+                                          const compressedFile = await imageCompression(file, { maxSizeMB: 0.5 });
+                                          const imageUrl = await uploadToCloudinary(compressedFile);
+                                          return imageUrl;
+                                        });
+
+                                        const uploadedUrls = await Promise.all(uploadPromises);
+
+                                        setGirlForm((prev) => ({
+                                          ...prev,
+                                          gallery: [...(prev.gallery || []), ...uploadedUrls],
+                                          galleryPreviews: [...(prev.galleryPreviews || []), ...uploadedUrls],
+                                        }));
+                                      } catch (err) {
+                                        toast({ title: "Gallery upload failed", variant: "destructive" });
+                                      } finally {
+                                        setUploadingGallery(false);
+                                      }
+                                    }}
+                                    className="hidden"
+                                  />
+                                  <ImageIcon className="mr-2 h-4 w-4" />
+                                  {uploadingGallery ? "Uploading..." : "Upload Gallery Images"}
+                                </label>
+                              </Button>
+
+                              {girlForm.galleryPreviews?.length > 0 && (
+                                <div className="grid grid-cols-2 gap-3">
+                                  {girlForm.galleryPreviews.map((url, idx) => (
+                                    <div key={idx} className="relative">
+                                      <img
+                                        src={url}
+                                        alt={`Gallery ${idx}`}
+                                        className="w-full h-20 object-cover rounded-lg border shadow-sm"
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          setGirlForm(prev => ({
+                                            ...prev,
+                                            gallery: prev.gallery.filter((_, index) => index !== idx),
+                                            galleryPreviews: prev.galleryPreviews.filter((_, index) => index !== idx)
+                                          }));
+                                        }}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-12 pt-8 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Button
+                        onClick={createGirlProfile}
+                        className="w-full sm:w-auto px-12 py-4 text-lg font-semibold bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                      >
+                        <Plus className="w-5 h-5 mr-2" />
+                        Create Girl Profile
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>

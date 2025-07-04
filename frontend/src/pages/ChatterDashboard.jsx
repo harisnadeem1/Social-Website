@@ -112,7 +112,6 @@ useEffect(() => {
   if (!socketRef.current) return;
 
   socketRef.current.on('receiveMessage', (data) => {
-    console.log('📥 New message received:', data);
     // You can call handleSelectChat again or directly append the message to selectedChat
   });
 
