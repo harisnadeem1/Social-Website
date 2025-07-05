@@ -25,49 +25,81 @@ const ProfileDetail = () => {
 
 
 
+//Match city
+//   useEffect(() => {
+//   const fetchProfile = async () => {
+//     try {
+      
+//       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/profile/get/${id}`);
+//       if (!res.ok) throw new Error("Profile not found");
+//       const data = await res.json();
+//       console.log(data);
 
-  useEffect(() => {
-  const fetchProfile = async () => {
-    try {
+//       // ✅ Set girl city to user's city
+//       const userCity = user?.profileLocation?.trim() || "";
+//       const updatedProfile = {
+//         ...data,
+//         city: userCity,
+//       };
 
- const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
-      const userProfile = await res1.json();
-      const userLocation = userProfile.profileLocation?.trim() || ""; // Handle null/undefined
+//       setProfile(updatedProfile);
+
+//       if (updatedProfile.isLikedByCurrentUser) {
+//         setLiked(true);
+//       }
+
+//       // ✅ Scroll to top after profile is set
+//       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+//     } catch (error) {
+//       console.error("Failed to fetch profile:", error);
+//       navigate('/'); // optionally redirect back
+//     }
+//   };
+
+//   fetchProfile();
+// }, [id, user]);
 
 
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/profile/get/${id}`);
-      if (!res.ok) throw new Error("Profile not found");
-      const data = await res.json();
-      console.log(data);
+ useEffect(() => {
+    const fetchProfile = async () => {
+      try {
 
-      // ✅ Set girl city to user's city
-      const updatedProfile = {
-        ...data,
-        city: userLocation,
-      };
+        const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
+        const userProfile = await res1.json();
+        const userLocation = userProfile.profileLocation?.trim() || ""; // Handle null/undefined
 
-      setProfile(updatedProfile);
 
-      if (updatedProfile.isLikedByCurrentUser) {
-        setLiked(true);
+
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/profile/get/${id}`);
+        if (!res.ok) throw new Error("Profile not found");
+        const data = await res.json();
+        console.log(data);
+
+        // ✅ Set girl city to user's city
+        const updatedProfile = {
+          ...data,
+          city: userLocation,
+        };
+
+        setProfile(updatedProfile);
+
+        if (updatedProfile.isLikedByCurrentUser) {
+          setLiked(true);
+        }
+
+        // ✅ Scroll to top after profile is set
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        navigate('/'); // optionally redirect back
       }
+    };
 
-      // ✅ Scroll to top after profile is set
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      navigate('/'); // optionally redirect back
-    }
-  };
-
-  fetchProfile();
-}, [id, user]);
-
-
-
-
+    fetchProfile();
+  }, [id, user]);
 
 
 

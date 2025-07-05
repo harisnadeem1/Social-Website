@@ -27,20 +27,66 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
 
+//match city
+//   useEffect(() => {
+//   const fetchProfiles = async () => {
+//     try {
+//       const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
+//       const userprofile = await res1.json();
+//       const userLocation = userprofile.profileLocation?.trim() || ""; // Handle null/undefined
 
-  useEffect(() => {
+//       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
+//       const data = await res.json();
+
+//       // Split profiles based on city match
+//       const sameLocation = data.filter(profile => profile.city?.trim() === userLocation);
+//       const differentLocation = data.filter(profile => profile.city?.trim() !== userLocation);
+
+//       // Shuffle both arrays independently
+//       const randomizedSameLocation = sameLocation.length ? shuffleArray(sameLocation) : [];
+//       const randomizedDifferentLocation = differentLocation.length ? shuffleArray(differentLocation) : [];
+
+//       // Merge: same location first, then other locations
+//       const finalProfiles = [...randomizedSameLocation, ...randomizedDifferentLocation];
+
+//       console.log(finalProfiles);
+
+//       setProfiles(finalProfiles);
+//       setFilteredProfiles(finalProfiles);
+//     } catch (error) {
+//       console.error("Failed to fetch profiles", error);
+//     }
+//   };
+
+//   fetchProfiles();
+// }, []);
+
+// const shuffleArray = (array) => {
+//   const shuffled = [...array];
+//   for (let i = shuffled.length - 1; i > 0; i--) {
+//     const j = Math.floor(Math.random() * (i + 1));
+//     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+//   }
+//   return shuffled;
+// };
+
+
+
+useEffect(() => {
   const fetchProfiles = async () => {
     try {
       // Get the user's profile to fetch their location
       const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
       const userProfile = await res1.json();
+
+      // Extract only the city (before the comma)
       const userLocation = userProfile.profileLocation?.split(",")[0]?.trim() || "";
 
       // Get all public girl profiles
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
       const data = await res.json();
 
-      // Update every profile's city to the user's city
+      // Update every profile's city to the user's city (only city, not country)
       const updatedProfiles = data.map(profile => ({
         ...profile,
         city: userLocation,
