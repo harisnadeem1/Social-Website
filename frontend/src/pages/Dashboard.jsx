@@ -34,7 +34,7 @@ const Dashboard = () => {
       // Get the user's profile to fetch their location
       const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
       const userProfile = await res1.json();
-      const userLocation = userProfile.profileLocation?.trim() || ""; // Handle null/undefined
+      const userLocation = userProfile.profileLocation?.split(",")[0]?.trim() || "";
 
       // Get all public girl profiles
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
