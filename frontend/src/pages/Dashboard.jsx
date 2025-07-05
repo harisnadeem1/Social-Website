@@ -31,28 +31,29 @@ const Dashboard = () => {
   useEffect(() => {
   const fetchProfiles = async () => {
     try {
+      // Get the user's profile to fetch their location
       const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
-      const userprofile = await res1.json();
-      const userLocation = userprofile.profileLocation?.trim() || ""; // Handle null/undefined
+      const userProfile = await res1.json();
+      const userLocation = userProfile.profileLocation?.trim() || ""; // Handle null/undefined
 
+      // Get all public girl profiles
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
       const data = await res.json();
 
-      // Split profiles based on city match
-      const sameLocation = data.filter(profile => profile.city?.trim() === userLocation);
-      const differentLocation = data.filter(profile => profile.city?.trim() !== userLocation);
+      // Update every profile's city to the user's city
+      const updatedProfiles = data.map(profile => ({
+        ...profile,
+        city: userLocation,
+      }));
 
-      // Shuffle both arrays independently
-      const randomizedSameLocation = sameLocation.length ? shuffleArray(sameLocation) : [];
-      const randomizedDifferentLocation = differentLocation.length ? shuffleArray(differentLocation) : [];
+      // Shuffle the updated profiles
+      const randomizedProfiles = shuffleArray(updatedProfiles);
 
-      // Merge: same location first, then other locations
-      const finalProfiles = [...randomizedSameLocation, ...randomizedDifferentLocation];
+      console.log(randomizedProfiles);
 
-      console.log(finalProfiles);
-
-      setProfiles(finalProfiles);
-      setFilteredProfiles(finalProfiles);
+      // Set profiles in state
+      setProfiles(randomizedProfiles);
+      setFilteredProfiles(randomizedProfiles);
     } catch (error) {
       console.error("Failed to fetch profiles", error);
     }
@@ -69,6 +70,7 @@ const shuffleArray = (array) => {
   }
   return shuffled;
 };
+
 
 
   const handleFiltersChange = (newFilters) => {
