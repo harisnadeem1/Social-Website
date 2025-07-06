@@ -45,7 +45,8 @@ export default function PublicProfilePage() {
   const handleChatClick = async () => {
     if (!user) {
       setShowSignupModal(true);
-    } else {
+    } else if(user.role=="user") {
+      console.log(user);
      
     const token = localStorage.getItem('token');
 
