@@ -245,7 +245,7 @@ const ProfileDetail = () => {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
         <title>{profile.name} - Profile | Liebenly</title>
-        <meta name="description" content={`View ${profile.name}'s profile on FlirtDuo. ${profile.bio}`} />
+        <meta name="description" content={`View ${profile.name}'s profile on Liebenly. ${profile.bio}`} />
       </Helmet>
 
       <Header />

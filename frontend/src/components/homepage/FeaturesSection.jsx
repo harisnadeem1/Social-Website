@@ -15,7 +15,7 @@ const FeaturesSection = () => {
           className="text-center mb-12 sm:mb-16"
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
-            Why Choose FlirtDuo?
+            Why Choose Liebenly?
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Experience dating like never before with our innovative features designed to help you find genuine connections.

@@ -24,7 +24,7 @@ const MobileMenu = ({ isOpen, onClose, onLogin, onSignUp }) => {
           >
             <div className="flex items-center justify-between p-6 border-b">
               <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                FlirtDuo
+                Liebenly
               </span>
               <button
                 onClick={onClose}

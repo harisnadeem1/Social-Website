@@ -90,7 +90,7 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-            Join FlirtDuo
+            Join Liebenly
           </DialogTitle>
         </DialogHeader>
 

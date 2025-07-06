@@ -199,7 +199,7 @@ const handlePasswordUpdate = async (e) => {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
         <title>Settings - Liebenly</title>
-        <meta name="description" content="Manage your FlirtDuo account settings, privacy preferences, and access help resources." />
+        <meta name="description" content="Manage your Liebenly account settings, privacy preferences, and access help resources." />
       </Helmet>
 
       <Header />

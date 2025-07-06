@@ -108,4 +108,25 @@ const getProfileIdByUserId = async (userId) => {
 };
 
 
-module.exports = { createProfile, findByUserId,updateProfile , findById,findPublicGirlById   ,getUserIdByProfileId , getProfileIdByUserId};
+const getPublicProfileByUsername = async (username) => {
+  const query = `
+    SELECT 
+      p.id, p.name, p.age, p.city, p.gender, p.height,
+      p.bio, p.interests, p.profile_image_url,
+      p.visibility, p.is_featured,p.user_id,
+      json_agg(json_build_object('id', i.id, 'image_url', i.image_url)) AS images
+    FROM profiles p
+    LEFT JOIN images i ON p.id = i.profile_id
+    WHERE LOWER(p.username) = LOWER($1)
+      AND p.is_featured = true
+      AND p.visibility = 'public'
+    GROUP BY p.id
+    LIMIT 1;
+  `;
+  const { rows } = await db.query(query, [username]);
+  return rows[0] || null;
+};
+
+
+
+module.exports = { createProfile, findByUserId,updateProfile , findById,findPublicGirlById  ,getPublicProfileByUsername ,getUserIdByProfileId , getProfileIdByUserId};

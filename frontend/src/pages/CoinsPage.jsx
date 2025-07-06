@@ -81,8 +81,8 @@ const CoinsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
-        <title>💰 Buy Coins - FlirtDuo</title>
-        <meta name="description" content="Purchase coins to unlock premium features on FlirtDuo. Boost your profile, send messages, and get more matches with our coin packages." />
+        <title>💰 Buy Coins - Liebenly</title>
+        <meta name="description" content="Purchase coins to unlock premium features on Liebenly. Boost your profile, send messages, and get more matches with our coin packages." />
       </Helmet>
 
       <Header />

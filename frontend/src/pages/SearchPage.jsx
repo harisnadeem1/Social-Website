@@ -151,8 +151,8 @@ const SearchPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
-        <title>Search - FlirtDuo</title>
-        <meta name="description" content="Search and filter profiles on FlirtDuo. Find your perfect match by age, location, interests, and more advanced search criteria." />
+        <title>Search - Liebenly</title>
+        <meta name="description" content="Search and filter profiles on Liebenly. Find your perfect match by age, location, interests, and more advanced search criteria." />
       </Helmet>
 
       <Header />

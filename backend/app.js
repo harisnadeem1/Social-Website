@@ -21,6 +21,9 @@ const notificationRoutes = require('./src/routes/notificationRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const giftRoutes = require('./src/routes/giftRoutes');
 const imageRoutes = require('./src/routes/imagesRoutes');
+const publicProfileRoutes = require('./src/routes/publicProfileRoutes');
+
+
 
 
 
@@ -66,6 +69,7 @@ app.use('/api/users/settings', userRoutes);
 app.use('/api/gifts', giftRoutes);
 
 app.use('/api/images', imageRoutes);
+app.use('/api/public', publicProfileRoutes);
 
 
 module.exports = app;

@@ -441,9 +441,31 @@ const createGirlProfile = async (req, res) => {
       interests,
       bio,
       profile_image_url,
-      gallery_image_urls = [] // <-- Expecting this as an array
+      gallery_image_urls = [], // <-- Expecting this as an array
+      is_featured = false,     // <-- New field for featured status
+      username                 // <-- New field for custom username
     } = req.body;
 
+    // Validate username if profile is featured
+    if (is_featured && (!username || username.trim() === '')) {
+      return res.status(400).json({ 
+        error: "Username is required for featured profiles" 
+      });
+    }
+
+    // Check if username is already taken (if provided)
+    if (username && username.trim() !== '') {
+      const existingUsername = await db.query(
+        `SELECT id FROM profiles WHERE username = $1`,
+        [username.trim()]
+      );
+      
+      if (existingUsername.rows.length > 0) {
+        return res.status(400).json({ 
+          error: "Username is already taken. Please choose a different one." 
+        });
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(password || "default123", 10);
 
@@ -456,32 +478,69 @@ const createGirlProfile = async (req, res) => {
 
     const user_id = userResult.rows[0].id;
 
-    // 2. Create profile
+    // 2. Create profile with featured fields
     const profileResult = await db.query(
-      `INSERT INTO profiles (user_id, bio, age, gender, city, height, interests, profile_image_url,name)
-       VALUES ($1, $2, $3, 'female', $4, $5, $6, $7,$8) RETURNING id`,
-      [user_id, bio, age, city, height, interests, profile_image_url,name]
+      `INSERT INTO profiles (
+        user_id, 
+        bio, 
+        age, 
+        gender, 
+        city, 
+        height, 
+        interests, 
+        profile_image_url, 
+        name, 
+        is_featured, 
+        username
+      )
+       VALUES ($1, $2, $3, 'female', $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [
+        user_id, 
+        bio, 
+        age, 
+        city, 
+        height, 
+        interests, 
+        profile_image_url, 
+        name, 
+        is_featured, 
+        username ? username.trim() : null  // Store trimmed username or null
+      ]
     );
 
     const profile_id = profileResult.rows[0].id;
 
-
     // 3. Insert gallery images
-   await Promise.all(
-  gallery_image_urls.map((url) =>
-    db.query(`INSERT INTO images (profile_id, image_url) VALUES ($1, $2)`, [profile_id, url])
-  )
-);
+    await Promise.all(
+      gallery_image_urls.map((url) =>
+        db.query(`INSERT INTO images (profile_id, image_url) VALUES ($1, $2)`, [profile_id, url])
+      )
+    );
 
+    // 4. Prepare response message
+    const responseMessage = is_featured 
+      ? `Featured girl profile created successfully! Profile accessible at /${username}`
+      : "Girl profile created successfully";
 
     res.status(201).json({
-      message: "Girl profile created",
+      message: responseMessage,
       user_id,
-      profile_id
+      profile_id,
+      is_featured,
+      username: is_featured ? username : null,
+      profile_url: is_featured ? `/${username}` : null
     });
 
   } catch (err) {
     console.error("Error creating girl profile:", err);
+    
+    // Handle specific database errors
+    if (err.code === '23505') { // PostgreSQL unique constraint violation
+      return res.status(400).json({ 
+        error: "Username or email already exists" 
+      });
+    }
+    
     res.status(500).json({ error: "Failed to create girl profile" });
   }
 };

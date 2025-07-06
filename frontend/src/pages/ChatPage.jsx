@@ -381,7 +381,7 @@ const ChatPage = () => {
     <div className="min-h-screen bg-white">
       <Helmet>
         <title>Messages - Liebenly</title>
-        <meta name="description" content="Chat with your matches on FlirtDuo. Send messages, connect with singles, and build meaningful relationships." />
+        <meta name="description" content="Chat with your matches on Liebenly. Send messages, connect with singles, and build meaningful relationships." />
       </Helmet>
 
       <Header />

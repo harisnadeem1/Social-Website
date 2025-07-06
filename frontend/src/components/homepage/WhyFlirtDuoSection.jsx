@@ -26,7 +26,7 @@ const WhyFlirtDuoSection = () => {
     {
       icon: Star,
       title: 'Success Stories',
-      description: 'Thousands of couples have found lasting love through FlirtDuo. Join our growing community of success stories and happy endings.',
+      description: 'Thousands of couples have found lasting love through Liebenly. Join our growing community of success stories and happy endings.',
       gradient: 'from-yellow-500 to-orange-500'
     }
   ];
@@ -42,7 +42,7 @@ const WhyFlirtDuoSection = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Why Choose FlirtDuo?
+            Why Choose Liebenly?
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             We're more than just a dating app. We're your partner in finding genuine love and building lasting relationships that matter.

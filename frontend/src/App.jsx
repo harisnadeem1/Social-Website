@@ -19,7 +19,7 @@ import AuthContext from '@/contexts/AuthContext';
 import ProfileCreation from '@/pages/CreateProfilePage';
 import BottomNav from './components/BottomNav';
 import NotificationsPage from '@/pages/NotificationsPage';
-
+import PublicProfilePage from '@/pages/PublicProfilePage';
 
 
 import AboutUsPage from '@/pages/info/AboutUsPage';
@@ -96,7 +96,7 @@ const showBottomNav = user && user.role === 'user';
         <div className={`min-h-screen bg-gray-50 ${showBottomNav ? 'pb-14' : ''} lg:pb-0`}>
           <Helmet>
             <title>Liebenly - Find Your Perfect Match Today</title>
-            <meta name="description" content="Join FlirtDuo, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment." />
+            <meta name="description" content="Join Liebenly, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment." />
           </Helmet>
           
           <Routes>
@@ -130,6 +130,7 @@ const showBottomNav = user && user.role === 'user';
             <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
             <Route path="/cookie-policy" element={<CookiePolicyPage />} />
             <Route path="/safety-tips" element={<SafetyTipsPage />} />
+            <Route path="/:username" element={<PublicProfilePage />} />
           </Routes>
           {showBottomNav && <BottomNav />}
           <Toaster />

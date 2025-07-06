@@ -266,7 +266,7 @@ const searchCity = async (query) => {
 
       toast({
         title: "🎉 Profile Complete!",
-        description: "Welcome to FlirtDuo! You've received 50 free coins to start chatting.",
+        description: "Welcome to Liebenly! You've received 50 free coins to start chatting.",
       });
 
       navigate('/dashboard');
@@ -577,8 +577,8 @@ const searchCity = async (query) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
-        <title>Create Your Profile - FlirtDuo</title>
-        <meta name="description" content="Complete your FlirtDuo profile to start meeting amazing people. Add your photos, write your bio, and set your preferences." />
+        <title>Create Your Profile - Liebenly</title>
+        <meta name="description" content="Complete your Liebenly profile to start meeting amazing people. Add your photos, write your bio, and set your preferences." />
       </Helmet>
 
       <div className="container mx-auto px-4 py-8">

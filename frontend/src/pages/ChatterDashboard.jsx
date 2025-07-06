@@ -143,7 +143,7 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Helmet>
-        <title>Chatter Dashboard - FlirtDuo</title>
+        <title>Chatter Dashboard - Liebenly</title>
         <meta name="description" content="Engage with users and manage conversations as different girl profiles." />
       </Helmet>
 

@@ -151,7 +151,7 @@ const shuffleArray = (array) => {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
         <title>Dashboard - Liebenly</title>
-        <meta name="description" content="Discover amazing people and find your perfect match on FlirtDuo. Browse profiles, connect with singles, and start meaningful conversations." />
+        <meta name="description" content="Discover amazing people and find your perfect match on Liebenly. Browse profiles, connect with singles, and start meaningful conversations." />
       </Helmet>
 
       <Header />

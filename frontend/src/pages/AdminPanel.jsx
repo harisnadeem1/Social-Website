@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import {
-  Users, Heart, MessageSquare, UserCheck, DollarSign, Coins, Zap, Shield, Eye, Edit, Trash2, MoreVertical, Plus, Search, Filter, BarChart2, UserPlus, Image as ImageIcon, Lock, User, Info, FileText, Camera, Upload, X, MapPin
+  Users,Star,AtSign, Heart, MessageSquare, UserCheck, DollarSign, Coins, Zap, Shield, Eye, Edit, Trash2, MoreVertical, Plus, Search, Filter, BarChart2, UserPlus, Image as ImageIcon, Lock, User, Info, FileText, Camera, Upload, X, MapPin
 } from 'lucide-react';
 import Header from '@/components/Header';
 import MobileHeader from '@/components/MobileHeader';
@@ -170,14 +170,18 @@ const AdminPanel = () => {
 
   const [girlForm, setGirlForm] = useState({
     name: "",
+    email: "",
     age: "",
     city: "",
     height: "",
     bio: "",
+    interests: "",
     profileImage: "",
     gallery: [],
     imagePreview: null,
     galleryPreviews: [],
+    isFeatured: false,      // New field
+    username: ""            // New field
   });
 
 
@@ -202,79 +206,87 @@ const AdminPanel = () => {
 
 
   const createGirlProfile = async () => {
-    const requiredFields = [
-      "name", "email", "age", "city", "height", "interests", "bio", "profileImage"
-    ];
+  const requiredFields = [
+    "name", "email", "age", "city", "height", "interests", "bio", "profileImage"
+  ];
 
-    for (let field of requiredFields) {
-      if (!girlForm[field] || girlForm[field].toString().trim() === "") {
-        return toast({
-          title: `Please fill in all required fields.`,
-          description: `${field.charAt(0).toUpperCase() + field.slice(1)} is missing.`,
-          variant: "destructive"
-        });
-      }
-    }
-    try {
-      if (!girlForm.profileImage) {
-        return toast({ title: "Please select a profile image", variant: "destructive" });
-      }
+  // Add username validation if featured is enabled
+  if (girlForm.isFeatured && !girlForm.username.trim()) {
+    return toast({
+      title: "Username Required",
+      description: "Please provide a username for featured profiles.",
+      variant: "destructive"
+    });
+  }
 
-      const token = localStorage.getItem("token");
-
-      // // Upload profile image
-      // const profileImageUrl = await uploadToImgBB(girlForm.profileImage);
-      // // Upload gallery images in parallel
-      // const galleryUploadPromises = girlForm.gallery.map(file => uploadToImgBB(file));
-      // const galleryUrls = await Promise.all(galleryUploadPromises); // 🚀 Parallel upload
-
-
-      //       const [profileImageUrl, galleryUrls] = await Promise.all([
-      //   uploadToImgBB(girlForm.profileImage),
-      //   Promise.all(girlForm.gallery.map(file => uploadToImgBB(file)))
-      // ]);
-
-
-      const profileImageUrl = girlForm.profileImage;  // Already a URL
-      const galleryUrls = girlForm.gallery;
-
-      // Create profile + gallery
-      await axios.post(`${BASE_URL}/admin/create-girl-profile`, {
-        name: girlForm.name,
-        email: girlForm.email,
-        password: "default123",
-        age: girlForm.age,
-        city: girlForm.city,
-        height: girlForm.height,
-        interests: girlForm.interests,
-        bio: girlForm.bio,
-        profile_image_url: profileImageUrl,
-        gallery_image_urls: galleryUrls
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+  for (let field of requiredFields) {
+    if (!girlForm[field] || girlForm[field].toString().trim() === "") {
+      return toast({
+        title: `Please fill in all required fields.`,
+        description: `${field.charAt(0).toUpperCase() + field.slice(1)} is missing.`,
+        variant: "destructive"
       });
-
-      toast({ title: "Girl profile created successfully" });
-
-      setGirlForm({
-        name: '',
-        email: '',
-        age: '',
-        city: '',
-        height: '',
-        interests: '',
-        bio: '',
-        imageFile: null,
-        imagePreview: null,
-        galleryFiles: [],
-        galleryPreviews: []
-      });
-
-    } catch (err) {
-      console.error(err);
-      toast({ title: "Failed to create profile", variant: "destructive" });
     }
-  };
+  }
+
+  try {
+    if (!girlForm.profileImage) {
+      return toast({ title: "Please select a profile image", variant: "destructive" });
+    }
+
+    const token = localStorage.getItem("token");
+    const profileImageUrl = girlForm.profileImage;  // Already a URL
+    const galleryUrls = girlForm.gallery;
+
+    // Create profile with featured fields
+    await axios.post(`${BASE_URL}/admin/create-girl-profile`, {
+      name: girlForm.name,
+      email: girlForm.email,
+      password: "default123",
+      age: girlForm.age,
+      city: girlForm.city,
+      height: girlForm.height,
+      interests: girlForm.interests,
+      bio: girlForm.bio,
+      profile_image_url: profileImageUrl,
+      gallery_image_urls: galleryUrls,
+      is_featured: girlForm.isFeatured,        // New field
+      username: girlForm.username              // New field
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    toast({ 
+      title: girlForm.isFeatured ? "Featured profile created successfully! ⭐" : "Girl profile created successfully",
+      description: girlForm.isFeatured ? `Profile will be accessible at /${girlForm.username}` : undefined
+    });
+
+    // Reset form
+    setGirlForm({
+      name: '',
+      email: '',
+      age: '',
+      city: '',
+      height: '',
+      interests: '',
+      bio: '',
+      profileImage: '',
+      gallery: [],
+      imagePreview: null,
+      galleryPreviews: [],
+      isFeatured: false,
+      username: ''
+    });
+
+  } catch (err) {
+    console.error(err);
+    toast({ 
+      title: "Failed to create profile", 
+      description: err.response?.data?.error || "Unknown error occurred",
+      variant: "destructive" 
+    });
+  }
+};
 
 
   const handleAction = async (action, userId) => {
@@ -325,7 +337,7 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gray-100">
       <Helmet>
         <title>Admin Panel - Liebenly</title>
-        <meta name="description" content="Administrator control panel for FlirtDuo." />
+        <meta name="description" content="Administrator control panel for Liebenly." />
       </Helmet>
 
       <Header />
@@ -338,10 +350,10 @@ const AdminPanel = () => {
           transition={{ duration: 0.6 }}
           className="space-y-8"
         >
-          
+
           {stats && <EnhancedDashboardSection stats={stats} />}
 
-          
+
 
           <section id="management-controls">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">⚙️ Management Controls</h2>
@@ -441,17 +453,6 @@ const AdminPanel = () => {
 
           <section id="create-girl-profile" className="py-8">
             <div className=" mx-auto px-1">
-              {/* Header Section */}
-              {/* <div className="text-center mb-8">
-      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full mb-4">
-        <UserPlus className="w-8 h-8 text-white" />
-      </div>
-      <h2 className="text-4xl font-bold text-gray-900 mb-2">👩 Create New Girl Profile</h2>
-      <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-        Create attractive female profiles that will appear in the user homepage grid and be fully functional.
-      </p>
-    </div> */}
-
               <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center text-2xl">
@@ -469,71 +470,122 @@ const AdminPanel = () => {
                     {/* Left Column - Personal Info & Additional Info */}
                     <div className="space-y-8">
                       {/* Personal Information */}
-                      <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-100">
-                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                          <User className="w-4 h-4 mr-2 text-pink-500" />
-                          Personal Details
-                        </h3>
+                      {/* Personal Information */}
+<div className="bg-gradient-to-r from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-100">
+  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+    <User className="w-4 h-4 mr-2 text-pink-500" />
+    Personal Details
+  </h3>
 
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="girl-name">Name</Label>
-                            <Input
-                              id="girl-name"
-                              placeholder="e.g., Isabella Martinez"
-                              value={girlForm.name}
-                              onChange={(e) => setGirlForm({ ...girlForm, name: e.target.value })}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-                            />
-                          </div>
+  <div className="space-y-4">
+    <div>
+      <Label htmlFor="girl-name">Name</Label>
+      <Input
+        id="girl-name"
+        placeholder="e.g., Isabella Martinez"
+        value={girlForm.name}
+        onChange={(e) => setGirlForm({ ...girlForm, name: e.target.value })}
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+      />
+    </div>
 
-                          <div>
-                            <Label htmlFor="girl-email">Email</Label>
-                            <Input
-                              id="girl-email"
-                              type="email"
-                              placeholder="e.g., bella@flirtduo.com"
-                              value={girlForm.email}
-                              onChange={(e) => setGirlForm({ ...girlForm, email: e.target.value })}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-                            />
-                          </div>
+    <div>
+      <Label htmlFor="girl-email">Email</Label>
+      <Input
+        id="girl-email"
+        type="email"
+        placeholder="e.g., bella@Liebenly.com"
+        value={girlForm.email}
+        onChange={(e) => setGirlForm({ ...girlForm, email: e.target.value })}
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+      />
+    </div>
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="girl-age">Age</Label>
-                              <Input
-                                id="girl-age"
-                                type="number"
-                                placeholder="24"
-                                min="18"
-                                max="50"
-                                value={girlForm.age}
-                                onChange={(e) => setGirlForm({ ...girlForm, age: e.target.value })}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-                              />
-                            </div>
+    {/* Featured Profile Toggle */}
+    <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-2">
+          <Star className="w-5 h-5 text-amber-500" />
+          <Label htmlFor="featured-toggle" className="font-medium text-gray-900">
+            Featured Profile
+          </Label>
+        </div>
+        <button
+          type="button"
+          id="featured-toggle"
+          onClick={() => setGirlForm({ ...girlForm, isFeatured: !girlForm.isFeatured })}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+            girlForm.isFeatured ? 'bg-amber-500' : 'bg-gray-300'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${
+              girlForm.isFeatured ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      <p className="text-sm text-amber-700">
+        Featured profiles appear with custom usernames and get priority visibility
+      </p>
+    </div>
 
-                            <div>
-                              <Label htmlFor="girl-height">Height</Label>
-                              <select
-                                id="girl-height"
-                                value={girlForm.height}
-                                onChange={(e) => setGirlForm({ ...girlForm, height: e.target.value })}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors text-gray-700"
-                              >
-                                <option value="">Select height</option>
-                                <option value="under 5ft">Under 5'0"</option>
-                                <option value="5'0 - 5'3">5'0" - 5'3"</option>
-                                <option value="5'4 - 5'7">5'4" - 5'7"</option>
-                                <option value="5'8 - 5'11">5'8" - 5'11"</option>
-                                <option value="6'0 - 6'3">6'0" - 6'3"</option>
-                                <option value="Over 6'3">Over 6'3"</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+    {/* Username field - only show when featured is enabled */}
+    {girlForm.isFeatured && (
+      <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200 animate-in slide-in-from-top duration-300">
+        <Label htmlFor="girl-username" className="flex items-center font-medium text-gray-900 mb-2">
+          <AtSign className="w-4 h-4 mr-2 text-purple-500" />
+          Public Username
+        </Label>
+        <Input
+          id="girl-username"
+          placeholder="e.g., bella_sunset22"
+          value={girlForm.username}
+          onChange={(e) => setGirlForm({ ...girlForm, username: e.target.value })}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+        />
+        <p className="text-xs text-purple-600 mt-1">
+          This username will be displayed on the public profile page
+        </p>
+      </div>
+    )}
+
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="girl-age">Age</Label>
+        <Input
+          id="girl-age"
+          type="number"
+          placeholder="24"
+          min="18"
+          max="50"
+          value={girlForm.age}
+          onChange={(e) => setGirlForm({ ...girlForm, age: e.target.value })}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="girl-height">Height</Label>
+        <select
+          id="girl-height"
+          value={girlForm.height}
+          onChange={(e) => setGirlForm({ ...girlForm, height: e.target.value })}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors text-gray-700"
+        >
+          <option value="">Select height</option>
+          <option value="under 5ft">Under 5'0"</option>
+          <option value="5'0 - 5'3">5'0" - 5'3"</option>
+          <option value="5'4 - 5'7">5'4" - 5'7"</option>
+          <option value="5'8 - 5'11">5'8" - 5'11"</option>
+          <option value="6'0 - 6'3">6'0" - 6'3"</option>
+          <option value="Over 6'3">Over 6'3"</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
 
                       {/* Additional Info */}
                       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">

@@ -244,8 +244,8 @@ const MyProfile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
       <Helmet>
-        <title>My Profile - FlirtDuo</title>
-        <meta name="description" content="Manage your FlirtDuo profile. Edit your information, upload photos, and customize how other users see you." />
+        <title>My Profile - Liebenly</title>
+        <meta name="description" content="Manage your Liebenly profile. Edit your information, upload photos, and customize how other users see you." />
       </Helmet>
 
       <Header />
