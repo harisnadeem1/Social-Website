@@ -183,7 +183,7 @@ export default function PublicProfilePage() {
             <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
 
             {/* Profile Info */}
-            <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="absolute bottom-10 left-0 right-0 p-6">
               <div className="mb-4">
                 <h1 className="text-4xl font-bold mb-2">
                   {profile.name} <span className="font-light">{profile.age}</span>
