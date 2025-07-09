@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
-import { Coins, Star, Zap, Crown, Shield, Heart, X } from 'lucide-react';
+import { Coins, Star, Zap, Crown, Shield, Heart, X, Gift, Award, Clock, Users, MessageCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,51 +16,114 @@ const CoinsPage = () => {
   const { toast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(23 * 60 * 60 + 45 * 60); // 23h 45m in seconds
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Helper function to format price with Courier New dollar sign
+  const formatPrice = (price) => {
+    return (
+      <>
+        <span style={{ fontFamily: 'Courier New, monospace', fontWeight: 'bold', fontStyle: 'normal' }}>$</span>
+        {price.slice(1)}
+      </>
+    );
+  };
 
   const coinPackages = [
     {
       id: 1,
-      name: "Starter Pack",
+      name: "Starter Romance",
       coins: 50,
       price: '$4.99',
+      originalPrice: '$7.99',
       popular: false,
-      bonus: 0,
-      icon: Coins,
-      color: 'from-yellow-400 to-yellow-600',
-      description: "Perfect for trying out premium features"
+      bonus: 10,
+      icon: Heart,
+      color: 'from-pink-500 to-rose-600',
+      description: "Perfect for new connections",
+      savings: "37% OFF",
+      dealTag: "FIRST TIME DEAL",
+      freeGifts: [
+        "Welcome Chat Badge",
+        "3 Free Winks",
+        "Priority Support"
+      ]
     },
     {
       id: 2,
-      name: "Popular Choice",
-      coins: 100,
+      name: "Love Seeker",
+      coins: 120,
       price: '$9.99',
+      originalPrice: '$15.99',
       popular: true,
-      bonus: 10,
+      bonus: 30,
       icon: Star,
-      color: 'from-pink-400 to-pink-600',
-      description: "Most popular package with bonus coins"
+      color: 'from-purple-500 to-pink-600',
+      description: "Most popular for active daters",
+      savings: "45% OFF",
+      dealTag: "BEST VALUE",
+      freeGifts: [
+        "Golden VIP Chat Badge",
+        "10 Free Winks",
+        "Priority Support",
+        "Profile Spotlight"
+      ]
     },
     {
       id: 3,
-      name: "Premium Pack",
-      coins: 250,
+      name: "Cupid's Choice",
+      coins: 300,
       price: '$19.99',
+      originalPrice: '$29.99',
       popular: false,
-      bonus: 50,
+      bonus: 80,
       icon: Crown,
-      color: 'from-purple-400 to-purple-600',
-      description: "Great value for active users"
+      color: 'from-yellow-500 to-orange-600',
+      description: "For serious relationship seekers",
+      savings: "50% OFF",
+      dealTag: "PREMIUM DEAL",
+      freeGifts: [
+        "Platinum VIP Badge",
+        "25 Free Winks",
+        "Profile Spotlight",
+        "Exclusive Chat Themes",
+        "Read Receipts"
+      ]
     },
     {
       id: 4,
-      name: "Ultimate Pack",
-      coins: 500,
+      name: "Soulmate Seeker",
+      coins: 600,
       price: '$34.99',
+      originalPrice: '$59.99',
       popular: false,
-      bonus: 100,
+      bonus: 200,
       icon: Zap,
-      color: 'from-blue-400 to-blue-600',
-      description: "Maximum value for serious daters"
+      color: 'from-indigo-500 to-purple-700',
+      description: "Ultimate package for love champions",
+      savings: "60% OFF",
+      dealTag: "ULTIMATE DEAL",
+      freeGifts: [
+        "Diamond VIP Badge",
+        "50 Free Winks",
+        "Weekly Profile Spotlight",
+        "Premium Chat Themes",
+        "Exclusive Emojis",
+        "VIP Customer Support"
+      ]
     }
   ];
 
@@ -88,41 +151,47 @@ const CoinsPage = () => {
       <Header />
       <MobileHeader />
       
-      <main className="container mx-auto px-4 py-8 pt-20 lg:pt-8">
+      <main className="container mx-auto px-4 py-8 pt-5 lg:pt-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          className="max-w-6xl mx-auto"
         >
+          {/* Clean Header */}
           <div className="text-center mb-12">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
-                <Coins className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-                💰 Buy Coins
-              </h1>
+            <div className="inline-flex items-center bg-gradient-to-r from-red-500 to-pink-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-6 shadow-lg">
+              <Clock className="w-4 h-4 mr-2" />
+              FLASH SALE ENDS IN: {formatTime(timeLeft)}
             </div>
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-              Unlock premium features, boost your profile, and increase your chances of finding the perfect match
-            </p>
             
-            <div className="mt-8">
-              <Card className="inline-block border-0 shadow-lg bg-gradient-to-r from-pink-400 to-purple-600">
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex items-center space-x-3 text-white">
-                    <Coins className="w-6 h-6 md:w-8 md:h-8" />
-                    <div>
-                      <div className="text-sm opacity-90">Current Balance</div>
-                      <div className="text-xl md:text-2xl font-bold">{coins} Coins</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+              Get More Coins
+            </h1>
+            
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+              Find your perfect match faster with premium features and exclusive bonuses
+            </p>
+
+            {/* Clean Social Proof */}
+            <div className="flex items-center justify-center space-x-8 mb-8">
+              <div className="flex items-center space-x-2">
+                <Users className="w-5 h-5 text-green-600" />
+                <span className="text-sm font-medium text-gray-700">127K+ Happy Couples</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-gray-700">4.9/5 Rating</span>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+          {/* Left-Aligned Card Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
             {coinPackages.map((pkg, index) => {
               const IconComponent = pkg.icon;
               return (
@@ -131,55 +200,113 @@ const CoinsPage = () => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
-                  whileHover={{ y: -8, scale: 1.02 }}
                   className="relative"
                 >
-                  {pkg.popular && (
-                    <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10 bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                      Most Popular
-                    </Badge>
-                  )}
-                  
-                  <Card className={`h-full border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-pink-50 ${pkg.popular ? 'ring-2 ring-pink-500' : ''}`}>
-                    <CardHeader className="text-center pb-4">
-                      <div className={`w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r ${pkg.color} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                        <IconComponent className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                      </div>
-                      <CardTitle className="text-xl md:text-2xl font-bold text-gray-900">
-                        {pkg.coins} Coins
-                      </CardTitle>
-                      <p className="text-sm text-gray-600 font-medium">{pkg.name}</p>
-                      {pkg.bonus > 0 && (
-                        <Badge variant="secondary" className="bg-green-100 text-green-700 border border-green-200">
-                          +{pkg.bonus} Bonus
+                  <Card className={`relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white ${pkg.popular ? 'ring-2 ring-pink-500' : ''}`}>
+                    {/* Popular Badge */}
+                    {pkg.popular && (
+                      <div className="absolute top-4 right-4 z-10">
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold px-3 py-1">
+                          Most Popular
                         </Badge>
-                      )}
-                    </CardHeader>
-                    
-                    <CardContent className="text-center space-y-4">
-                      <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent">
-                        {pkg.price}
                       </div>
-                      
-                      <p className="text-xs md:text-sm text-gray-500 min-h-[2.5rem] flex items-center justify-center">
-                        {pkg.description}
-                      </p>
-                      
+                    )}
+
+                    <CardContent className="p-8">
+                      {/* Package Name */}
+                      <div className="flex items-center mb-4">
+                        <div className={`w-12 h-12 bg-gradient-to-r ${pkg.color} rounded-full flex items-center justify-center mr-4 shadow-lg`}>
+                          <IconComponent className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900">{pkg.name}</h3>
+                          <p className="text-gray-600 font-bold">{pkg.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Coins Quantity */}
+                      <div className="mb-6">
+                        <div className="text-3xl font-bold text-gray-900 mb-1">
+                          {pkg.coins + pkg.bonus} Coins
+                        </div>
+                        <div className="text-sm text-gray-600 font-bold">
+                          {pkg.coins} coins + {pkg.bonus} bonus coins
+                        </div>
+                      </div>
+
+                      {/* Free Gifts List */}
+                      <div className="mb-6">
+                        <div className="flex items-center mb-3">
+                          <Gift className="w-4 h-4 text-pink-600 mr-2" />
+                          <span className="font-bold text-pink-600 text-sm">FREE GIFTS</span>
+                        </div>
+                        <div className="space-y-2">
+                          {pkg.freeGifts.map((gift, i) => (
+                            <div key={i} className="flex items-center">
+                              <div className="w-5 h-5 bg-pink-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                              <span className="text-lg text-gray-700 font-bold">{gift}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Liebenly Deal Days */}
+                      <div className="mb-4">
+                        <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-3 border border-pink-200">
+                          <div className="font-bold text-pink-600 text-base mb-1">LIEBENLY DEAL DAYS</div>
+                          <div className="text-xs text-pink-400 font-bold">Limited time exclusive offer</div>
+                        </div>
+                      </div>
+
+                      {/* Price with Discount */}
+                      <div className="mb-2">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <span className="text-3xl font-bold text-gray-900">{formatPrice(pkg.price)}</span>
+                          <span className="text-lg text-gray-400 line-through font-bold">{formatPrice(pkg.originalPrice)}</span>
+                          <Badge className="bg-pink-600 text-white font-bold">
+                            {pkg.savings}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Cost per Coin */}
+                      <div className="mb-4">
+                        <div className="text-pink-600 text-sm font-bold">
+                          <span style={{ fontFamily: 'Courier New, monospace', fontWeight: 'bold', fontStyle: 'normal' }}>$</span>
+                          {(parseFloat(pkg.price.slice(1)) / (pkg.coins + pkg.bonus)).toFixed(2)} per coin
+                        </div>
+                      </div>
+
+                      {/* Get Started Button */}
                       <motion.div
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        className="mb-6"
                       >
                         <Button
                           onClick={() => handlePurchaseClick(pkg)}
-                          className={`w-full bg-gradient-to-r ${pkg.color} hover:opacity-90 text-white font-semibold shadow-lg`}
-                          size="lg"
+                          className={`w-full bg-gradient-to-r ${pkg.color} hover:opacity-90 text-white font-bold py-4 px-8 text-lg shadow-lg rounded-xl transition-all duration-300`}
                         >
-                          Purchase
+                          Get Started →
                         </Button>
                       </motion.div>
-                      
-                      <div className="text-xs text-gray-500">
-                        {pkg.bonus > 0 ? `Total: ${pkg.coins + pkg.bonus} coins` : `${pkg.coins} coins`}
+
+                      {/* Small Benefits List */}
+                      <div className="space-y-1 text-xs text-gray-600">
+                        <div className="flex items-center">
+                          <Check className="w-4 h-4 text-gray-400 mr-3" />
+                          <span>{formatPrice(pkg.price)} Refill in 30 Days</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Check className="w-4 h-4 text-gray-400 mr-3" />
+                          <span>Adjust Refills or Cancel Anytime</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Check className="w-4 h-4 text-gray-400 mr-3" />
+                          <span>Stay Active and Keep Messaging</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -188,126 +315,176 @@ const CoinsPage = () => {
             })}
           </div>
 
+          {/* Clean Features Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
+            className="mb-16"
           >
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
-              <CardHeader>
-                <CardTitle className="text-xl md:text-2xl font-bold text-gray-900 text-center flex items-center justify-center space-x-2">
-                  <Heart className="w-6 h-6 text-pink-500" />
-                  <span>What Can You Do With Coins?</span>
+            <Card className="border-0 shadow-xl bg-white">
+              <CardHeader className="text-center pb-8">
+                <CardTitle className="text-3xl font-bold text-gray-900 mb-4">
+                  Why Choose Premium?
                 </CardTitle>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Unlock powerful features that help you find meaningful connections faster
+                </p>
               </CardHeader>
               
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center space-y-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                      <Zap className="w-6 h-6 text-white" />
+              <CardContent className="px-8 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <Zap className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">Boost Profile</h3>
-                    <p className="text-gray-600 text-sm">Get featured at the top for 24 hours and triple your views</p>
-                    <Badge variant="outline" className="border-yellow-300 text-yellow-700">50 Coins</Badge>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Profile Boost</h3>
+                    <p className="text-gray-600 mb-4">Get 10x more profile views and matches with our spotlight feature</p>
+                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">5 Coins per boost</Badge>
                   </div>
                   
-                  <div className="text-center space-y-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                      <Heart className="w-6 h-6 text-white" />
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <MessageCircle className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">Send Winks</h3>
-                    <p className="text-gray-600 text-sm">Catch someone's attention with a special wink notification</p>
-                    <Badge variant="outline" className="border-purple-300 text-purple-700">2 Coins</Badge>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Premium Messages</h3>
+                    <p className="text-gray-600 mb-4">Send unlimited messages with priority delivery and read receipts</p>
+                    <Badge className="bg-purple-100 text-purple-800 border-purple-300">5 Coins per message</Badge>
                   </div>
                   
-                  <div className="text-center space-y-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-green-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                      <Shield className="w-6 h-6 text-white" />
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <Heart className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">Send Messages</h3>
-                    <p className="text-gray-600 text-sm">Start conversations and connect with your matches</p>
-                    <Badge variant="outline" className="border-blue-300 text-blue-700">5 Coins</Badge>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Super Winks</h3>
+                    <p className="text-gray-600 mb-4">Send special winks that get 5x more responses than regular likes</p>
+                    <Badge className="bg-pink-100 text-pink-800 border-pink-300">2 Coins per wink</Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
+          {/* Clean Guarantee Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="mt-8 text-center"
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <div className="flex items-center justify-center space-x-2 text-gray-600">
-              <Shield className="w-5 h-5" />
-              <span className="text-sm">Secure checkout powered by industry-leading encryption</span>
-            </div>
+            <Card className="border-0 shadow-xl bg-gradient-to-r from-blue-600 to-purple-700 text-white">
+              <CardContent className="px-8 py-12 text-center">
+                <div className="flex items-center justify-center mb-6">
+                  <Shield className="w-12 h-12 mr-4" />
+                  <h3 className="text-3xl font-bold">30-Day Love Guarantee</h3>
+                </div>
+                <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
+                  Not finding the connections you're looking for? We'll refund your coins with no questions asked.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
+                  <div className="flex items-center justify-center">
+                    <Check className="w-6 h-6 mr-2" />
+                    <span className="text-lg">Money Back Guarantee</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <Check className="w-6 h-6 mr-2" />
+                    <span className="text-lg">Instant Delivery</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <Check className="w-6 h-6 mr-2" />
+                    <span className="text-lg">24/7 Support</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         </motion.div>
       </main>
 
+      {/* Simple Clean Purchase Modal */}
       <Dialog open={showPurchaseModal} onOpenChange={setShowPurchaseModal}>
-        <DialogContent className="w-[95vw] max-w-md bg-gradient-to-br from-pink-50 via-white to-purple-50 border-0 shadow-2xl">
+        <DialogContent className="w-[95vw] max-w-md bg-white border-0 shadow-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <button
             onClick={() => setShowPurchaseModal(false)}
             className="absolute right-4 top-4 z-50 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
           >
-            <X className="w-4 h-4 text-gray-600" />
+            <X className="w-5 h-5 text-gray-600" />
           </button>
 
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold text-gray-900 pr-8">
-              {selectedPackage?.name} Details
-            </DialogTitle>
-          </DialogHeader>
-
           {selectedPackage && (
-            <div className="space-y-6 px-2">
-              <div className="text-center">
-                <div className={`w-20 h-20 bg-gradient-to-r ${selectedPackage.color} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                  <selectedPackage.icon className="w-10 h-10 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedPackage.coins} Coins</h3>
-                {selectedPackage.bonus > 0 && (
-                  <Badge className="bg-green-100 text-green-700 border border-green-200 mb-2">
-                    +{selectedPackage.bonus} Bonus Coins
-                  </Badge>
-                )}
-                <p className="text-gray-600 text-sm">{selectedPackage.description}</p>
+            <div className="p-6">
+              {/* Header */}
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  {selectedPackage.name}
+                </h2>
+                <p className="text-gray-600">{selectedPackage.description}</p>
               </div>
 
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-200">
-                <div className="text-center space-y-2">
-                  <div className="text-3xl font-bold text-gray-900">{selectedPackage.price}</div>
-                  <div className="text-sm text-gray-600">
-                    Total: {selectedPackage.coins + selectedPackage.bonus} coins
-                  </div>
-                  {selectedPackage.bonus > 0 && (
-                    <div className="text-xs text-green-600 font-medium">
-                      Includes {selectedPackage.bonus} bonus coins!
+              {/* Coin Amount */}
+              <div className="text-center mb-6">
+                <div className="text-4xl font-bold text-gray-900 mb-2">
+                  {selectedPackage.coins + selectedPackage.bonus} Coins
+                </div>
+                <div className="bg-yellow-400 text-yellow-900 font-bold px-3 py-1 rounded-full inline-block text-sm">
+                  {selectedPackage.savings}
+                </div>
+              </div>
+
+              {/* Free Gifts */}
+              <div className="bg-green-50 rounded-xl p-4 mb-6 border border-green-200">
+                <div className="flex items-center mb-3">
+                  <Gift className="w-4 h-4 text-green-600 mr-2" />
+                  <span className="font-bold text-green-800 text-sm">FREE GIFTS</span>
+                </div>
+                <div className="space-y-2">
+                  {selectedPackage.freeGifts.map((gift, i) => (
+                    <div key={i} className="flex items-center">
+                      <Check className="w-3 h-3 text-green-600 mr-2" />
+                      <span className="text-sm text-green-700">{gift}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
 
+              {/* Pricing */}
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <span className="text-3xl font-bold text-gray-900">{formatPrice(selectedPackage.price)}</span>
+                  <span className="text-lg text-gray-500 line-through">{formatPrice(selectedPackage.originalPrice)}</span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <span style={{ fontFamily: 'Courier New, monospace', fontWeight: 'bold', fontStyle: 'normal' }}>$</span>
+                  {(parseFloat(selectedPackage.price.slice(1)) / (selectedPackage.coins + selectedPackage.bonus)).toFixed(2)} per coin
+                </div>
+              </div>
+
+              {/* Purchase Button */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                className="mb-4"
               >
                 <Button
                   onClick={handleBuyNow}
-                  className={`w-full bg-gradient-to-r ${selectedPackage.color} hover:opacity-90 text-white font-bold py-4 text-lg shadow-lg`}
+                  className={`w-full bg-gradient-to-r ${selectedPackage.color} hover:opacity-90 text-white font-bold py-4 text-lg shadow-lg rounded-xl`}
                 >
-                  Buy Now
+                  Get Started →
                 </Button>
               </motion.div>
 
-              <div className="text-center text-xs text-gray-500">
-                <div className="flex items-center justify-center space-x-1">
-                  <Shield className="w-3 h-3" />
-                  <span>Secure payment processing</span>
+              {/* Trust Indicators */}
+              <div className="flex items-center justify-center space-x-4 text-xs text-gray-600">
+                <div className="flex items-center">
+                  <Shield className="w-3 h-3 mr-1" />
+                  <span>30-Day Refund</span>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  <span>Instant Delivery</span>
+                </div>
+                <div className="flex items-center">
+                  <Heart className="w-3 h-3 mr-1" />
+                  <span>SSL Secured</span>
                 </div>
               </div>
             </div>
