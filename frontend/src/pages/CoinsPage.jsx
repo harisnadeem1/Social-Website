@@ -205,7 +205,7 @@ const CoinsPage = () => {
                   <Card className={`relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white ${pkg.popular ? 'ring-2 ring-pink-500' : ''}`}>
                     {/* Popular Badge */}
                     {pkg.popular && (
-                      <div className="absolute top-4 right-4 z-10">
+                      <div className="absolute top-2 right-2 z-10">
                         <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold px-3 py-1">
                           Most Popular
                         </Badge>
