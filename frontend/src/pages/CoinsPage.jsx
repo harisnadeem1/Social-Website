@@ -16,21 +16,52 @@ const CoinsPage = () => {
   const { toast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(23 * 60 * 60 + 45 * 60); // 23h 45m in seconds
+  const TOTAL_TIME = 30 * 60; // 30 minutes in seconds
 
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+const [timeLeft, setTimeLeft] = useState(() => {
+  const savedStart = localStorage.getItem('countdown_start_time');
+  const now = Math.floor(Date.now() / 1000);
 
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  if (savedStart) {
+    const elapsed = now - parseInt(savedStart, 10);
+    const remaining = TOTAL_TIME - elapsed;
+    if (remaining > 0) {
+      return remaining;
+    } else {
+      // More than 30 min passed → restart timer
+      localStorage.setItem('countdown_start_time', now.toString());
+      return TOTAL_TIME;
+    }
+  } else {
+    // No start time found → initialize
+    localStorage.setItem('countdown_start_time', now.toString());
+    return TOTAL_TIME;
+  }
+});
+
+React.useEffect(() => {
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev > 1) {
+        return prev - 1;
+      } else {
+        // When timer ends, restart for 30 minutes
+        const now = Math.floor(Date.now() / 1000);
+        localStorage.setItem('countdown_start_time', now.toString());
+        return TOTAL_TIME;
+      }
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, []);
+
+const formatTime = (seconds) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
 
   // Helper function to format price with Courier New dollar sign
   const formatPrice = (price) => {
@@ -174,7 +205,7 @@ const CoinsPage = () => {
             </p>
 
             {/* Clean Social Proof */}
-            <div className="flex items-center justify-center space-x-8 mb-8">
+            {/* <div className="flex items-center justify-center space-x-8 mb-8">
               <div className="flex items-center space-x-2">
                 <Users className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium text-gray-700">127K+ Happy Couples</span>
@@ -187,7 +218,7 @@ const CoinsPage = () => {
                 </div>
                 <span className="text-sm font-medium text-gray-700">4.9/5 Rating</span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Left-Aligned Card Layout */}
