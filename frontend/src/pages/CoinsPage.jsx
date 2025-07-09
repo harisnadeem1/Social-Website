@@ -85,7 +85,7 @@ const formatTime = (seconds) => {
       icon: Heart,
       color: 'from-pink-500 to-rose-600',
       description: "Perfect for new connections",
-      savings: "37% OFF",
+      savings: "37% OFF TODAY",
       dealTag: "FIRST TIME DEAL",
       freeGifts: [
         "Welcome Chat Badge",
@@ -104,7 +104,7 @@ const formatTime = (seconds) => {
       icon: Star,
       color: 'from-purple-500 to-pink-600',
       description: "Most popular for active daters",
-      savings: "45% OFF",
+      savings: "45% OFF TODAY",
       dealTag: "BEST VALUE",
       freeGifts: [
         "Golden VIP Chat Badge",
@@ -124,7 +124,7 @@ const formatTime = (seconds) => {
       icon: Crown,
       color: 'from-yellow-500 to-orange-600',
       description: "For serious relationship seekers",
-      savings: "50% OFF",
+      savings: "50% OFF TODAY",
       dealTag: "PREMIUM DEAL",
       freeGifts: [
         "Platinum VIP Badge",
@@ -145,7 +145,7 @@ const formatTime = (seconds) => {
       icon: Zap,
       color: 'from-indigo-500 to-purple-700',
       description: "Ultimate package for love champions",
-      savings: "60% OFF",
+      savings: "60% OFF TODAY",
       dealTag: "ULTIMATE DEAL",
       freeGifts: [
         "Diamond VIP Badge",
@@ -256,8 +256,9 @@ const formatTime = (seconds) => {
                       </div>
 
                       {/* Coins Quantity */}
-                      <div className="mb-6">
-                        <div className="text-3xl font-bold text-gray-900 mb-1">
+                     <div className="mb-6">
+                        <div className="flex items-center text-3xl font-bold text-gray-900 mb-1">
+                          <Coins className="w-8 h-8 text-yellow-500 mr-2" />
                           {pkg.coins + pkg.bonus} Coins
                         </div>
                         <div className="text-sm text-gray-600 font-bold">
@@ -271,13 +272,13 @@ const formatTime = (seconds) => {
                           <Gift className="w-4 h-4 text-pink-600 mr-2" />
                           <span className="font-bold text-pink-600 text-sm">FREE GIFTS</span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {pkg.freeGifts.map((gift, i) => (
                             <div key={i} className="flex items-center">
-                              <div className="w-5 h-5 bg-pink-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                                <Check className="w-3 h-3 text-white" />
+                              <div className="w-4 h-4 bg-pink-600 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                <Check className="w-2.5 h-2.5 text-white" />
                               </div>
-                              <span className="text-lg text-gray-700 font-bold">{gift}</span>
+                              <span className="text-base text-gray-900 font-bold">{gift}</span>
                             </div>
                           ))}
                         </div>
@@ -296,9 +297,9 @@ const formatTime = (seconds) => {
                         <div className="flex items-center space-x-3 mb-2">
                           <span className="text-3xl font-bold text-gray-900">{formatPrice(pkg.price)}</span>
                           <span className="text-lg text-gray-400 line-through font-bold">{formatPrice(pkg.originalPrice)}</span>
-                          <Badge className="bg-pink-600 text-white font-bold">
+                          <div className="bg-pink-600 text-white font-black px-3 py-2 text-sm rounded-sm shadow-lg">
                             {pkg.savings}
-                          </Badge>
+                          </div>
                         </div>
                       </div>
 
@@ -325,17 +326,17 @@ const formatTime = (seconds) => {
                       </motion.div>
 
                       {/* Small Benefits List */}
-                      <div className="space-y-1 text-xs text-gray-600">
+                      <div className="space-y-0 text-xs text-gray-400">
                         <div className="flex items-center">
-                          <Check className="w-4 h-4 text-gray-400 mr-3" />
+                          <Check className="w-3 h-3 text-gray-400 mr-2" />
                           <span>{formatPrice(pkg.price)} Refill in 30 Days</span>
                         </div>
                         <div className="flex items-center">
-                          <Check className="w-4 h-4 text-gray-400 mr-3" />
+                          <Check className="w-3 h-3 text-gray-400 mr-2" />
                           <span>Adjust Refills or Cancel Anytime</span>
                         </div>
                         <div className="flex items-center">
-                          <Check className="w-4 h-4 text-gray-400 mr-3" />
+                          <Check className="w-3 h-3 text-gray-400 mr-2" />
                           <span>Stay Active and Keep Messaging</span>
                         </div>
                       </div>
@@ -456,7 +457,7 @@ const formatTime = (seconds) => {
                 <div className="text-4xl font-bold text-gray-900 mb-2">
                   {selectedPackage.coins + selectedPackage.bonus} Coins
                 </div>
-                <div className="bg-yellow-400 text-yellow-900 font-bold px-3 py-1 rounded-full inline-block text-sm">
+                <div className="bg-pink-600 text-white font-black px-4 py-2 rounded-sm inline-block text-sm shadow-lg">
                   {selectedPackage.savings}
                 </div>
               </div>
@@ -467,7 +468,7 @@ const formatTime = (seconds) => {
                   <Gift className="w-4 h-4 text-green-600 mr-2" />
                   <span className="font-bold text-green-800 text-sm">FREE GIFTS</span>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {selectedPackage.freeGifts.map((gift, i) => (
                     <div key={i} className="flex items-center">
                       <Check className="w-3 h-3 text-green-600 mr-2" />
