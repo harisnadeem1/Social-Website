@@ -296,7 +296,7 @@ const CoinsPage = () => {
                       {/* Price with Discount */}
                       <div className="mb-2">
                         <div className="flex items-center space-x-3 mb-2">
-                          <span className="text-3xl font-bold text-gray-900">{formatPrice(pkg.price)}</span>
+                          <span className="text-3xl font-bold text-gray-900">${formatPrice(pkg.price)}</span>
                           <span className="text-lg text-gray-400 line-through font-bold">{formatPrice(pkg.originalPrice)}</span>
                           <div className="bg-pink-600 text-white font-black px-3 py-2 text-sm rounded-sm shadow-lg">
                             {pkg.savings}
