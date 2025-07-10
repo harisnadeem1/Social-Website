@@ -18,50 +18,50 @@ const CoinsPage = () => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const TOTAL_TIME = 30 * 60; // 30 minutes in seconds
 
-const [timeLeft, setTimeLeft] = useState(() => {
-  const savedStart = localStorage.getItem('countdown_start_time');
-  const now = Math.floor(Date.now() / 1000);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const savedStart = localStorage.getItem('countdown_start_time');
+    const now = Math.floor(Date.now() / 1000);
 
-  if (savedStart) {
-    const elapsed = now - parseInt(savedStart, 10);
-    const remaining = TOTAL_TIME - elapsed;
-    if (remaining > 0) {
-      return remaining;
-    } else {
-      // More than 30 min passed → restart timer
-      localStorage.setItem('countdown_start_time', now.toString());
-      return TOTAL_TIME;
-    }
-  } else {
-    // No start time found → initialize
-    localStorage.setItem('countdown_start_time', now.toString());
-    return TOTAL_TIME;
-  }
-});
-
-React.useEffect(() => {
-  const timer = setInterval(() => {
-    setTimeLeft((prev) => {
-      if (prev > 1) {
-        return prev - 1;
+    if (savedStart) {
+      const elapsed = now - parseInt(savedStart, 10);
+      const remaining = TOTAL_TIME - elapsed;
+      if (remaining > 0) {
+        return remaining;
       } else {
-        // When timer ends, restart for 30 minutes
-        const now = Math.floor(Date.now() / 1000);
+        // More than 30 min passed → restart timer
         localStorage.setItem('countdown_start_time', now.toString());
         return TOTAL_TIME;
       }
-    });
-  }, 1000);
+    } else {
+      // No start time found → initialize
+      localStorage.setItem('countdown_start_time', now.toString());
+      return TOTAL_TIME;
+    }
+  });
 
-  return () => clearInterval(timer);
-}, []);
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev > 1) {
+          return prev - 1;
+        } else {
+          // When timer ends, restart for 30 minutes
+          const now = Math.floor(Date.now() / 1000);
+          localStorage.setItem('countdown_start_time', now.toString());
+          return TOTAL_TIME;
+        }
+      });
+    }, 1000);
 
-const formatTime = (seconds) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Helper function to format price with Courier New dollar sign
   const formatPrice = (price) => {
@@ -181,7 +181,7 @@ const formatTime = (seconds) => {
 
       <Header />
       <MobileHeader />
-      
+
       <main className="container mx-auto px-4 py-8 pt-5 lg:pt-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -195,11 +195,11 @@ const formatTime = (seconds) => {
               <Clock className="w-4 h-4 mr-2" />
               FLASH SALE ENDS IN: {formatTime(timeLeft)}
             </div>
-            
+
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Get More Coins
             </h1>
-            
+
             <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
               Find your perfect match faster with premium features and exclusive bonuses
             </p>
@@ -237,13 +237,14 @@ const formatTime = (seconds) => {
                     {/* Popular Badge */}
                     {pkg.popular && (
                       <div className="absolute top-2 right-2 z-10">
-                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold px-3 py-1">
+                        <Badge className={`bg-gradient-to-r ${pkg.color} text-white font-bold px-3 py-1`}>
                           Most Popular
                         </Badge>
                       </div>
                     )}
 
-                    <CardContent className="p-8">
+
+                    <CardContent className="p-8 px-4">
                       {/* Package Name */}
                       <div className="flex items-center mb-4">
                         <div className={`w-12 h-12 bg-gradient-to-r ${pkg.color} rounded-full flex items-center justify-center mr-4 shadow-lg`}>
@@ -256,7 +257,7 @@ const formatTime = (seconds) => {
                       </div>
 
                       {/* Coins Quantity */}
-                     <div className="mb-6">
+                      <div className="mb-6">
                         <div className="flex items-center text-3xl font-bold text-gray-900 mb-1">
                           <Coins className="w-8 h-8 text-yellow-500 mr-2" />
                           {pkg.coins + pkg.bonus} Coins
@@ -315,31 +316,32 @@ const formatTime = (seconds) => {
                       <motion.div
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className="mb-6"
+                        className="mb-5"
                       >
                         <Button
                           onClick={() => handlePurchaseClick(pkg)}
-                          className={`w-full bg-gradient-to-r ${pkg.color} hover:opacity-90 text-white font-bold py-4 px-8 text-lg shadow-lg rounded-xl transition-all duration-300`}
+                          className={`w-full bg-gradient-to-r ${pkg.color} hover:opacity-90 text-white font-bold py-7 px-8 text-lg shadow-lg rounded-xl transition-all duration-300`}
                         >
-                          Get Started →
+                          GET STARTED →
                         </Button>
                       </motion.div>
 
                       {/* Small Benefits List */}
-                      <div className="space-y-0 text-xs text-gray-400">
+                      <div className="text-xxs text-gray-400">
                         <div className="flex items-center">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span>{formatPrice(pkg.price)} Refill in 30 Days</span>
+                          <span className="leading-none">$29 Refill in 30 Days</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center -mt-[2px]">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span>Adjust Refills or Cancel Anytime</span>
+                          <span className="leading-none">Adjust Refills or Cancel Anytime</span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center -mt-[2px]">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span>Stay Active and Keep Messaging</span>
+                          <span className="leading-none">Stay Active and Keep Messaging</span>
                         </div>
                       </div>
+
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -363,7 +365,7 @@ const formatTime = (seconds) => {
                   Unlock powerful features that help you find meaningful connections faster
                 </p>
               </CardHeader>
-              
+
               <CardContent className="px-8 pb-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   <div className="text-center">
@@ -374,7 +376,7 @@ const formatTime = (seconds) => {
                     <p className="text-gray-600 mb-4">Get 10x more profile views and matches with our spotlight feature</p>
                     <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">5 Coins per boost</Badge>
                   </div>
-                  
+
                   <div className="text-center">
                     <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                       <MessageCircle className="w-8 h-8 text-white" />
@@ -383,7 +385,7 @@ const formatTime = (seconds) => {
                     <p className="text-gray-600 mb-4">Send unlimited messages with priority delivery and read receipts</p>
                     <Badge className="bg-purple-100 text-purple-800 border-purple-300">5 Coins per message</Badge>
                   </div>
-                  
+
                   <div className="text-center">
                     <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                       <Heart className="w-8 h-8 text-white" />
