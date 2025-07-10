@@ -67,7 +67,6 @@ const CoinsPage = () => {
   const formatPrice = (price) => {
     return (
       <>
-        <span style={{ fontFamily: 'Courier New, monospace', fontWeight: 'bold', fontStyle: 'normal' }}>$</span>
         {price.slice(1)}
       </>
     );
