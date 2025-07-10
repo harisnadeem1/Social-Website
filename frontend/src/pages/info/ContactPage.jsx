@@ -58,8 +58,16 @@ const ContactPage = () => {
                 <MapPin className="w-6 h-6 text-pink-500 mt-1 mr-4 flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold">Our Office</h3>
-                  <p>30 N GOULD ST STE 9240</p>
-                  <p>SHERIDAN, WY 82801, USA</p>
+                  <p>ONLYLIFE S.R.L.
+</p>
+                  <p>BRAGADIRU, STR. DUNARII, NR. 146-148 ,CAMERA 3, jud.
+</p>
+                  <p>ILFOV, Romania
+</p>
+                  <p> <strong>Reg. no.</strong> RC J2024038382006
+</p>
+                  <p> <strong>Tax ID:</strong> RO50832320</p>
+
                 </div>
 
               </div>
