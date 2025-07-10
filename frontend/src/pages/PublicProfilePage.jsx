@@ -283,7 +283,9 @@ export default function PublicProfilePage() {
                   </h1>
                   <div className="flex items-center text-gray-300 mb-2">
                     <MapPin className="w-4 h-4 mr-1" />
-                    <span>{profile.city}</span>
+                    {/* <span>{profile.city}</span> */}
+                    <span>3 Miles Away</span>
+
                   </div>
                   {profile.instagram && (
                     <div className="flex items-center text-gray-300">

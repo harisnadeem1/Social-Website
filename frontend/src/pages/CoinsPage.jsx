@@ -329,15 +329,17 @@ const CoinsPage = () => {
                       <div className="text-xxs text-gray-400">
                         <div className="flex items-center">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span className="leading-none">$29 Refill in 30 Days</span>
+                          <span className="leading-none">Refill For Only $0.9 A Day
+</span>
                         </div>
                         <div className="flex items-center -mt-[2px]">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span className="leading-none">Adjust Refills or Cancel Anytime</span>
+                          <span className="leading-none">Stay active and keep messaging
+</span>
                         </div>
                         <div className="flex items-center -mt-[2px]">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span className="leading-none">Stay Active and Keep Messaging</span>
+                          <span className="leading-none">“No More Dates” fast cancellation</span>
                         </div>
                       </div>
 
