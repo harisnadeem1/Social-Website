@@ -406,12 +406,8 @@ const ProfileDetail = () => {
                         <div className="flex items-center space-x-2">
                           <Calendar className="w-4 h-4 text-gray-500" />
                           <div>
-                            <span className="text-xs text-gray-500">Joined</span>
-                            <div className="font-medium text-sm">{new Date(profile.created_at).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}</div>
+                            <span className="text-xs text-gray-500">Age</span>
+                            <div className="font-medium text-sm">{profile.age}</div>
                           </div>
                         </div>
                       </div>
@@ -518,7 +514,7 @@ const ProfileDetail = () => {
                     </div>
 
                     {/* Joined Date */}
-                    <div className="flex items-center space-x-3">
+                    {/* <div className="flex items-center space-x-3">
                       <Calendar className="w-5 h-5 text-gray-500" />
                       <div>
                         <span className="text-sm text-gray-500">Joined</span>
@@ -530,7 +526,7 @@ const ProfileDetail = () => {
                           })}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                   </div>
                 </CardContent>

@@ -65,45 +65,36 @@ const FilterPanel = ({ onFiltersChange, onSearchChange, searchTerm }) => {
     onFiltersChange(clearedFilters);
   };
 
-  const activeFiltersCount = Object.values(filters).filter(value => 
+  // For mobile, only count age filters as active (when different from defaults)
+  const mobileActiveFiltersCount = (filters.ageMin !== 18 || filters.ageMax !== 100) ? 1 : 0;
+  
+  // For desktop, count all non-default filters
+  const desktopActiveFiltersCount = Object.values(filters).filter(value => 
     value !== '' && value !== 18 && value !== 100
   ).length;
 
   return (
     <>
-      {/* Mobile Layout */}
-      <div className="lg:hidden mb-6">
-        <div className="flex gap-3">
-          {/* Search Input */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="Search by name..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10 h-12 border-gray-200 focus:border-pink-400 focus:ring-pink-400 text-base"
-              style={{ fontSize: '16px' }}
-            />
-          </div>
-          
-          {/* Filter Button */}
+      {/* Mobile Layout - Floating Filter Button */}
+      <div className="lg:hidden">
+        {/* Floating Filter Button - Fixed Position */}
+        <div className="fixed right-1 z-40" style={{ top: '4.2rem' }}>
           <Button
-            variant="outline"
             onClick={() => setIsModalOpen(true)}
-            className="h-12 px-4 border-gray-200 hover:border-pink-400 hover:text-pink-600 relative"
+            className="h-12 w-12 rounded-full bg-pink-500 hover:bg-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 relative"
           >
-            <Filter className="w-4 h-4" />
-            {activeFiltersCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {activeFiltersCount}
+            <Filter className="w-7 h-7" />
+            
+            {mobileActiveFiltersCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-white text-pink-500 text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold border-2 border-pink-500">
+                {mobileActiveFiltersCount}
               </span>
             )}
           </Button>
         </div>
       </div>
 
-      {/* Desktop Layout */}
+      {/* Desktop Layout - Full Search and Filters */}
       <div className="hidden lg:block mb-6">
         <div className="flex flex-col lg:flex-row gap-4 mb-4">
           <div className="flex-1">
@@ -123,9 +114,9 @@ const FilterPanel = ({ onFiltersChange, onSearchChange, searchTerm }) => {
           >
             <Filter className="w-4 h-4 mr-2" />
             Filters
-            {activeFiltersCount > 0 && (
+            {desktopActiveFiltersCount > 0 && (
               <span className="ml-2 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {activeFiltersCount}
+                {desktopActiveFiltersCount}
               </span>
             )}
           </Button>
@@ -145,18 +136,18 @@ const FilterPanel = ({ onFiltersChange, onSearchChange, searchTerm }) => {
               onClick={() => setIsModalOpen(false)}
             />
             
-            {/* Mobile Modal */}
+            {/* Mobile Modal - Age Filter Only */}
             <motion.div
               initial={{ opacity: 0, y: '100%' }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 500 }}
-              className="fixed bottom-20 left-4 right-4 bg-white rounded-3xl z-50 max-h-[70vh] overflow-y-auto lg:hidden shadow-2xl"
+              className="fixed bottom-20 left-0 right-0 bg-white rounded-t-3xl z-50 lg:hidden shadow-2xl"
             >
-              <div className="p-6">
+              <div className="p-6 pb-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Filters</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Age Filter</h3>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -167,82 +158,33 @@ const FilterPanel = ({ onFiltersChange, onSearchChange, searchTerm }) => {
                   </Button>
                 </div>
 
-                {/* Filter Content */}
-                <div className="space-y-6">
-                  {/* Age Range */}
-                  <div className="space-y-3">
-                    <Label className="text-base font-medium">Age Range</Label>
-                    <div className="flex items-center space-x-3">
-                      <Input
-                        type="number"
-                        placeholder="Min"
-                        value={inputValues.ageMin}
-                        onChange={(e) => handleAgeInputChange('ageMin', e.target.value)}
-                        onBlur={() => handleAgeInputBlur('ageMin')}
-                        className="flex-1 h-12 text-base"
-                        style={{ fontSize: '16px' }}
-                        min="18"
-                        max="100"
-                      />
-                      <span className="text-gray-500 font-medium">to</span>
-                      <Input
-                        type="number"
-                        placeholder="Max"
-                        value={inputValues.ageMax}
-                        onChange={(e) => handleAgeInputChange('ageMax', e.target.value)}
-                        onBlur={() => handleAgeInputBlur('ageMax')}
-                        className="flex-1 h-12 text-base"
-                        style={{ fontSize: '16px' }}
-                        min="18"
-                        max="100"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Gender */}
-                  <div className="space-y-3">
-                    <Label className="text-base font-medium">Gender</Label>
-                    <select
-                      value={filters.gender}
-                      onChange={(e) => handleFilterChange('gender', e.target.value)}
-                      className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white text-base"
-                      style={{ fontSize: '16px' }}
-                    >
-                      <option value="">All Genders</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="non-binary">Non-Binary</option>
-                    </select>
-                  </div>
-
-                  {/* Location */}
-                  <div className="space-y-3">
-                    <Label className="text-base font-medium">Location</Label>
+                {/* Age Range Filter Only */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Age Range</Label>
+                  <div className="flex items-center space-x-3">
                     <Input
-                      type="text"
-                      placeholder="City or Country"
-                      value={filters.location}
-                      onChange={(e) => handleFilterChange('location', e.target.value)}
-                      className="h-12 text-base"
+                      type="number"
+                      placeholder="Min"
+                      value={inputValues.ageMin}
+                      onChange={(e) => handleAgeInputChange('ageMin', e.target.value)}
+                      onBlur={() => handleAgeInputBlur('ageMin')}
+                      className="flex-1 h-12 text-base"
                       style={{ fontSize: '16px' }}
+                      min="18"
+                      max="100"
                     />
-                  </div>
-
-                  {/* Intent */}
-                  <div className="space-y-3">
-                    <Label className="text-base font-medium">Looking For</Label>
-                    <select
-                      value={filters.intent}
-                      onChange={(e) => handleFilterChange('intent', e.target.value)}
-                      className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white text-base"
+                    <span className="text-gray-500 font-medium">to</span>
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      value={inputValues.ageMax}
+                      onChange={(e) => handleAgeInputChange('ageMax', e.target.value)}
+                      onBlur={() => handleAgeInputBlur('ageMax')}
+                      className="flex-1 h-12 text-base"
                       style={{ fontSize: '16px' }}
-                    >
-                      <option value="">All Intentions</option>
-                      <option value="dating">Dating</option>
-                      <option value="friendship">Friendship</option>
-                      <option value="long-term">Long-Term</option>
-                      <option value="casual">Casual</option>
-                    </select>
+                      min="18"
+                      max="100"
+                    />
                   </div>
                 </div>
 
@@ -250,22 +192,26 @@ const FilterPanel = ({ onFiltersChange, onSearchChange, searchTerm }) => {
                 <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
                   <Button
                     variant="outline"
-                    onClick={clearFilters}
+                    onClick={() => {
+                      setInputValues({ ageMin: '18', ageMax: '100' });
+                      handleFilterChange('ageMin', 18);
+                      handleFilterChange('ageMax', 100);
+                    }}
                     className="flex-1 h-12"
                   >
-                    Clear All
+                    Reset
                   </Button>
                   <Button
                     onClick={() => setIsModalOpen(false)}
                     className="flex-1 h-12 bg-pink-500 hover:bg-pink-600"
                   >
-                    Apply Filters
+                    Apply Filter
                   </Button>
                 </div>
               </div>
             </motion.div>
 
-            {/* Desktop Modal */}
+            {/* Desktop Modal - Full Filters */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
