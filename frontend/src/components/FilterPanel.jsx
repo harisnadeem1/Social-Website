@@ -142,7 +142,7 @@ const FilterPanel = ({ onFiltersChange, onSearchChange, searchTerm }) => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 500 }}
-              className="fixed bottom-20 left-0 right-0 bg-white rounded-t-3xl z-50 lg:hidden shadow-2xl"
+              className="fixed bottom-20 left-3 right-3 bg-white rounded-3xl z-50 lg:hidden shadow-2xl"
             >
               <div className="p-6 pb-8">
                 {/* Header */}
