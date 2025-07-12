@@ -75,6 +75,7 @@ const ProfileDetail = () => {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/profile/get/${id}`);
         if (!res.ok) throw new Error("Profile not found");
         const data = await res.json();
+        console.log("------------------")
         console.log(data);
 
         // ✅ Set girl city to user's city
@@ -211,9 +212,54 @@ const ProfileDetail = () => {
   };
 
 
-  const handleMessage = () => {
+  const handleMessage1 = () => {
     navigate(`/chat?user=${profile.user_id}&name=${encodeURIComponent(profile.name)}`);
   };
+
+
+  const handleMessage = async (e) => {
+  e?.stopPropagation?.(); // Optional: prevent bubbling if triggered from a button
+  const token = localStorage.getItem('token');
+
+  try {
+    // Step 1: Get girl’s user_id using her profile.id
+    console.log(profile);
+    const userIdRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user-id/${profile.id}`);
+    const userData = await userIdRes.json();
+
+    if (!userIdRes.ok || !userData.user_id) {
+      throw new Error("Failed to fetch girl's user ID");
+    }
+
+    const girlUserId = userData.user_id;
+
+    // Step 2: Start or get conversation
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations/start/${girlUserId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.conversationId) {
+      navigate(`/chat?user=${girlUserId}&name=${encodeURIComponent(profile.name)}`);
+    } else {
+      throw new Error(data.message || "Could not start conversation.");
+    }
+
+  } catch (err) {
+    console.error("Start chat error:", err);
+    toast({
+      title: "Chat Error",
+      description: err.message || "Could not start chat. Try again later.",
+      variant: "destructive"
+    });
+  }
+};
+
 
   const handleBack = () => {
     navigate('/');
