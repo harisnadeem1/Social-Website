@@ -29,6 +29,7 @@ export default function PublicProfilePage() {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/public/profile/${username}`);
         if (!res.ok) throw new Error('Profile not found');
         const data = await res.json();
+
         setProfile(data);
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -41,9 +42,11 @@ export default function PublicProfilePage() {
 
   const handleChatClick = async () => {
     if (!user) {
+      if (profile?.id) {
+      localStorage.setItem("redirectAfterAuth", `/profile/${profile.id}`);
+    }
       setShowSignupModal(true);
     } else if(user.role=="user") {
-      console.log(user);
      
     const token = localStorage.getItem('token');
 

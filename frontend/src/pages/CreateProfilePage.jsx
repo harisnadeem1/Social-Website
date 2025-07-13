@@ -269,7 +269,17 @@ const searchCity = async (query) => {
         description: "Welcome to Liebenly! You've received 50 free coins to start chatting.",
       });
 
-      navigate('/dashboard');
+      const redirectPath = localStorage.getItem("redirectAfterAuth");
+      console.log("Local Storage", localStorage);
+      if (redirectPath) {
+        console.log("its there");
+        localStorage.removeItem("redirectAfterAuth");
+        navigate(redirectPath);
+      } else {
+        console.log("its not there");
+
+        navigate('/dashboard');
+      }
 
     } catch (error) {
       console.error('Profile creation error:', error);

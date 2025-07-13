@@ -18,10 +18,10 @@ const ProfileCreation = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get user data from navigation state
   const { userId, userData } = location.state || {};
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -74,7 +74,7 @@ const ProfileCreation = () => {
         return;
       }
     }
-    
+
     if (currentStep === 2) {
       if (!profileData.city || !profileData.lookingFor) {
         toast({
@@ -98,6 +98,7 @@ const ProfileCreation = () => {
   };
 
   const handleCompleteProfile = async () => {
+    console.log("handle complete profile");
     if (!profileData.bio) {
       toast({
         title: "Missing Information",
@@ -137,15 +138,27 @@ const ProfileCreation = () => {
           id: profileResponse.data.profile.id
         }
       };
+console.log("Checking localStorage for redirectAfterAuth");
 
       login(completedUser);
-      
+      const redirectPath = localStorage.getItem("redirectAfterAuth");
+      console.log("Local Storage", localStorage);
+      if (redirectPath) {
+        console.log("its there");
+        localStorage.removeItem("redirectAfterAuth");
+        navigate(redirectPath);
+      } else {
+        console.log("its not there");
+
+        navigate('/dashboard');
+      }
+
       toast({
         title: "🎉 Profile Complete!",
         description: "Welcome to Liebenly! You've received 50 free coins to start chatting.",
       });
 
-      navigate('/dashboard');
+      
 
     } catch (error) {
       console.error('Profile creation error:', error);
@@ -434,21 +447,19 @@ const ProfileCreation = () => {
                 {steps.map((step) => (
                   <div key={step.number} className="flex items-center">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                        step.number <= currentStep
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${step.number <= currentStep
                           ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
                           : 'bg-gray-200 text-gray-500'
-                      }`}
+                        }`}
                     >
                       {step.number}
                     </div>
                     {step.number < steps.length && (
                       <div
-                        className={`w-8 h-1 mx-2 transition-colors ${
-                          step.number < currentStep
+                        className={`w-8 h-1 mx-2 transition-colors ${step.number < currentStep
                             ? 'bg-gradient-to-r from-pink-500 to-purple-600'
                             : 'bg-gray-200'
-                        }`}
+                          }`}
                       />
                     )}
                   </div>
