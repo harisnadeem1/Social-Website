@@ -1,7 +1,18 @@
 import React, { useContext, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
-import { Coins, Star, Zap, Crown, Shield, Heart, X, Gift, Award, Clock, Users, MessageCircle, Check } from 'lucide-react';
+import { Coins, Star, Zap, Crown, Shield,  X,  Award, Clock, Users, MessageCircle, Check } from 'lucide-react';
+import {
+  Hand,
+  Flame,
+  Sparkles,
+  Gift,
+  Heart,
+  Diamond,
+  Target,
+  Infinity,
+  Trophy
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,90 +83,150 @@ const CoinsPage = () => {
     );
   };
 
-  const coinPackages = [
-    {
-      id: 1,
-      name: "Starter Romance",
-      coins: 50,
-      price: '$4.99',
-      originalPrice: '$7.99',
-      popular: false,
-      bonus: 10,
-      icon: Heart,
-      color: 'from-pink-500 to-rose-600',
-      description: "Perfect for new connections",
-      savings: "37% OFF TODAY",
-      dealTag: "FIRST TIME DEAL",
-      freeGifts: [
-        "Welcome Chat Badge",
-        "3 Free Winks",
-        "Priority Support"
-      ]
-    },
-    {
-      id: 2,
-      name: "Love Seeker",
-      coins: 120,
-      price: '$9.99',
-      originalPrice: '$15.99',
-      popular: true,
-      bonus: 30,
-      icon: Star,
-      color: 'from-purple-500 to-pink-600',
-      description: "Most popular for active daters",
-      savings: "45% OFF TODAY",
-      dealTag: "BEST VALUE",
-      freeGifts: [
-        "Golden VIP Chat Badge",
-        "10 Free Winks",
-        "Priority Support",
-        "Profile Spotlight"
-      ]
-    },
-    {
-      id: 3,
-      name: "Cupid's Choice",
-      coins: 300,
-      price: '$19.99',
-      originalPrice: '$29.99',
-      popular: false,
-      bonus: 80,
-      icon: Crown,
-      color: 'from-yellow-500 to-orange-600',
-      description: "For serious relationship seekers",
-      savings: "50% OFF TODAY",
-      dealTag: "PREMIUM DEAL",
-      freeGifts: [
-        "Platinum VIP Badge",
-        "25 Free Winks",
-        "Profile Spotlight",
-        "Exclusive Chat Themes",
-        "Read Receipts"
-      ]
-    },
-    {
-      id: 4,
-      name: "Soulmate Seeker",
-      coins: 600,
-      price: '$34.99',
-      originalPrice: '$59.99',
-      popular: false,
-      bonus: 200,
-      icon: Zap,
-      color: 'from-indigo-500 to-purple-700',
-      description: "Ultimate package for love champions",
-      savings: "60% OFF TODAY",
-      dealTag: "ULTIMATE DEAL",
-      freeGifts: [
-        "Diamond VIP Badge",
-        "50 Free Winks",
-        "Weekly Profile Spotlight",
-        "Premium Chat Themes",
-        "Exclusive Emojis",
-        "VIP Customer Support"
-      ]
-    }
-  ];
+const coinPackages = [
+  {
+    id: 1,
+    name: "Quick Hello",
+    coins: 10,
+    bonus: 0,
+    price: '€2.99',
+    originalPrice: '€3.99',
+    popular: false,
+    icon: Hand,
+    color: 'from-gray-500 to-gray-700',
+    description: "Send a quick greeting and break the ice",
+    savings: "25% OFF",
+    dealTag: null,
+    freeGifts: []
+  },
+  {
+    id: 2,
+    name: "Starter Spark",
+    coins: 25,
+    bonus: 5,
+    price: '€5.99',
+    originalPrice: '€8.99',
+    popular: false,
+    icon: Flame,
+    color: 'from-pink-500 to-red-600',
+    description: "Kickstart your chat with bonus coins",
+    savings: "33% OFF",
+    dealTag: "BONUS DEAL",
+    freeGifts: ["2 Free Winks"]
+  },
+  {
+    id: 3,
+    name: "Flirty Vibes",
+    coins: 30,
+    bonus: 10,
+    price: '€8.99',
+    originalPrice: '€12.99',
+    popular: true,
+    icon: Sparkles,
+    color: 'from-purple-600 to-violet-700',
+    description: "Turn up the charm with extra value",
+    savings: "31% OFF",
+    dealTag: "POPULAR PICK",
+    freeGifts: ["5 Free Winks", "Starter Badge"]
+  },
+  {
+    id: 4,
+    name: "Romantic Bundle",
+    coins: 75,
+    bonus: 15,
+    price: '€14.99',
+    originalPrice: '€21.99',
+    popular: false,
+    icon: Gift,
+    color: 'from-yellow-500 to-orange-500',
+    description: "Build real bonds with more power per message",
+    savings: "32% OFF",
+    dealTag: "VALUE PACK",
+    freeGifts: ["10 Free Winks", "Chat Badge", "Profile Highlight"]
+  },
+  {
+    id: 5,
+    name: "True Connection",
+    coins: 155,
+    bonus: 30,
+    price: '€39.00',
+    originalPrice: '€54.99',
+    popular: false,
+    icon: Heart,
+    color: 'from-teal-500 to-cyan-600',
+    description: "For daters who love consistency",
+    savings: "29% OFF",
+    dealTag: "TOP SAVER",
+    freeGifts: ["VIP Badge", "20 Free Winks", "Profile Boost"]
+  },
+  {
+    id: 6,
+    name: "Elite Charmer",
+    coins: 350,
+    bonus: 60,
+    price: '€89.00',
+    originalPrice: '€129.00',
+    popular: false,
+    icon: Diamond,
+    color: 'from-blue-500 to-indigo-600',
+    description: "For charming conversations that go deep",
+    savings: "31% OFF",
+    dealTag: "PREMIUM BUNDLE",
+    freeGifts: ["Diamond Badge", "50 Free Winks", "Read Receipts", "Exclusive Emojis"]
+  },
+  {
+    id: 7,
+    name: "Soulmate Hunter",
+    coins: 600,
+    bonus: 100,
+    price: '€149.99',
+    originalPrice: '€199.99',
+    popular: false,
+    icon: Target,
+    color: 'from-indigo-500 to-purple-700',
+    description: "For those serious about finding love",
+    savings: "25% OFF",
+    dealTag: "SERIOUS DATER PACK",
+    freeGifts: ["VIP Badge", "100 Free Winks", "Weekly Spotlight", "Premium Themes"]
+  },
+  {
+    id: 8,
+    name: "Lover’s Legacy",
+    coins: 1025,
+    bonus: 150,
+    price: '€249.00',
+    originalPrice: '€329.00',
+    popular: false,
+    icon: Infinity,
+    color: 'from-rose-600 to-fuchsia-700',
+    description: "Fuel a long-term love journey",
+    savings: "24% OFF",
+    dealTag: "LEGENDARY VALUE",
+    freeGifts: ["Platinum Badge", "150 Free Winks", "Exclusive Themes", "Priority Support"]
+  },
+  {
+    id: 9,
+    name: "The Eternal Bond",
+    coins: 2100,
+    bonus: 300,
+    price: '€499.00',
+    originalPrice: '€659.00',
+    popular: false,
+    icon: Trophy,
+    color: 'from-amber-500 to-red-600',
+    description: "Unlimited charm. Endless possibilities.",
+    savings: "24% OFF",
+    dealTag: "ALL-IN DEAL",
+    freeGifts: [
+      "Diamond Supreme Badge",
+      "Unlimited Winks",
+      "Unlimited Spotlight",
+      "Premium Chat Themes",
+      "Priority Support",
+      "All Features Unlocked"
+    ]
+  }
+];
 
   const handlePurchaseClick = (packageData) => {
     setSelectedPackage(packageData);
