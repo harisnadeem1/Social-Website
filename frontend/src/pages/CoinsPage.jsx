@@ -97,7 +97,7 @@ const coinPackages = [
     description: "Send a quick greeting and break the ice",
     savings: "25% OFF",
     dealTag: null,
-    freeGifts: []
+    freeGifts: ["1 Free Wink", "Welcome Badge", "Mini Chat Bubble", "Starter Theme"]
   },
   {
     id: 2,
@@ -112,7 +112,7 @@ const coinPackages = [
     description: "Kickstart your chat with bonus coins",
     savings: "33% OFF",
     dealTag: "BONUS DEAL",
-    freeGifts: ["2 Free Winks"]
+    freeGifts: ["2 Free Winks", "Starter Badge", "1 Profile Boost", "Basic Read Receipts", "Quick Emoji Pack"]
   },
   {
     id: 3,
@@ -127,7 +127,7 @@ const coinPackages = [
     description: "Turn up the charm with extra value",
     savings: "31% OFF",
     dealTag: "POPULAR PICK",
-    freeGifts: ["5 Free Winks", "Starter Badge"]
+    freeGifts: ["5 Free Winks", "Starter Badge", "Mini Spotlight", "Theme Pack", "Read Receipts"]
   },
   {
     id: 4,
@@ -142,7 +142,7 @@ const coinPackages = [
     description: "Build real bonds with more power per message",
     savings: "32% OFF",
     dealTag: "VALUE PACK",
-    freeGifts: ["10 Free Winks", "Chat Badge", "Profile Highlight"]
+    freeGifts: ["10 Free Winks", "Chat Badge", "Profile Highlight", "Read Receipts", "Love Emoji Pack"]
   },
   {
     id: 5,
@@ -157,7 +157,7 @@ const coinPackages = [
     description: "For daters who love consistency",
     savings: "29% OFF",
     dealTag: "TOP SAVER",
-    freeGifts: ["VIP Badge", "20 Free Winks", "Profile Boost"]
+    freeGifts: ["VIP Badge", "20 Free Winks", "Profile Boost", "Weekly Highlight", "Priority Inbox"]
   },
   {
     id: 6,
@@ -172,7 +172,7 @@ const coinPackages = [
     description: "For charming conversations that go deep",
     savings: "31% OFF",
     dealTag: "PREMIUM BUNDLE",
-    freeGifts: ["Diamond Badge", "50 Free Winks", "Read Receipts", "Exclusive Emojis"]
+    freeGifts: ["Diamond Badge", "50 Free Winks", "Read Receipts", "Exclusive Emojis", "VIP Highlight", "Flirty Voice Notes"]
   },
   {
     id: 7,
@@ -187,7 +187,7 @@ const coinPackages = [
     description: "For those serious about finding love",
     savings: "25% OFF",
     dealTag: "SERIOUS DATER PACK",
-    freeGifts: ["VIP Badge", "100 Free Winks", "Weekly Spotlight", "Premium Themes"]
+    freeGifts: ["VIP Badge", "100 Free Winks", "Weekly Spotlight", "Premium Themes", "Boosted Visibility", "Advanced Filters"]
   },
   {
     id: 8,
@@ -202,7 +202,7 @@ const coinPackages = [
     description: "Fuel a long-term love journey",
     savings: "24% OFF",
     dealTag: "LEGENDARY VALUE",
-    freeGifts: ["Platinum Badge", "150 Free Winks", "Exclusive Themes", "Priority Support"]
+    freeGifts: ["Platinum Badge", "150 Free Winks", "Exclusive Themes", "Priority Support", "Unlimited Read Receipts", "Legacy Sticker Pack"]
   },
   {
     id: 9,
@@ -223,10 +223,12 @@ const coinPackages = [
       "Unlimited Spotlight",
       "Premium Chat Themes",
       "Priority Support",
-      "All Features Unlocked"
+      "All Features Unlocked",
+      "1-on-1 Matchmaking Session"
     ]
   }
 ];
+
 
   const handlePurchaseClick = (packageData) => {
     setSelectedPackage(packageData);
