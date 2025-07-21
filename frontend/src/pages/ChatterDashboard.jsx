@@ -1,4 +1,4 @@
-import React, { useState, useContext,useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useChatterState } from '@/hooks/useChatterState.js';
@@ -10,8 +10,6 @@ import { useToast } from '@/components/ui/use-toast.js';
 import useSocket from '@/hooks/useSocket';
 import { unlockChat } from '../api/chatLock';
 import axios from 'axios';
-// import { useEffect } from 'react';
-
 
 const ChatterDashboard = () => {
   const {
@@ -36,8 +34,8 @@ const ChatterDashboard = () => {
     lockHolderName,
     setSelectedChatId,
   } = useChatterState();
-const socketRef = useSocket();
-
+  
+  const socketRef = useSocket();
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -52,79 +50,49 @@ const socketRef = useSocket();
   };
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [winks, setWinks] = useState([]);
 
+  useEffect(() => {
+    const fetchWinks = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chatter/winks`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setWinks(res.data); // assuming the backend returns the winks array
+      } catch (err) {
+        console.error("Failed to fetch winks:", err);
+      }
+    };
 
+    fetchWinks();
+  }, []);
 
-const [winks, setWinks] = useState([]);
-
-
-useEffect(() => {
-  const fetchWinks = async () => {
-    try {
+  useEffect(() => {
+    const handleUnload = async () => {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chatter/winks`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setWinks(res.data); // assuming the backend returns the winks array
-    } catch (err) {
-      console.error("Failed to fetch winks:", err);
-    }
-  };
+      if (selectedChat) {
+        await unlockChat(selectedChat.conversation_id, token);
+      }
+    };
 
-  fetchWinks();
-}, []);
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [selectedChat]);
 
+  useEffect(() => {
+    if (!socketRef.current) return;
 
+    socketRef.current.on('receiveMessage', (data) => {
+      // You can call handleSelectChat again or directly append the message to selectedChat
+    });
 
-
-
-
-
-
-
-
-
-
-
-useEffect(() => {
-  const handleUnload = async () => {
-    const token = localStorage.getItem('token');
-    if (selectedChat) {
-      await unlockChat(selectedChat.conversation_id, token);
-    }
-  };
-
-  window.addEventListener('beforeunload', handleUnload);
-  return () => window.removeEventListener('beforeunload', handleUnload);
-}, [selectedChat]);
-
-
-
-
-
-
-
-  
-
-useEffect(() => {
-  if (!socketRef.current) return;
-
-  socketRef.current.on('receiveMessage', (data) => {
-    // You can call handleSelectChat again or directly append the message to selectedChat
-  });
-
-  return () => {
-    socketRef.current.off('receiveMessage');
-  };
-}, [socketRef.current]);
-
-
-
-
-
-
+    return () => {
+      socketRef.current.off('receiveMessage');
+    };
+  }, [socketRef.current]);
 
   const handleSelectChatAndCloseSidebar = (chat) => {
     handleSelectChat(chat);
@@ -133,12 +101,19 @@ useEffect(() => {
   };
 
   const handleBackToInbox = async () => {
-  const token = localStorage.getItem('token');
-  if (selectedChat) {
-    await unlockChat(selectedChat.conversation_id, token);
-  }
-  setSelectedChatId(null);
-};
+    const token = localStorage.getItem('token');
+    if (selectedChat) {
+      await unlockChat(selectedChat.conversation_id, token);
+    }
+    setSelectedChatId(null);
+  };
+
+  // Set default activeView to 'chats' instead of 'conversations'
+  useEffect(() => {
+    if (!activeView || activeView === 'conversations') {
+      setActiveView('chats');
+    }
+  }, [activeView, setActiveView]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -187,7 +162,6 @@ useEffect(() => {
             lockHolderName={lockHolderName}
             allUsers={allUsers}
             onBackToInbox={handleBackToInbox}
-
           />
         </div>
       </div>
