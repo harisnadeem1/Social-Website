@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button.jsx';
 import { Heart } from 'lucide-react';
 
 const WinksList = ({ winks,  onWinkResponse }) => {
+  const [selectedWink, setSelectedWink] = React.useState(null);
+const [customMessage, setCustomMessage] = React.useState('');
+
   if (winks.length === 0) {
     return (
       <div className="p-4 text-center text-gray-500">
@@ -49,19 +52,54 @@ const WinksList = ({ winks,  onWinkResponse }) => {
                   Winked at {wink.girl_name}
                 </p>
                 <Button
-                  size="sm"
-                  className="bg-pink-500 hover:bg-pink-600 text-white"
-                  onClick={async () => await onWinkResponse(wink)}
-                >
-                  <Heart className="w-4 h-4 mr-1" />
-                  Respond
-                </Button>
+  size="sm"
+  className="bg-pink-500 hover:bg-pink-600 text-white"
+  onClick={() => setSelectedWink(wink)}
+>
+  <Heart className="w-4 h-4 mr-1" />
+  Respond
+</Button>
+
               </div>
             </div>
           </motion.div>
         );
       })}
       </AnimatePresence>
+      {selectedWink && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+    <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
+      <button
+        onClick={() => {
+          setSelectedWink(null);
+          setCustomMessage('');
+        }}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+      >
+        ✕
+      </button>
+      <h2 className="text-lg font-semibold mb-2 text-center">Send a message to {selectedWink.user_name}</h2>
+      <textarea
+        value={customMessage}
+        onChange={(e) => setCustomMessage(e.target.value)}
+        placeholder="Write your custom message here..."
+        className="w-full border border-gray-300 rounded-md p-2 h-24 resize-none mb-4"
+      />
+      <Button
+        className="w-full bg-pink-500 hover:bg-pink-600 text-white"
+        onClick={async () => {
+          await onWinkResponse(selectedWink, customMessage);
+          setSelectedWink(null);
+          setCustomMessage('');
+        }}
+        disabled={!customMessage.trim()}
+      >
+        Send Message
+      </Button>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

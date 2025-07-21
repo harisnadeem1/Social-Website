@@ -32,10 +32,14 @@ const respondToLike = async (req, res) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
+    const { message } = req.body;
+
+    if (!message || message.trim() === '') {
+      return res.status(400).json({ message: 'Message is required' });
+    }
 
     await client.query('BEGIN');
 
-    // Get sender and receiver (girl) from the like
     const likeResult = await client.query(`
       DELETE FROM likes WHERE id = $1 RETURNING sender_id, receiver_id
     `, [id]);
@@ -45,13 +49,11 @@ const respondToLike = async (req, res) => {
 
     if (!senderId || !girlId) throw new Error('Like not found');
 
-    // Add notification
     await client.query(`
       INSERT INTO notifications (sender_id, user_id, type, content)
       VALUES ($1, $2, 'like', 'You have been liked!')
     `, [girlId, senderId]);
 
-    // Check if conversation already exists
     const conversationResult = await client.query(`
       SELECT id FROM conversations
       WHERE user_id = $1 AND girl_id = $2
@@ -70,14 +72,13 @@ const respondToLike = async (req, res) => {
       conversationId = newConv.rows[0].id;
     }
 
-    // Send message
     await client.query(`
       INSERT INTO messages (conversation_id, sender_id, content)
       VALUES ($1, $2, $3)
-    `, [conversationId, girlId, 'Hey there! Just saw you liked me 💖']);
+    `, [conversationId, girlId, message]);
 
     await client.query('COMMIT');
-    res.json({ message: 'Like responded successfully' });
+    res.json({ message: 'Like responded with custom message' });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
@@ -86,6 +87,7 @@ const respondToLike = async (req, res) => {
     client.release();
   }
 };
+
 
 
 module.exports = { getLikes, respondToLike };

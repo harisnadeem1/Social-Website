@@ -76,6 +76,7 @@ const ChatPage = () => {
                 id: incomingMessage.id,
                 text: incomingMessage.text,
                 senderId: incomingMessage.senderId,
+                sent_at: new Date(incomingMessage.timestamp).getTime(), // Keep raw timestamp
                 timestamp: new Date(incomingMessage.timestamp).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -89,7 +90,7 @@ const ChatPage = () => {
               messages: updatedMessages,
               // Incoming message from other person, don't add "You:" prefix
               lastMessage: incomingMessage.text,
-              lastActivity: Date.now()
+              lastActivity: new Date(incomingMessage.timestamp).getTime() // Use raw timestamp
             };
           }
         }
@@ -139,7 +140,8 @@ const ChatPage = () => {
                 gift_image_path: msg.gift_image_path,
                 image_url: msg.image_url,
                 senderId: msg.sender_id,
-                timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                sent_at: new Date(msg.sent_at).getTime(), // Keep raw timestamp for sorting
+                timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // Display format
                 status: 'delivered',
               }))
               : [];
@@ -204,7 +206,8 @@ const ChatPage = () => {
           gift_image_path: msg.gift_image_path,
           image_url: msg.image_url,
           senderId: msg.sender_id,
-          timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          sent_at: new Date(msg.sent_at).getTime(), // Keep raw timestamp for sorting
+          timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // Display format
           status: 'delivered',
         }))
         : [];
@@ -226,6 +229,7 @@ const ChatPage = () => {
               ...conv,
               messages: messages,
               lastMessage: formattedLastMessage,
+              lastActivity: lastMsg ? lastMsg.sent_at : conv.lastActivity, // Update with latest message timestamp
             };
           }
           return conv;
@@ -341,6 +345,7 @@ const ChatPage = () => {
         id: responseData.message.id,
         text: responseData.message.content,
         senderId: user.id,
+        sent_at: new Date(responseData.message.sent_at).getTime(), // Keep raw timestamp
         timestamp: new Date(responseData.message.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         status: 'sent'
       };
@@ -356,7 +361,7 @@ const ChatPage = () => {
               messages: [...conv.messages, newMessage],
               lastMessage: `You: ${newMessage.text}`,
               timestamp: 'now',
-              lastActivity: Date.now()
+              lastActivity: newMessage.sent_at // Use the raw timestamp
             };
           }
           return conv;

@@ -52,13 +52,15 @@ useEffect(() => {
   fetchWinks();
 }, []);
 
-const handleLikeResponse = async (like) => {
+const handleLikeResponse = async (like, message) => {
   try {
     await fetch(`${import.meta.env.VITE_API_BASE_URL}/chatter/likes/respond/${like.id}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message })
     });
     setLikes(prev => prev.filter(l => l.id !== like.id));
   } catch (error) {
@@ -66,22 +68,23 @@ const handleLikeResponse = async (like) => {
   }
 };
 
-const handleWinkResponse = async (wink) => {
+const handleWinkResponse = async (wink, message) => {
   try {
     await fetch(`${import.meta.env.VITE_API_BASE_URL}/winks/respond/${wink.id}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({ message })
     });
 
-    // Optional: update state to remove wink from UI
     setWinks(prev => prev.filter(w => w.id !== wink.id));
   } catch (error) {
     console.error(error);
   }
 };
+
 
   const renderContent = () => {
     switch (activeView) {

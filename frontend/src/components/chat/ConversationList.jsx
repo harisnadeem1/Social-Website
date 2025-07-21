@@ -8,14 +8,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 const ConversationList = ({ conversations, onSelectChat, isLoading = false, currentUserId }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const sortedConversations = [...conversations].sort(
-    (a, b) => b.lastActivity - a.lastActivity
-  );
+  // Helper function to get the latest message timestamp from a conversation
+  const getLatestMessageTime = (conversation) => {
+    if (!conversation.messages || conversation.messages.length === 0) {
+      return conversation.lastActivity || 0;
+    }
+    
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+    // Handle both raw timestamps and sent_at dates
+    return lastMessage.sent_at || lastMessage.rawTimestamp || conversation.lastActivity || 0;
+  };
+
+  // Sort conversations by the actual latest message timestamp
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const timeA = getLatestMessageTime(a);
+    const timeB = getLatestMessageTime(b);
+    return timeB - timeA;
+  });
 
   const filteredConversations = sortedConversations.filter((conversation) =>
     conversation.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
@@ -57,7 +70,6 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
         </div>
       </div>
 
-
       <div className="mb-2 px-2">
         <input
           type="text"
@@ -73,6 +85,7 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
         <AnimatePresence>
           {filteredConversations.map((conversation, index) => {
             const showNewMessagesBadge = hasNewMessages(conversation);
+            const latestMessageTime = getLatestMessageTime(conversation);
 
             return (
               <motion.div
@@ -105,7 +118,7 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
                       </h3>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs text-gray-500">
-                          {formatTime(conversation.lastActivity)}
+                          {formatTime(latestMessageTime)}
                         </span>
                         {showNewMessagesBadge && (
                           <Badge className="bg-pink-500 text-white text-xs px-2 py-1">
@@ -115,11 +128,11 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
                       </div>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                    <p className={`text-sm text-gray-600 truncate ${showNewMessagesBadge ? 'font-medium' : ''}`}>
-  {conversation.lastMessage === 'You: null'
-    ? '🎁 You sent a gift'
-    : conversation.lastMessage}
-</p>
+                      <p className={`text-sm text-gray-600 truncate ${showNewMessagesBadge ? 'font-medium' : ''}`}>
+                        {conversation.lastMessage === 'You: null'
+                          ? '🎁 You sent a gift'
+                          : conversation.lastMessage}
+                      </p>
                       {conversation.unread > 0 && (
                         <Badge className="bg-red-500 text-white text-xs ml-2">
                           {conversation.unread}

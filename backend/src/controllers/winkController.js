@@ -84,9 +84,14 @@ const sendWink = async (req, res) => {
 
 const respondToWink = async (req, res) => {
   const { winkId } = req.params;
+  const { message } = req.body;
+
+  if (!message || message.trim() === '') {
+    return res.status(400).json({ message: 'Message is required' });
+  }
 
   try {
-    const result = await WinksModel.respondToWink(winkId);
+    const result = await WinksModel.respondToWink(winkId, message);
     res.status(200).json({ success: true, message: 'Responded to wink successfully' });
   } catch (err) {
     console.error("Failed to respond to wink:", err);
