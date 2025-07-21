@@ -129,9 +129,9 @@ const handleWinkResponse = async (wink) => {
             allUsers={allUsers}
             activeGirl={activeGirl}
           >
-            <Button size="sm" className="bg-pink-500 hover:bg-pink-600 text-white">
+            {/* <Button size="sm" className="bg-pink-500 hover:bg-pink-600 text-white">
               <Plus className="w-4 h-4" />
-            </Button>
+            </Button> */}
           </StartNewChatModal>
         </div>
         <div className="flex space-x-2">

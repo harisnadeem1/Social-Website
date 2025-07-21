@@ -1,7 +1,7 @@
 // routes/chatterRoutes.js
 const express = require('express');
 const router = express.Router();
-const {getActiveConversations , getMessagesForConversation,sendMessageAsGirl,getWinks} = require('../controllers/chatterController');
+const {getActiveConversations , getMessagesForConversation,sendMessageAsGirl,getWinks, getProfileByUserId} = require('../controllers/chatterController');
 const {verifyToken} = require('../middleware/authMiddleware'); // JWT auth
 
 // GET all active conversations for chatter
@@ -12,6 +12,8 @@ router.get('/conversations/:id/messages', verifyToken, getMessagesForConversatio
 router.post('/conversations/chatter/:id/messages', verifyToken, sendMessageAsGirl);
 
 router.get('/winks', verifyToken, getWinks);
+
+router.get('/getProfilebyUserid/:userId', verifyToken, getProfileByUserId);
 
 
 module.exports = router;

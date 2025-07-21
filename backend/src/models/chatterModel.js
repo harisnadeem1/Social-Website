@@ -108,4 +108,17 @@ LIMIT 50
 };
 
 
-module.exports = {getAllActiveConversations,getMessagesByConversationId, sendMessageFromGirl,getAllWinks}
+
+const findByUserId = async (userId) => {
+  const result = await db.query(
+    `SELECT p.*, u.full_name, u.email, u.role 
+     FROM profiles p
+     JOIN users u ON p.user_id = u.id
+     WHERE p.user_id = $1`,
+    [userId]
+  );
+
+  return result.rows[0];
+};
+
+module.exports = {getAllActiveConversations,getMessagesByConversationId, sendMessageFromGirl,getAllWinks , findByUserId}

@@ -41,10 +41,10 @@ const ChatterHeader = ({
             </div>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="text-sm text-gray-600 hidden sm:block">
+            {/* <div className="text-sm text-gray-600 hidden sm:block">
               Logged in as: <span className="font-medium">{user?.name}</span>
-            </div>
-            <DropdownMenu>
+            </div> */}
+            {/* <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center space-x-2">
                   <Avatar className="w-6 h-6">
@@ -71,7 +71,7 @@ const ChatterHeader = ({
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu> */}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

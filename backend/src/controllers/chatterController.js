@@ -66,4 +66,24 @@ const getWinks = async (req, res) => {
 };
 
 
-module.exports = {getActiveConversations,getMessagesForConversation, sendMessageAsGirl,getWinks}
+const getProfileByUserId = async (req, res, next) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const profile = await ChatterModel.findByUserId(userId);
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    res.json(profile);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+module.exports = {getActiveConversations,getMessagesForConversation, sendMessageAsGirl,getWinks , getProfileByUserId}

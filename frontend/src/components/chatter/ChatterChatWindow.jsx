@@ -1,4 +1,4 @@
-import React, { useRef, useEffect,useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
@@ -24,10 +24,16 @@ const ChatterChatWindow = ({
 }) => {
   const messagesEndRef = useRef(null);
   const { socket, newIncomingMessage } = useSocket();
+  const [showMenu, setShowMenu] = useState(false);
+  const [showUserProfileModal, setShowUserProfileModal] = useState(false);
+  const [showGirlProfileModal, setShowGirlProfileModal] = useState(false);
+  const [userProfileData, setUserProfileData] = useState(null);
+  const [girlProfileData, setGirlProfileData] = useState(null);
 
 
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedChat?.messages]);
@@ -69,6 +75,25 @@ const ChatterChatWindow = ({
   }
 
   const userProfile = allUsers.find(u => u.id === selectedChat.participants.user.id);
+  console.log(selectedChat);
+
+
+  const fetchProfileData = async (userId, setProfileFn) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chatter/getProfilebyUserid/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch profile');
+
+      const data = await response.json();
+      setProfileFn(data);
+    } catch (error) {
+      console.error('Profile fetch error:', error.message);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col flex-1">
@@ -90,9 +115,46 @@ const ChatterChatWindow = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm"><Phone className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm"><Video className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm"><MoreVertical className="w-4 h-4" /></Button>
+            {/* <Button variant="ghost" size="sm"><Phone className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm"><Video className="w-4 h-4" /></Button> */}
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMenu(!showMenu)}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-30">
+                 <button
+  onClick={() => {
+    fetchProfileData(selectedChat.user_id, setUserProfileData);
+    setShowUserProfileModal(true);
+    setShowMenu(false);
+  }}
+  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+>
+  User Profile
+</button>
+
+<button
+  onClick={() => {
+    fetchProfileData(selectedChat.girl_id, setGirlProfileData);
+    setShowGirlProfileModal(true);
+    setShowMenu(false);
+  }}
+  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+>
+  Girl Profile
+</button>
+
+                </div>
+              )}
+            </div>
+
+
           </div>
         </div>
       </div>
@@ -142,9 +204,9 @@ const ChatterChatWindow = ({
 
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="flex items-center space-x-2">
-         <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
-                     <Smile className="w-5 h-5 text-gray-500" />
-                   </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
+            <Smile className="w-5 h-5 text-gray-500" />
+          </Button>
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -159,16 +221,73 @@ const ChatterChatWindow = ({
             disabled={isLockedByOther}
           />
 
-           {showEmojiPicker && (
-                      <div className="absolute bottom-20 z-10">
-                        <EmojiPicker
-                          onEmojiClick={(emojiData) => {
-                            setMessage((prev) => prev + emojiData.emoji);
-                            setShowEmojiPicker(false);
-                          }}
-                        />
-                      </div>
-                    )}
+          {showEmojiPicker && (
+            <div className="absolute bottom-20 z-10">
+              <EmojiPicker
+                onEmojiClick={(emojiData) => {
+                  setMessage((prev) => prev + emojiData.emoji);
+                  setShowEmojiPicker(false);
+                }}
+              />
+            </div>
+          )}
+
+         {showUserProfileModal && userProfileData && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+    <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
+      <button
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+        onClick={() => setShowUserProfileModal(false)}
+      >
+        ✕
+      </button>
+      <div className="text-center">
+        <Avatar className="mx-auto w-20 h-20 mb-4">
+          <AvatarImage src={userProfileData.profile_image_url} />
+          <AvatarFallback>
+            {userProfileData.full_name?.split(' ').map(n => n[0]).join('')}
+          </AvatarFallback>
+        </Avatar>
+        <h2 className="text-xl font-semibold">{userProfileData.full_name}</h2>
+        <p className="text-gray-500 text-sm mb-1">Age: {userProfileData.age}</p>
+        <p className="text-gray-500 text-sm mb-1">City: {userProfileData.city}</p>
+        <p className="text-gray-500 text-sm mb-1">Height: {userProfileData.height}</p>
+        <p className="text-gray-500 text-sm mb-1">Bio: {userProfileData.bio || "No bio available."}</p>
+        <p className="text-gray-500 text-sm mb-1">Interests: {userProfileData.interests || "Not mentioned."}</p>
+      </div>
+    </div>
+  </div>
+)}
+
+
+{showGirlProfileModal && girlProfileData && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+    <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
+      <button
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+        onClick={() => setShowGirlProfileModal(false)}
+      >
+        ✕
+      </button>
+      <div className="text-center">
+        <Avatar className="mx-auto w-20 h-20 mb-4">
+          <AvatarImage src={girlProfileData.profile_image_url} />
+          <AvatarFallback>
+            {girlProfileData.full_name?.split(' ').map(n => n[0]).join('')}
+          </AvatarFallback>
+        </Avatar>
+        <h2 className="text-xl font-semibold">{girlProfileData.full_name}</h2>
+        <p className="text-gray-500 text-sm mb-1">Age: {girlProfileData.age}</p>
+        <p className="text-gray-500 text-sm mb-1">City: {girlProfileData.city}</p>
+        <p className="text-gray-500 text-sm mb-1">Height: {girlProfileData.height}</p>
+        <p className="text-gray-500 text-sm mb-1">Bio: {girlProfileData.bio || "No bio available."}</p>
+        <p className="text-gray-500 text-sm mb-1">Interests: {girlProfileData.interests || "Not mentioned."}</p>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
           <Button
             onClick={() => onSendMessage(socket)}
