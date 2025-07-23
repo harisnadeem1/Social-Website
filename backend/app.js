@@ -22,7 +22,8 @@ const userRoutes = require('./src/routes/userRoutes');
 const giftRoutes = require('./src/routes/giftRoutes');
 const imageRoutes = require('./src/routes/imagesRoutes');
 const publicProfileRoutes = require('./src/routes/publicProfileRoutes');
-
+const autoEngagementRoutes = require('./src/routes/autoEngagementRoutes');
+const mobilenavRoutes = require('./src/routes/mobilenav');
 
 
 
@@ -60,6 +61,8 @@ app.use('/api/messages', messageRoutes);
 
 app.use('/api/chatter', chatterRoutes);
 app.use('/api/chatter-lock', chatterLockRoutes);
+app.use('/api/auto-engagement', autoEngagementRoutes);
+
 
 app.use('/api/chatter/likes', chatterLikeRoutes);
 app.use('/api/boost-profile', boostRoutes);
@@ -70,6 +73,9 @@ app.use('/api/gifts', giftRoutes);
 
 app.use('/api/images', imageRoutes);
 app.use('/api/public', publicProfileRoutes);
+
+app.use('/api/mobilenav', mobilenavRoutes);
+
 
 
 module.exports = app;

@@ -6,6 +6,7 @@ const { Server } = require("socket.io");
 const { releaseExpiredLocks } = require("./src/utils/lockCleanup");
 
 dotenv.config();
+require("./src/cron/dailyJob"); // Loads the daily rotation scheduler
 
 const PORT = process.env.PORT || 5000;
 

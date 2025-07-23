@@ -19,8 +19,14 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
     return lastMessage.sent_at || lastMessage.rawTimestamp || conversation.lastActivity || 0;
   };
 
+  // Filter out conversations that don't have any messages
+  const conversationsWithMessages = conversations.filter(conversation => {
+    // Check if conversation has messages array and it's not empty
+    return conversation.messages && conversation.messages.length > 0;
+  });
+
   // Sort conversations by the actual latest message timestamp
-  const sortedConversations = [...conversations].sort((a, b) => {
+  const sortedConversations = [...conversationsWithMessages].sort((a, b) => {
     const timeA = getLatestMessageTime(a);
     const timeB = getLatestMessageTime(b);
     return timeB - timeA;
@@ -157,9 +163,16 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
                   Try searching with different keywords
                 </p>
               )}
+              {!searchTerm && conversationsWithMessages.length === 0 && conversations.length > 0 && (
+                <p className="text-gray-400 text-xs mt-1">
+                  Start messaging to see conversations here
+                </p>
+              )}
             </div>
           </div>
         )}
+
+       
       </div>
     </div>
   );

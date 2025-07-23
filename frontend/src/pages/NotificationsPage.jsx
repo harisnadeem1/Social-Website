@@ -49,11 +49,42 @@ const NotificationsPage = () => {
         }
     };
 
-    const handleNotificationClick = (notif) => {
-        if (['wink', 'message', 'like'].includes(notif.type) && notif.sender_id) {
-            navigate(`/chat?user=${notif.sender_id}`);
+    const handleNotificationClick = async (notif) => {
+    if (!['wink', 'message', 'like'].includes(notif.type) || !notif.sender_id) {
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+
+    try {
+        // Step 1: Start or get conversation with the sender
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations/start/${notif.sender_id}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.conversationId) {
+            // Navigate to chat with sender's user_id and name (if available)
+            const nameParam = notif.sender_name ? `&name=${encodeURIComponent(notif.sender_name)}` : '';
+            navigate(`/chat?user=${notif.sender_id}${nameParam}`);
+        } else {
+            throw new Error(data.message || "Could not start conversation.");
         }
-    };
+
+    } catch (err) {
+        console.error("Start chat from notification error:", err);
+        toast({
+            title: "Chat Error", 
+            description: err.message || "Could not start chat. Try again later.",
+            variant: "destructive"
+        });
+    }
+};
 
     useEffect(() => {
         if (user) fetchNotifications();
@@ -62,7 +93,7 @@ const NotificationsPage = () => {
     return (
         <div className="min-h-screen bg-white pb-16 px-4 pt-4">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Your Notifications</h2>
+                <h2 className="text-xl font-semibold">Activity</h2>
                 {notifications.length > 0 && (
                     <Button variant="destructive" size="sm" onClick={handleClearAll}>
                         Clear All

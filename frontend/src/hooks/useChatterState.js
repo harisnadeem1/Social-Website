@@ -20,6 +20,84 @@ const allUsersData = [
 
 const LOCK_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Enhanced deduplication function for user-girl pairs
+const deduplicateConversationsByUserGirl = (conversations) => {
+  const userGirlMap = new Map();
+  
+  conversations.forEach(conv => {
+    const key = `${conv.user_id}-${conv.girl_id}`;
+    
+    if (!userGirlMap.has(key)) {
+      userGirlMap.set(key, conv);
+    } else {
+      const existing = userGirlMap.get(key);
+      
+      // Keep the conversation with:
+      // 1. More recent lastActivity
+      // 2. More messages
+      // 3. More recent last_message_time
+      const shouldReplace = 
+        (conv.lastActivity || 0) > (existing.lastActivity || 0) ||
+        (conv.messages?.length || 0) > (existing.messages?.length || 0) ||
+        new Date(conv.last_message_time || 0) > new Date(existing.last_message_time || 0);
+      
+      if (shouldReplace) {
+        // Merge messages from both conversations to avoid losing data
+        const mergedMessages = [
+          ...(existing.messages || []),
+          ...(conv.messages || [])
+        ];
+        
+        // Remove duplicate messages by ID
+        const uniqueMessages = mergedMessages.filter((msg, index, arr) => 
+          arr.findIndex(m => m.id === msg.id) === index
+        );
+        
+        // Sort messages by timestamp
+        uniqueMessages.sort((a, b) => {
+          const timeA = new Date(a.timestamp || 0);
+          const timeB = new Date(b.timestamp || 0);
+          return timeA - timeB;
+        });
+        
+        userGirlMap.set(key, {
+          ...conv,
+          messages: uniqueMessages,
+          // Use the most recent last message
+          last_message: uniqueMessages.length > 0 ? 
+            (uniqueMessages[uniqueMessages.length - 1].senderId === conv.girl_id ? 
+              `You: ${uniqueMessages[uniqueMessages.length - 1].text}` : 
+              uniqueMessages[uniqueMessages.length - 1].text) : 
+            conv.last_message
+        });
+      }
+    }
+  });
+  
+  return Array.from(userGirlMap.values());
+};
+
+// Debug function to identify duplicates
+const findDuplicateUserGirlPairs = (conversations) => {
+  const pairs = {};
+  const duplicates = [];
+  
+  conversations.forEach((conv, index) => {
+    const key = `${conv.user_id}-${conv.girl_id}`;
+    if (pairs[key]) {
+      duplicates.push({
+        key,
+        conversations: [pairs[key], { ...conv, index }],
+        userGirl: `${conv.user_name} & ${conv.girl_name}`
+      });
+    } else {
+      pairs[key] = { ...conv, index };
+    }
+  });
+  
+  return duplicates;
+};
+
 export const useChatterState = () => {
   const { user } = useContext(AuthContext);
   const { toast } = useToast();
@@ -36,6 +114,14 @@ export const useChatterState = () => {
   const [lockHolderName, setLockHolderName] = useState('');
   const [lockedChatId, setLockedChatId] = useState(null);
 
+  // Format time function - moved up for use in other functions
+  const formatTime = useCallback((timestamp) => {
+    if (timestamp === 'now') return 'now';
+    if (timestamp && (timestamp.includes('min ago') || timestamp.includes('hour ago'))) return timestamp;
+    if (timestamp === 'Yesterday') return timestamp;
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }, []);
+
   // Function to fetch all conversations with messages and format last message
   const fetchAllConversations = useCallback(async () => {
     try {
@@ -45,6 +131,14 @@ export const useChatterState = () => {
       });
 
       if (res.data.conversations) {
+        console.log('Raw conversations from API:', res.data.conversations.length);
+        
+        // Check for duplicates before processing
+        const duplicates = findDuplicateUserGirlPairs(res.data.conversations);
+        if (duplicates.length > 0) {
+          console.warn('Found duplicate user-girl pairs before processing:', duplicates);
+        }
+
         const conversationsWithMessages = await Promise.all(
           res.data.conversations.map(async (conv) => {
             // Fetch messages for each conversation
@@ -57,6 +151,11 @@ export const useChatterState = () => {
               ? messagesRes.data.map((msg) => ({
                   id: msg.id,
                   text: msg.content,
+                  message_type: msg.message_type,
+                  gift_id: msg.gift_id,
+                  gift_name: msg.gift_name,
+                  gift_image_path: msg.gift_image_path,
+                  image_url: msg.image_url,
                   senderId: msg.sender_id,
                   timestamp: formatTime(msg.sent_at),
                   status: 'delivered',
@@ -67,10 +166,19 @@ export const useChatterState = () => {
             const lastMsg = messages[messages.length - 1];
             let formattedLastMessage = 'Tap to continue...';
             if (lastMsg) {
+              let messageText = '';
+              if (lastMsg.message_type === 'gift') {
+                messageText = `🎁 ${lastMsg.gift_name || 'Gift'}`;
+              } else if (lastMsg.message_type === 'image') {
+                messageText = '📷 Image';
+              } else {
+                messageText = lastMsg.text;
+              }
+              
               // For chatter: show "You:" if message was sent by the girl (chatter), no prefix if sent by user
               formattedLastMessage = lastMsg.senderId === conv.girl_id 
-                ? `You: ${lastMsg.text}` 
-                : lastMsg.text;
+                ? `You: ${messageText}` 
+                : messageText;
             }
 
             return {
@@ -94,8 +202,13 @@ export const useChatterState = () => {
           })
         );
 
-        setConversations(conversationsWithMessages);
-        console.log('Chatter conversation list reloaded');
+        // Deduplicate by user-girl pairs
+        const uniqueConversations = deduplicateConversationsByUserGirl(conversationsWithMessages);
+        
+        console.log('Conversations after deduplication:', uniqueConversations.length);
+        console.log('Removed duplicates:', conversationsWithMessages.length - uniqueConversations.length);
+        
+        setConversations(uniqueConversations);
       }
     } catch (err) {
       console.error('Failed to fetch chatter conversations:', err);
@@ -105,7 +218,7 @@ export const useChatterState = () => {
         variant: "destructive"
       });
     }
-  }, [toast]);
+  }, [toast, formatTime]);
 
   // Function to fetch messages for a specific conversation
   const fetchMessagesForConversation = useCallback(async (conversationId) => {
@@ -120,37 +233,54 @@ export const useChatterState = () => {
         ? messagesRes.data.map((msg) => ({
             id: msg.id,
             text: msg.content,
+            message_type: msg.message_type,
+            gift_id: msg.gift_id,
+            gift_name: msg.gift_name,
+            gift_image_path: msg.gift_image_path,
+            image_url: msg.image_url,
             senderId: msg.sender_id,
             timestamp: formatTime(msg.sent_at),
             status: 'delivered',
           }))
         : [];
 
-      // Update the specific conversation with new messages
-      setConversations(prevConvs =>
-        prevConvs.map(conv => {
+      // Update the specific conversation with new messages and deduplicate
+      setConversations(prevConvs => {
+        const updatedConvs = prevConvs.map(conv => {
           if (conv.conversation_id === conversationId) {
             // Format last message with proper prefix
             const lastMsg = messages[messages.length - 1];
             let formattedLastMessage = 'Tap to continue...';
             if (lastMsg) {
+              let messageText = '';
+              if (lastMsg.message_type === 'gift') {
+                messageText = `🎁 ${lastMsg.gift_name || 'Gift'}`;
+              } else if (lastMsg.message_type === 'image') {
+                messageText = '📷 Image';
+              } else {
+                messageText = lastMsg.text;
+              }
+              
               // For chatter: show "You:" if message was sent by the girl (chatter), no prefix if sent by user
               formattedLastMessage = lastMsg.senderId === conv.girl_id 
-                ? `You: ${lastMsg.text}` 
-                : lastMsg.text;
+                ? `You: ${messageText}` 
+                : messageText;
             }
 
             return {
               ...conv,
               messages: messages,
               last_message: formattedLastMessage,
+              lastActivity: messages.length > 0 ? new Date(messages[messages.length - 1].timestamp).getTime() : conv.lastActivity,
             };
           }
           return conv;
-        })
-      );
+        });
+        
+        // Apply deduplication after update
+        return deduplicateConversationsByUserGirl(updatedConvs);
+      });
 
-      // console.log(`Chatter messages reloaded for conversation ${conversationId}`);
     } catch (err) {
       console.error(`Failed to fetch chatter messages for conversation ${conversationId}:`, err);
       toast({
@@ -159,22 +289,30 @@ export const useChatterState = () => {
         variant: "destructive"
       });
     }
-  }, [toast]);
+  }, [toast, formatTime]);
 
+  // Update the sortedConversations memoization to include deduplication
   const sortedConversations = useMemo(() => {
-    return [...conversations].sort((a, b) => b.lastActivity - a.lastActivity);
+    const uniqueConversations = deduplicateConversationsByUserGirl(conversations);
+    return uniqueConversations.sort((a, b) => b.lastActivity - a.lastActivity);
   }, [conversations]);
 
   const lockConversation = useCallback((chatId, chatterId) => {
-    setConversations(prev => prev.map(c => 
-      c.conversation_id === chatId ? { ...c, locked_by: chatterId, lock_time: Date.now() } : c
-    ));
+    setConversations(prev => {
+      const updatedConvs = prev.map(c => 
+        c.conversation_id === chatId ? { ...c, locked_by: chatterId, lock_time: Date.now() } : c
+      );
+      return deduplicateConversationsByUserGirl(updatedConvs);
+    });
   }, []);
 
   const unlockConversation = useCallback((chatId) => {
-    setConversations(prev => prev.map(c => 
-      c.conversation_id === chatId ? { ...c, locked_by: null, lock_time: null } : c
-    ));
+    setConversations(prev => {
+      const updatedConvs = prev.map(c => 
+        c.conversation_id === chatId ? { ...c, locked_by: null, lock_time: null } : c
+      );
+      return deduplicateConversationsByUserGirl(updatedConvs);
+    });
   }, []);
 
   useEffect(() => {
@@ -195,6 +333,14 @@ export const useChatterState = () => {
     fetchAllConversations();
   }, [fetchAllConversations]);
 
+  // Debug effect to monitor duplicates
+  useEffect(() => {
+    const duplicates = findDuplicateUserGirlPairs(conversations);
+    if (duplicates.length > 0) {
+      console.warn('Current duplicate user-girl pairs in state:', duplicates);
+    }
+  }, [conversations]);
+
   // Updated handleSelectChat function with reload functionality
   const handleSelectChat = useCallback(async (conversation) => {
     try {
@@ -204,7 +350,6 @@ export const useChatterState = () => {
       // 🔓 Unlock previous chat (if switching to a different one)
       if (lockedChatId && lockedChatId !== conversation.conversation_id) {
         await unlockChat(lockedChatId, token);
-        // console.log("Unlocked chat:", lockedChatId);
       }
 
       // Reload all conversations first
@@ -233,6 +378,11 @@ export const useChatterState = () => {
           senderName: msg.sender_name,
           senderImage: msg.sender_image,
           text: msg.content,
+          message_type: msg.message_type,
+          gift_id: msg.gift_id,
+          gift_name: msg.gift_name,
+          gift_image_path: msg.gift_image_path,
+          image_url: msg.image_url,
           timestamp: formatTime(msg.sent_at),
         })),
       };
@@ -242,7 +392,6 @@ export const useChatterState = () => {
       // 🔒 Lock this conversation
       await lockChat(conversation.conversation_id, token);
       setLockedChatId(conversation.conversation_id);
-      // console.log("Locked chat:", conversation.conversation_id);
 
       // ✅ Check lock status
       const lockData = await checkLockStatus(conversation.conversation_id, token);
@@ -263,25 +412,48 @@ export const useChatterState = () => {
       console.error("Failed to load messages or lock chat", err);
       toast({ title: "Error", description: "Could not open or lock the chat." });
     }
-  }, [lockedChatId, fetchAllConversations, fetchMessagesForConversation, toast]);
+  }, [lockedChatId, fetchAllConversations, fetchMessagesForConversation, toast, formatTime]);
 
-  // Reload messages and conversation list whenever selectedChatId changes
+  // Enhanced useEffect for real-time updates with smart fetching
   useEffect(() => {
     if (selectedChatId) {
-      // Reload the conversation list first
-      fetchAllConversations().then(() => {
-        // Then reload messages for the selected chat
-        fetchMessagesForConversation(selectedChatId);
-      });
+      // Always fetch messages for the selected conversation to get latest updates
+      fetchMessagesForConversation(selectedChatId);
+      
+      // Set up a periodic refresh for the conversation list to catch new conversations
+      // This is less aggressive than fetching on every selection
+      const conversationRefreshInterval = setInterval(() => {
+        fetchAllConversations();
+      }, 15000); // Every 15 seconds
+      
+      return () => clearInterval(conversationRefreshInterval);
     }
   }, [selectedChatId, fetchMessagesForConversation, fetchAllConversations]);
 
-  // Your existing polling logic - keeping it as is
+  // Alternative: If you want immediate conversation list refresh on chat selection
+  // but want to prevent race conditions, you can use this instead:
+  /*
   useEffect(() => {
-    let interval;
+    if (selectedChatId) {
+      // Fetch conversation list first, then messages
+      const refreshData = async () => {
+        await fetchAllConversations();
+        await fetchMessagesForConversation(selectedChatId);
+      };
+      
+      refreshData();
+    }
+  }, [selectedChatId, fetchMessagesForConversation, fetchAllConversations]);
+  */
+  
+  // Enhanced polling logic with deduplication
+  useEffect(() => {
+    let messageInterval;
+    let conversationInterval;
 
     if (selectedChat) {
-      interval = setInterval(async () => {
+      // Poll for new messages in the selected chat every 3 seconds
+      messageInterval = setInterval(async () => {
         try {
           const token = localStorage.getItem('token');
           const res = await axios.get(
@@ -293,6 +465,11 @@ export const useChatterState = () => {
             id: msg.id,
             senderId: msg.sender_id,
             text: msg.content,
+            message_type: msg.message_type,
+            gift_id: msg.gift_id,
+            gift_name: msg.gift_name,
+            gift_image_path: msg.gift_image_path,
+            image_url: msg.image_url,
             timestamp: formatTime(msg.sent_at),
           }));
 
@@ -300,14 +477,47 @@ export const useChatterState = () => {
             ...prev,
             messages: updatedMessages,
           }));
+
+          // Also update the conversation in the list with latest message
+          setConversations(prevConvs => {
+            const updatedConvs = prevConvs.map(conv => {
+              if (conv.conversation_id === selectedChat.conversation_id) {
+                const lastMsg = updatedMessages[updatedMessages.length - 1];
+                const formattedLastMessage = lastMsg 
+                  ? (lastMsg.senderId === conv.girl_id ? `You: ${lastMsg.text}` : lastMsg.text)
+                  : conv.last_message;
+                
+                return {
+                  ...conv,
+                  messages: updatedMessages,
+                  last_message: formattedLastMessage,
+                  lastActivity: Date.now()
+                };
+              }
+              return conv;
+            });
+            
+            // Apply deduplication and sort
+            const uniqueConvs = deduplicateConversationsByUserGirl(updatedConvs);
+            return uniqueConvs.sort((a, b) => b.lastActivity - a.lastActivity);
+          });
+
         } catch (err) {
-          console.error("Polling failed", err);
+          console.error("Message polling failed", err);
         }
-      }, 3000); // every 3 seconds
+      }, 3000);
+
+      // Poll for new conversations every 30 seconds (less frequent)
+      conversationInterval = setInterval(() => {
+        fetchAllConversations();
+      }, 30000);
     }
 
-    return () => clearInterval(interval); // clean up
-  }, [selectedChat?.conversation_id]);
+    return () => {
+      clearInterval(messageInterval);
+      clearInterval(conversationInterval);
+    };
+  }, [selectedChat?.conversation_id, formatTime]);
 
   const handleBackToInbox = async () => {
     const token = localStorage.getItem('token');
@@ -327,7 +537,7 @@ export const useChatterState = () => {
     }
   };
 
-  // Updated handleSendMessage to format the last message correctly
+  // Updated handleSendMessage to prevent duplicates
   const handleSendMessage = async (socket) => {
     if (!message.trim() || !selectedChat) return;
 
@@ -348,18 +558,29 @@ export const useChatterState = () => {
         id: newMsg.id,
         senderId: newMsg.sender_id,
         text: newMsg.content,
+        message_type: newMsg.message_type || 'text',
+        gift_id: newMsg.gift_id,
+        gift_name: newMsg.gift_name,
+        gift_image_path: newMsg.gift_image_path,
+        image_url: newMsg.image_url,
         timestamp: formatTime(newMsg.sent_at),
       };
 
       setMessage('');
 
-      // Update conversations with the new message
-      setConversations(prevConvs =>
-        prevConvs.map(conv => {
+      // Update conversations with the new message and deduplicate
+      setConversations(prevConvs => {
+        const updatedConvs = prevConvs.map(conv => {
           if (conv.conversation_id === selectedChat.conversation_id) {
+            // Check if message already exists to prevent duplicates
+            const messageExists = conv.messages.some(msg => msg.id === formattedMessage.id);
+            const updatedMessages = messageExists 
+              ? conv.messages 
+              : [...conv.messages, formattedMessage];
+
             return {
               ...conv,
-              messages: [...conv.messages, formattedMessage],
+              messages: updatedMessages,
               // For chatter sending message: show "You: message"
               last_message: `You: ${formattedMessage.text}`,
               last_message_time: newMsg.sent_at,
@@ -367,14 +588,21 @@ export const useChatterState = () => {
             };
           }
           return conv;
-        }).sort((a, b) => b.lastActivity - a.lastActivity)
-      );
+        });
 
-      // Update selected chat
-      setSelectedChat(prev => ({
-        ...prev,
-        messages: [...prev.messages, formattedMessage]
-      }));
+        // Deduplicate and sort
+        const uniqueConvs = deduplicateConversationsByUserGirl(updatedConvs);
+        return uniqueConvs.sort((a, b) => b.lastActivity - a.lastActivity);
+      });
+
+      // Update selected chat (also check for duplicate messages)
+      setSelectedChat(prev => {
+        const messageExists = prev.messages.some(msg => msg.id === formattedMessage.id);
+        return {
+          ...prev,
+          messages: messageExists ? prev.messages : [...prev.messages, formattedMessage]
+        };
+      });
 
       // Emit real-time update (keeping your existing socket logic)
       if (socket) {
@@ -415,7 +643,12 @@ export const useChatterState = () => {
       participants: { user: userToChat, girl: activeGirl },
       lastActivity: Date.now(),
     };
-    setConversations(prev => [newConversation, ...prev]);
+    
+    setConversations(prev => {
+      const updatedConvs = [newConversation, ...prev];
+      return deduplicateConversationsByUserGirl(updatedConvs);
+    });
+    
     setSelectedChatId(newConversation.conversation_id);
     toast({ title: 'New Chat Started!', description: `Started conversation as ${activeGirl.name} with ${userToChat.name}.` });
   }, [activeGirl, allUsers, user.email, toast]);
@@ -441,19 +674,17 @@ export const useChatterState = () => {
       participants: { user: wink.user, girl: wink.girl },
       lastActivity: Date.now(),
     };
-    setConversations(prev => [newConversation, ...prev]);
+    
+    setConversations(prev => {
+      const updatedConvs = [newConversation, ...prev];
+      return deduplicateConversationsByUserGirl(updatedConvs);
+    });
+    
     setActiveView('conversations');
     setSelectedChatId(newConversation.conversation_id);
     setActiveGirl(wink.girl);
     toast({ title: 'Wink Response Sent!', description: `You responded as ${wink.girl.name} to ${wink.user.name}'s wink.` });
   }, [user.email, toast]);
-
-  const formatTime = useCallback((timestamp) => {
-    if (timestamp === 'now') return 'now';
-    if (timestamp.includes('min ago') || timestamp.includes('hour ago')) return timestamp;
-    if (timestamp === 'Yesterday') return timestamp;
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }, []);
 
   return {
     user,

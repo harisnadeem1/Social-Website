@@ -36,12 +36,20 @@ const getMessagesByConversationId = async (conversationId) => {
       m.conversation_id,
       m.sender_id,
       m.content,
+      m.message_type,
+      m.gift_id,
+      m.image_id,
       m.sent_at,
       u.full_name AS sender_name,
-      p.profile_image_url AS sender_image
+      p.profile_image_url AS sender_image,
+      gc.name AS gift_name,
+      gc.image_path AS gift_image_path,
+      img.image_url
     FROM messages m
     JOIN users u ON u.id = m.sender_id
     LEFT JOIN profiles p ON p.user_id = u.id
+    LEFT JOIN gift_catalog gc ON gc.id = m.gift_id
+    LEFT JOIN images img ON img.id = m.image_id
     WHERE m.conversation_id = $1
     ORDER BY m.sent_at ASC;
   `;

@@ -1,13 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Lock } from 'lucide-react';
+import { ArrowLeft, Send, Smile, MoreVertical, Phone, Video, Lock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
 import useSocket from '../../hooks/useSocket';
 import EmojiPicker from 'emoji-picker-react';
-
-
 
 const ChatterChatWindow = ({
   selectedChat,
@@ -20,7 +18,6 @@ const ChatterChatWindow = ({
   lockHolderName,
   allUsers,
   onBackToInbox,
-
 }) => {
   const messagesEndRef = useRef(null);
   const { socket, newIncomingMessage } = useSocket();
@@ -29,9 +26,6 @@ const ChatterChatWindow = ({
   const [showGirlProfileModal, setShowGirlProfileModal] = useState(false);
   const [userProfileData, setUserProfileData] = useState(null);
   const [girlProfileData, setGirlProfileData] = useState(null);
-
-
-
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
@@ -53,6 +47,11 @@ const ChatterChatWindow = ({
         id: newIncomingMessage.id || Date.now(),
         senderId: newIncomingMessage.sender_id,
         text: newIncomingMessage.content,
+        message_type: newIncomingMessage.message_type || 'text',
+        gift_id: newIncomingMessage.gift_id,
+        gift_name: newIncomingMessage.gift_name,
+        gift_image_path: newIncomingMessage.gift_image_path,
+        image_url: newIncomingMessage.image_url,
         timestamp: formatTime(newIncomingMessage.sent_at),
       };
 
@@ -62,6 +61,13 @@ const ChatterChatWindow = ({
       }));
     }
   }, [newIncomingMessage]);
+
+  const formatTime = (timestamp) => {
+    if (timestamp === 'now') return 'now';
+    if (timestamp && (timestamp.includes('min ago') || timestamp.includes('hour ago'))) return timestamp;
+    if (timestamp === 'Yesterday') return timestamp;
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   if (!selectedChat) {
     return (
@@ -76,7 +82,6 @@ const ChatterChatWindow = ({
 
   const userProfile = allUsers.find(u => u.id === selectedChat.participants.user.id);
   console.log(selectedChat);
-
 
   const fetchProfileData = async (userId, setProfileFn) => {
     try {
@@ -115,8 +120,6 @@ const ChatterChatWindow = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {/* <Button variant="ghost" size="sm"><Phone className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm"><Video className="w-4 h-4" /></Button> */}
             <div className="relative">
               <Button
                 variant="ghost"
@@ -128,33 +131,30 @@ const ChatterChatWindow = ({
 
               {showMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-30">
-                 <button
-  onClick={() => {
-    fetchProfileData(selectedChat.user_id, setUserProfileData);
-    setShowUserProfileModal(true);
-    setShowMenu(false);
-  }}
-  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
->
-  User Profile
-</button>
+                  <button
+                    onClick={() => {
+                      fetchProfileData(selectedChat.user_id, setUserProfileData);
+                      setShowUserProfileModal(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                  >
+                    User Profile
+                  </button>
 
-<button
-  onClick={() => {
-    fetchProfileData(selectedChat.girl_id, setGirlProfileData);
-    setShowGirlProfileModal(true);
-    setShowMenu(false);
-  }}
-  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
->
-  Girl Profile
-</button>
-
+                  <button
+                    onClick={() => {
+                      fetchProfileData(selectedChat.girl_id, setGirlProfileData);
+                      setShowGirlProfileModal(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                  >
+                    Girl Profile
+                  </button>
                 </div>
               )}
             </div>
-
-
           </div>
         </div>
       </div>
@@ -189,7 +189,30 @@ const ChatterChatWindow = ({
               >
                 <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${isGirlMessage ? 'bg-pink-500 text-white rounded-br-md' : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
                   }`}>
-                  <p className="text-sm">{msg.text}</p>
+                  {msg.message_type === 'gift' ? (
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <img
+                        src={`/gifts/${msg.gift_image_path}`}
+                        alt={msg.gift_name || 'Gift'}
+                        className="w-16 h-16 object-contain mb-1"
+                      />
+                      <p className="text-xs font-medium">{msg.gift_name || 'Gift 🎁'}</p>
+                    </div>
+                  ) : msg.message_type === 'image' ? (
+                    msg.status === 'uploading' ? (
+                      <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded-md">
+                        <Loader2 className="animate-spin text-gray-500 w-6 h-6" />
+                      </div>
+                    ) : (
+                      <img
+                        src={msg.image_url}
+                        alt="Sent Image"
+                        className="w-48 h-auto rounded-md object-cover"
+                      />
+                    )
+                  ) : (
+                    <p className="text-sm">{msg.text}</p>
+                  )}
                   <div className={`flex items-center justify-end mt-1 text-xs ${isGirlMessage ? 'text-pink-100' : 'text-gray-500'
                     }`}>
                     <span>{msg.timestamp}</span>
@@ -232,62 +255,59 @@ const ChatterChatWindow = ({
             </div>
           )}
 
-         {showUserProfileModal && userProfileData && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
-    <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
-      <button
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-        onClick={() => setShowUserProfileModal(false)}
-      >
-        ✕
-      </button>
-      <div className="text-center">
-        <Avatar className="mx-auto w-20 h-20 mb-4">
-          <AvatarImage src={userProfileData.profile_image_url} />
-          <AvatarFallback>
-            {userProfileData.full_name?.split(' ').map(n => n[0]).join('')}
-          </AvatarFallback>
-        </Avatar>
-        <h2 className="text-xl font-semibold">{userProfileData.full_name}</h2>
-        <p className="text-gray-500 text-sm mb-1">Age: {userProfileData.age}</p>
-        <p className="text-gray-500 text-sm mb-1">City: {userProfileData.city}</p>
-        <p className="text-gray-500 text-sm mb-1">Height: {userProfileData.height}</p>
-        <p className="text-gray-500 text-sm mb-1">Bio: {userProfileData.bio || "No bio available."}</p>
-        <p className="text-gray-500 text-sm mb-1">Interests: {userProfileData.interests || "Not mentioned."}</p>
-      </div>
-    </div>
-  </div>
-)}
+          {showUserProfileModal && userProfileData && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+              <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
+                <button
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowUserProfileModal(false)}
+                >
+                  ✕
+                </button>
+                <div className="text-center">
+                  <Avatar className="mx-auto w-20 h-20 mb-4">
+                    <AvatarImage src={userProfileData.profile_image_url} />
+                    <AvatarFallback>
+                      {userProfileData.full_name?.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h2 className="text-xl font-semibold">{userProfileData.full_name}</h2>
+                  <p className="text-gray-500 text-sm mb-1">Age: {userProfileData.age}</p>
+                  <p className="text-gray-500 text-sm mb-1">City: {userProfileData.city}</p>
+                  <p className="text-gray-500 text-sm mb-1">Height: {userProfileData.height}</p>
+                  <p className="text-gray-500 text-sm mb-1">Bio: {userProfileData.bio || "No bio available."}</p>
+                  <p className="text-gray-500 text-sm mb-1">Interests: {userProfileData.interests || "Not mentioned."}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-
-{showGirlProfileModal && girlProfileData && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
-    <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
-      <button
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-        onClick={() => setShowGirlProfileModal(false)}
-      >
-        ✕
-      </button>
-      <div className="text-center">
-        <Avatar className="mx-auto w-20 h-20 mb-4">
-          <AvatarImage src={girlProfileData.profile_image_url} />
-          <AvatarFallback>
-            {girlProfileData.full_name?.split(' ').map(n => n[0]).join('')}
-          </AvatarFallback>
-        </Avatar>
-        <h2 className="text-xl font-semibold">{girlProfileData.full_name}</h2>
-        <p className="text-gray-500 text-sm mb-1">Age: {girlProfileData.age}</p>
-        <p className="text-gray-500 text-sm mb-1">City: {girlProfileData.city}</p>
-        <p className="text-gray-500 text-sm mb-1">Height: {girlProfileData.height}</p>
-        <p className="text-gray-500 text-sm mb-1">Bio: {girlProfileData.bio || "No bio available."}</p>
-        <p className="text-gray-500 text-sm mb-1">Interests: {girlProfileData.interests || "Not mentioned."}</p>
-      </div>
-    </div>
-  </div>
-)}
-
-
+          {showGirlProfileModal && girlProfileData && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+              <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
+                <button
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowGirlProfileModal(false)}
+                >
+                  ✕
+                </button>
+                <div className="text-center">
+                  <Avatar className="mx-auto w-20 h-20 mb-4">
+                    <AvatarImage src={girlProfileData.profile_image_url} />
+                    <AvatarFallback>
+                      {girlProfileData.full_name?.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h2 className="text-xl font-semibold">{girlProfileData.full_name}</h2>
+                  <p className="text-gray-500 text-sm mb-1">Age: {girlProfileData.age}</p>
+                  <p className="text-gray-500 text-sm mb-1">City: {girlProfileData.city}</p>
+                  <p className="text-gray-500 text-sm mb-1">Height: {girlProfileData.height}</p>
+                  <p className="text-gray-500 text-sm mb-1">Bio: {girlProfileData.bio || "No bio available."}</p>
+                  <p className="text-gray-500 text-sm mb-1">Interests: {girlProfileData.interests || "Not mentioned."}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Button
             onClick={() => onSendMessage(socket)}

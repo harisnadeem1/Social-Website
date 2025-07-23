@@ -65,22 +65,22 @@ const ProfileCreation = () => {
     }
   }, 800); // debounce increased to reduce API calls
 
-const searchCity = async (query) => {
-  if (!query || query.length < 2) return;
+  const searchCity = async (query) => {
+    if (!query || query.length < 2) return;
 
-  try {
-    const response = await fetch(
-      `https://api.locationiq.com/v1/autocomplete?key=${import.meta.env.VITE_LOCATIONIQ_API_KEY}&q=${encodeURIComponent(query)}&limit=5&normalizecity=1&tag=place:city`
-    );
-    if (!response.ok) throw new Error("API error");
+    try {
+      const response = await fetch(
+        `https://api.locationiq.com/v1/autocomplete?key=${import.meta.env.VITE_LOCATIONIQ_API_KEY}&q=${encodeURIComponent(query)}&limit=5&normalizecity=1&tag=place:city`
+      );
+      if (!response.ok) throw new Error("API error");
 
-    const data = await response.json();
-    setCitySuggestions(data || []);
-    setShowSuggestions(true);
-  } catch (err) {
-    console.error("LocationIQ search error:", err.message);
-  }
-};
+      const data = await response.json();
+      setCitySuggestions(data || []);
+      setShowSuggestions(true);
+    } catch (err) {
+      console.error("LocationIQ search error:", err.message);
+    }
+  };
 
 
 
@@ -269,6 +269,21 @@ const searchCity = async (query) => {
         description: "Welcome to Liebenly! You've received 50 free coins to start chatting.",
       });
 
+      // First create 30-day rotation loop
+      await axios.post(`${BASE_URL}/auto-engagement/rotation`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Then trigger Day 1 scheduled actions
+      await axios.post(`${BASE_URL}/auto-engagement/day1`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+
       const redirectPath = localStorage.getItem("redirectAfterAuth");
       console.log("Local Storage", localStorage);
       if (redirectPath) {
@@ -383,42 +398,42 @@ const searchCity = async (query) => {
       </div>
 
       <div className="space-y-4">
-       <div className="space-y-4">
-  <div>
-    <Label htmlFor="city">City/Location *</Label>
-    <div className="flex gap-2 mt-1">
-      <Input
-        id="city"
-        placeholder="e.g., New York"
-        value={profileData.city}
-        onChange={(e) => handleInputChange("city", e.target.value)}
-      />
-      <Button type="button" onClick={() => searchCity(profileData.city)}>
-        Search
-      </Button>
-    </div>
-  </div>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="city">City/Location *</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                id="city"
+                placeholder="e.g., New York"
+                value={profileData.city}
+                onChange={(e) => handleInputChange("city", e.target.value)}
+              />
+              <Button type="button" onClick={() => searchCity(profileData.city)}>
+                Search
+              </Button>
+            </div>
+          </div>
 
-  {showSuggestions && citySuggestions.length > 0 && (
-    <ul className="bg-white border rounded mt-2 shadow-md max-h-40 overflow-auto">
-      {citySuggestions.map((place, index) => (
-        <li
-          key={index}
-          onClick={() => {
-            const city = place.address?.city || place.address?.name || "";
-            const country = place.address?.country || "";
-            handleInputChange("city", `${city}, ${country}`);
-            setShowSuggestions(false);
-          }}
-          className="p-2 cursor-pointer hover:bg-gray-100"
-        >
-          {place.address?.city || place.address?.name},{" "}
-          {place.address?.country}
-        </li>
-      ))}
-    </ul>
-  )}
-</div>
+          {showSuggestions && citySuggestions.length > 0 && (
+            <ul className="bg-white border rounded mt-2 shadow-md max-h-40 overflow-auto">
+              {citySuggestions.map((place, index) => (
+                <li
+                  key={index}
+                  onClick={() => {
+                    const city = place.address?.city || place.address?.name || "";
+                    const country = place.address?.country || "";
+                    handleInputChange("city", `${city}, ${country}`);
+                    setShowSuggestions(false);
+                  }}
+                  className="p-2 cursor-pointer hover:bg-gray-100"
+                >
+                  {place.address?.city || place.address?.name},{" "}
+                  {place.address?.country}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
 
 
