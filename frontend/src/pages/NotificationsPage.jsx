@@ -94,11 +94,11 @@ const NotificationsPage = () => {
         <div className="min-h-screen bg-white pb-16 px-4 pt-4">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Activity</h2>
-                {notifications.length > 0 && (
+                {/* {notifications.length > 0 && (
                     <Button variant="destructive" size="sm" onClick={handleClearAll}>
                         Clear All
                     </Button>
-                )}
+                )} */}
             </div>
 
             {notifications.length === 0 ? (
