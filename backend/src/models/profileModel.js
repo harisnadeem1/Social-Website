@@ -62,7 +62,8 @@ const findPublicGirlById = async (id) => {
   const profileResult = await db.query(`
     SELECT 
       profiles.*, 
-      users.full_name AS name 
+      users.full_name AS name,
+      profiles.is_verified
     FROM profiles 
     JOIN users ON users.id = profiles.user_id 
     WHERE profiles.id = $1 

@@ -390,9 +390,26 @@ const ProfileDetail = () => {
                 </div>
 
                 <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h1 className="text-3xl font-bold text-gray-900">{profile.name}</h1>
+  <div className="space-y-4">
+    <div>
+      {/* Name with Verified Tick */}
+      <div className="flex items-center">
+        <h1 className="text-3xl font-bold text-gray-900">{profile.name}</h1>
+        
+        {/* Verified Tick - Only show if profile is verified */}
+        {profile.is_verified && (
+          <img
+            src="/bluetick/verified.png"
+            alt="Verified"
+            className="w-8 h-8 ml-3 drop-shadow-lg"
+            title="Verified Profile"
+            onError={(e) => {
+              // Fallback if image doesn't load
+              e.target.style.display = 'none';
+            }}
+          />
+        )}
+      </div>
                       <div className="flex items-center text-gray-600 mt-1">
                         <MapPin className="w-4 h-4 mr-1" />
                         <span>{profile.city}</span>

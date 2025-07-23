@@ -180,8 +180,9 @@ const AdminPanel = () => {
     gallery: [],
     imagePreview: null,
     galleryPreviews: [],
-    isFeatured: false,      // New field
-    username: ""            // New field
+    isFeatured: false,
+    username: "",
+    isVerified: false      // Add this new field
   });
 
 
@@ -205,92 +206,195 @@ const AdminPanel = () => {
   };
 
 
-  const createGirlProfile = async () => {
-    const requiredFields = [
-      "name", "email", "age", "city", "height", "interests", "bio", "profileImage"
-    ];
+  // const createGirlProfile = async () => {
+  //   const requiredFields = [
+  //     "name", "email", "age", "city", "height", "interests", "bio", "profileImage"
+  //   ];
 
-    // Add username validation if featured is enabled
-    if (girlForm.isFeatured && !girlForm.username.trim()) {
+  //   // Add username validation if featured is enabled
+  //   if (girlForm.isFeatured && !girlForm.username.trim()) {
+  //     return toast({
+  //       title: "Username Required",
+  //       description: "Please provide a username for featured profiles.",
+  //       variant: "destructive"
+  //     });
+  //   }
+
+  //   for (let field of requiredFields) {
+  //     if (!girlForm[field] || girlForm[field].toString().trim() === "") {
+  //       return toast({
+  //         title: `Please fill in all required fields.`,
+  //         description: `${field.charAt(0).toUpperCase() + field.slice(1)} is missing.`,
+  //         variant: "destructive"
+  //       });
+  //     }
+  //   }
+
+  //   try {
+  //     if (!girlForm.profileImage) {
+  //       return toast({ title: "Please select a profile image", variant: "destructive" });
+  //     }
+
+  //     const token = localStorage.getItem("token");
+  //     const profileImageUrl = girlForm.profileImage;  // Already a URL
+  //     const galleryUrls = girlForm.gallery;
+
+  //     // Create profile with featured fields
+  //     await axios.post(`${BASE_URL}/admin/create-girl-profile`, {
+  //       name: girlForm.name,
+  //       email: girlForm.email,
+  //       password: "default123",
+  //       age: girlForm.age,
+  //       city: girlForm.city,
+  //       height: girlForm.height,
+  //       interests: girlForm.interests,
+  //       bio: girlForm.bio,
+  //       profile_image_url: profileImageUrl,
+  //       gallery_image_urls: galleryUrls,
+  //       is_featured: girlForm.isFeatured,        // New field
+  //       username: girlForm.username              // New field
+  //     }, {
+  //       headers: { Authorization: `Bearer ${token}` }
+  //     });
+
+  //     toast({
+  //       title: girlForm.isFeatured ? "Featured profile created successfully! ⭐" : "Girl profile created successfully",
+  //       description: girlForm.isFeatured ? `Profile will be accessible at /${girlForm.username}` : undefined
+  //     });
+
+  //     // Reset form
+  //     setGirlForm({
+  //       name: '',
+  //       email: '',
+  //       age: '',
+  //       city: '',
+  //       height: '',
+  //       interests: '',
+  //       bio: '',
+  //       profileImage: '',
+  //       gallery: [],
+  //       imagePreview: null,
+  //       galleryPreviews: [],
+  //       isFeatured: false,
+  //       username: ''
+  //     });
+  //     setLocationInput('');
+  //     setLocationSuggestions([]);
+  //     setSelectedLocation('');
+
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast({
+  //       title: "Failed to create profile",
+  //       description: err.response?.data?.error || "Unknown error occurred",
+  //       variant: "destructive"
+  //     });
+  //   }
+  // };
+
+
+  const createGirlProfile = async () => {
+  const requiredFields = [
+    "name", "email", "age", "city", "height", "interests", "bio", "profileImage"
+  ];
+
+  // Add username validation if featured is enabled
+  if (girlForm.isFeatured && !girlForm.username.trim()) {
+    return toast({
+      title: "Username Required",
+      description: "Please provide a username for featured profiles.",
+      variant: "destructive"
+    });
+  }
+
+  for (let field of requiredFields) {
+    if (!girlForm[field] || girlForm[field].toString().trim() === "") {
       return toast({
-        title: "Username Required",
-        description: "Please provide a username for featured profiles.",
+        title: `Please fill in all required fields.`,
+        description: `${field.charAt(0).toUpperCase() + field.slice(1)} is missing.`,
         variant: "destructive"
       });
     }
+  }
 
-    for (let field of requiredFields) {
-      if (!girlForm[field] || girlForm[field].toString().trim() === "") {
-        return toast({
-          title: `Please fill in all required fields.`,
-          description: `${field.charAt(0).toUpperCase() + field.slice(1)} is missing.`,
-          variant: "destructive"
-        });
-      }
+  try {
+    if (!girlForm.profileImage) {
+      return toast({ title: "Please select a profile image", variant: "destructive" });
     }
 
-    try {
-      if (!girlForm.profileImage) {
-        return toast({ title: "Please select a profile image", variant: "destructive" });
-      }
+    const token = localStorage.getItem("token");
+    const profileImageUrl = girlForm.profileImage;
+    const galleryUrls = girlForm.gallery;
 
-      const token = localStorage.getItem("token");
-      const profileImageUrl = girlForm.profileImage;  // Already a URL
-      const galleryUrls = girlForm.gallery;
+    // Create profile with featured and verified fields
+    await axios.post(`${BASE_URL}/admin/create-girl-profile`, {
+      name: girlForm.name,
+      email: girlForm.email,
+      password: "default123",
+      age: girlForm.age,
+      city: girlForm.city,
+      height: girlForm.height,
+      interests: girlForm.interests,
+      bio: girlForm.bio,
+      profile_image_url: profileImageUrl,
+      gallery_image_urls: galleryUrls,
+      is_featured: girlForm.isFeatured,
+      username: girlForm.username,
+      is_verified: girlForm.isVerified    // Add this line
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-      // Create profile with featured fields
-      await axios.post(`${BASE_URL}/admin/create-girl-profile`, {
-        name: girlForm.name,
-        email: girlForm.email,
-        password: "default123",
-        age: girlForm.age,
-        city: girlForm.city,
-        height: girlForm.height,
-        interests: girlForm.interests,
-        bio: girlForm.bio,
-        profile_image_url: profileImageUrl,
-        gallery_image_urls: galleryUrls,
-        is_featured: girlForm.isFeatured,        // New field
-        username: girlForm.username              // New field
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+    // Enhanced success message with verification status
+    let successMessage = "Girl profile created successfully";
+    let description = "";
+    
+    if (girlForm.isFeatured && girlForm.isVerified) {
+      successMessage = "Featured & Verified profile created successfully! ⭐🛡️";
+      description = `Profile will be accessible at /${girlForm.username} with verification badge`;
+    } else if (girlForm.isFeatured) {
+      successMessage = "Featured profile created successfully! ⭐";
+      description = `Profile will be accessible at /${girlForm.username}`;
+    } else if (girlForm.isVerified) {
+      successMessage = "Verified profile created successfully! 🛡️";
+      description = "Profile will display with verification badge";
+    }
 
-      toast({
-        title: girlForm.isFeatured ? "Featured profile created successfully! ⭐" : "Girl profile created successfully",
-        description: girlForm.isFeatured ? `Profile will be accessible at /${girlForm.username}` : undefined
-      });
+    toast({
+      title: successMessage,
+      description: description
+    });
 
-      // Reset form
-      setGirlForm({
-        name: '',
-        email: '',
-        age: '',
-        city: '',
-        height: '',
-        interests: '',
-        bio: '',
-        profileImage: '',
-        gallery: [],
-        imagePreview: null,
-        galleryPreviews: [],
-        isFeatured: false,
-        username: ''
-      });
-      setLocationInput('');
+    // Reset form (include isVerified in reset)
+    setGirlForm({
+      name: '',
+      email: '',
+      age: '',
+      city: '',
+      height: '',
+      interests: '',
+      bio: '',
+      profileImage: '',
+      gallery: [],
+      imagePreview: null,
+      galleryPreviews: [],
+      isFeatured: false,
+      username: '',
+      isVerified: false    // Add this line
+    });
+    setLocationInput('');
     setLocationSuggestions([]);
     setSelectedLocation('');
 
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Failed to create profile",
-        description: err.response?.data?.error || "Unknown error occurred",
-        variant: "destructive"
-      });
-    }
-  };
-
+  } catch (err) {
+    console.error(err);
+    toast({
+      title: "Failed to create profile",
+      description: err.response?.data?.error || "Unknown error occurred",
+      variant: "destructive"
+    });
+  }
+};
 
   const handleAction = async (action, userId) => {
     if (action === 'Delete') {
@@ -550,6 +654,32 @@ const AdminPanel = () => {
                               </p>
                             </div>
                           )}
+                          {/* Verified Profile Toggle */}
+<div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+  <div className="flex items-center justify-between mb-0">
+    <div className="flex items-center space-x-2">
+      <Shield className="w-5 h-5 text-emerald-500" />
+      <Label htmlFor="verified-toggle" className="font-medium text-gray-900">
+        Verified Profile
+      </Label>
+    </div>
+    <button
+      type="button"
+      id="verified-toggle"
+      onClick={() => setGirlForm({ ...girlForm, isVerified: !girlForm.isVerified })}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+        girlForm.isVerified ? 'bg-emerald-500' : 'bg-gray-300'
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${
+          girlForm.isVerified ? 'translate-x-6' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  </div>
+  
+</div>
 
                           <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -569,13 +699,13 @@ const AdminPanel = () => {
                             <div>
                               <Label htmlFor="girl-height">Height</Label>
                               <Input
-  id="girl-height"
-  type="text"
-  placeholder="e.g., 5'7\"
-  value={girlForm.height}
-  onChange={(e) => setGirlForm({ ...girlForm, height: e.target.value })}
-  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-/>
+                                id="girl-height"
+                                type="text"
+                                placeholder="e.g., 5'7\"
+                                value={girlForm.height}
+                                onChange={(e) => setGirlForm({ ...girlForm, height: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                              />
                             </div>
                           </div>
                         </div>

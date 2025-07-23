@@ -110,79 +110,80 @@ const ChatPage = () => {
 
   // Function to fetch all conversations
   const fetchAllConversations = useCallback(async () => {
-    setIsLoadingConversations(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/me/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+  setIsLoadingConversations(true);
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/me/conversations`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (data.conversations) {
-        const conversationsWithMessages = await Promise.all(
-          data.conversations.map(async (conv) => {
-            // Fetch messages for each conversation
-            const messagesRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/messages/${conv.conversation_id}`, {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-
-            const messagesData = await messagesRes.json();
-            const messages = Array.isArray(messagesData.messages)
-              ? messagesData.messages.map((msg) => ({
-                id: msg.id,
-                text: msg.content,
-                message_type: msg.message_type,
-                gift_id: msg.gift_id,
-                gift_name: msg.gift_name,
-                gift_image_path: msg.gift_image_path,
-                image_url: msg.image_url,
-                senderId: msg.sender_id,
-                sent_at: new Date(msg.sent_at).getTime(), // Keep raw timestamp for sorting
-                timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // Display format
-                status: 'delivered',
-              }))
-              : [];
-
-            // Format last message with "You:" prefix if sent by current user
-            const lastMsg = messages[messages.length - 1];
-            let formattedLastMessage = 'Tap to continue...';
-            if (lastMsg) {
-              formattedLastMessage = lastMsg.senderId === user?.id
-                ? `You: ${lastMsg.text}`
-                : lastMsg.text;
+    if (data.conversations) {
+      const conversationsWithMessages = await Promise.all(
+        data.conversations.map(async (conv) => {
+          // Fetch messages for each conversation
+          const messagesRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/messages/${conv.conversation_id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
             }
+          });
 
-            return {
-              id: conv.conversation_id,
-              girlId: conv.girl_id,
-              name: conv.girl_name,
-              avatar: conv.avatar || '/default-avatar.jpg',
-              lastMessage: formattedLastMessage,
-              timestamp: 'now',
-              unread: 0,
-              online: true,
-              messages: messages,
-              lastActivity: new Date(conv.last_activity).getTime(),
-            };
-          })
-        );
+          const messagesData = await messagesRes.json();
+          const messages = Array.isArray(messagesData.messages)
+            ? messagesData.messages.map((msg) => ({
+              id: msg.id,
+              text: msg.content,
+              message_type: msg.message_type,
+              gift_id: msg.gift_id,
+              gift_name: msg.gift_name,
+              gift_image_path: msg.gift_image_path,
+              image_url: msg.image_url,
+              senderId: msg.sender_id,
+              sent_at: new Date(msg.sent_at).getTime(), // Keep raw timestamp for sorting
+              timestamp: new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // Display format
+              status: 'delivered',
+            }))
+            : [];
 
-        setConversations(conversationsWithMessages);
-      }
-    } catch (err) {
-      console.error('Failed to fetch conversations:', err);
-      toast({
-        title: "Error",
-        description: "Failed to reload conversation list. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoadingConversations(false);
+          // Format last message with "You:" prefix if sent by current user
+          const lastMsg = messages[messages.length - 1];
+          let formattedLastMessage = 'Tap to continue...';
+          if (lastMsg) {
+            formattedLastMessage = lastMsg.senderId === user?.id
+              ? `You: ${lastMsg.text}`
+              : lastMsg.text;
+          }
+
+          return {
+            id: conv.conversation_id,
+            girlId: conv.girl_id,
+            name: conv.girl_name,
+            avatar: conv.avatar || '/default-avatar.jpg',
+            is_verified: conv.is_verified, // Add this line
+            lastMessage: formattedLastMessage,
+            timestamp: 'now',
+            unread: 0,
+            online: true,
+            messages: messages,
+            lastActivity: new Date(conv.last_activity).getTime(),
+          };
+        })
+      );
+
+      setConversations(conversationsWithMessages);
     }
-  }, [toast, user?.id]);
+  } catch (err) {
+    console.error('Failed to fetch conversations:', err);
+    toast({
+      title: "Error",
+      description: "Failed to reload conversation list. Please try again.",
+      variant: "destructive"
+    });
+  } finally {
+    setIsLoadingConversations(false);
+  }
+}, [toast, user?.id]);
 
   // Function to fetch messages for a specific conversation
   const fetchMessagesForConversation = useCallback(async (conversationId) => {

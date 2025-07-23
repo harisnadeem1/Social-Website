@@ -119,9 +119,25 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className={`font-medium text-gray-900 truncate ${showNewMessagesBadge ? 'font-semibold' : ''}`}>
-                        {conversation.name}
-                      </h3>
+                      {/* Name with Verified Tick */}
+                      <div className="flex items-center">
+                        <h3 className={`font-medium text-gray-900 truncate ${showNewMessagesBadge ? 'font-semibold' : ''}`}>
+                          {conversation.name}
+                        </h3>
+                        {/* Verified Tick - Only show if conversation is verified */}
+                        {conversation.is_verified && (
+                          <img
+                            src="/bluetick/verified.png"
+                            alt="Verified"
+                            className="w-4 h-4 ml-1 flex-shrink-0"
+                            title="Verified Profile"
+                            onError={(e) => {
+                              // Fallback if image doesn't load
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs text-gray-500">
                           {formatTime(latestMessageTime)}
@@ -171,8 +187,6 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
             </div>
           </div>
         )}
-
-       
       </div>
     </div>
   );

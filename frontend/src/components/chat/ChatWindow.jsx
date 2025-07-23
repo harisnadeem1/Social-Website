@@ -393,12 +393,30 @@ const ChatWindow = ({
             </Avatar>
 
             <div>
-              <h3 className="font-semibold text-gray-900 flex items-center">
-                {selectedChat.name}
-                {isLoadingMessages && (
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin text-gray-500" />
-                )}
-              </h3>
+              {/* Name with Verified Tick */}
+              <div className="flex items-center">
+                <h3 className="font-semibold text-gray-900 flex items-center">
+                  <span>{selectedChat.name}</span>
+
+                  {/* Verified Tick - Only show if chat is verified */}
+                  {selectedChat.is_verified && (
+                    <img
+                      src="/bluetick/verified.png"
+                      alt="Verified"
+                      className="w-5 h-5 ml-2"
+                      title="Verified Profile"
+                      onError={(e) => {
+                        // Fallback if image doesn't load
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  )}
+
+                  {isLoadingMessages && (
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin text-gray-500" />
+                  )}
+                </h3>
+              </div>
               <p className="text-sm text-gray-500">
                 {isChatter ? `Replying as ${selectedChat.participants.girl.name}` : (selectedChat.online ? 'Active now' : `Last seen ${selectedChat.lastSeen || '1 hour ago'}`)}
               </p>
@@ -413,7 +431,6 @@ const ChatWindow = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-
                 <DropdownMenuItem onClick={() => handleShowProfile(selectedChat.girlId)}>
                   View Profile
                 </DropdownMenuItem>

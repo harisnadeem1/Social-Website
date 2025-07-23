@@ -50,41 +50,41 @@ const NotificationsPage = () => {
     };
 
     const handleNotificationClick = async (notif) => {
-    if (!['wink', 'message', 'like'].includes(notif.type) || !notif.sender_id) {
-        return;
-    }
-
-    const token = localStorage.getItem('token');
-
-    try {
-        // Step 1: Start or get conversation with the sender
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations/start/${notif.sender_id}`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.conversationId) {
-            // Navigate to chat with sender's user_id and name (if available)
-            const nameParam = notif.sender_name ? `&name=${encodeURIComponent(notif.sender_name)}` : '';
-            navigate(`/chat?user=${notif.sender_id}${nameParam}`);
-        } else {
-            throw new Error(data.message || "Could not start conversation.");
+        if (!['wink', 'message', 'like'].includes(notif.type) || !notif.sender_id) {
+            return;
         }
 
-    } catch (err) {
-        console.error("Start chat from notification error:", err);
-        toast({
-            title: "Chat Error", 
-            description: err.message || "Could not start chat. Try again later.",
-            variant: "destructive"
-        });
-    }
-};
+        const token = localStorage.getItem('token');
+
+        try {
+            // Step 1: Start or get conversation with the sender
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conversations/start/${notif.sender_id}`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.conversationId) {
+                // Navigate to chat with sender's user_id and name (if available)
+                const nameParam = notif.sender_name ? `&name=${encodeURIComponent(notif.sender_name)}` : '';
+                navigate(`/chat?user=${notif.sender_id}${nameParam}`);
+            } else {
+                throw new Error(data.message || "Could not start conversation.");
+            }
+
+        } catch (err) {
+            console.error("Start chat from notification error:", err);
+            toast({
+                title: "Chat Error",
+                description: err.message || "Could not start chat. Try again later.",
+                variant: "destructive"
+            });
+        }
+    };
 
     useEffect(() => {
         if (user) fetchNotifications();
@@ -120,13 +120,18 @@ const NotificationsPage = () => {
                                         alt="Profile"
                                         className="w-12 h-12 rounded-full object-cover"
                                     />
-                                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-md">
-                                        <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM7 9H5v2h2V9zm8 0h-2v2h2V9zM6.293 13.707a1 1 0 011.414 0A4.978 4.978 0 0010 15c.89 0 1.735-.234 2.293-.707a1 1 0 011.414 1.414A6.978 6.978 0 0110 17a6.978 6.978 0 01-4.707-1.793 1 1 0 010-1.414z" />
-                                        </svg>
+                                    <div className="absolute -bottom-1 -right-1 text-xl">
+                                        {notif.type === 'wink' && <span>😉</span>}
+                                        {notif.type === 'like' && <span>❤️</span>}
+                                        {notif.type === 'message' && (
+                                            <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM7 9H5v2h2V9zm8 0h-2v2h2V9zM6.293 13.707a1 1 0 011.414 0A4.978 4.978 0 0010 15c.89 0 1.735-.234 2.293-.707a1 1 0 011.414 1.414A6.978 6.978 0 0110 17a6.978 6.978 0 01-4.707-1.793 1 1 0 010-1.414z" />
+                                            </svg>
+                                        )}
                                     </div>
                                 </div>
                             )}
+
 
                             {/* ✅ Main content */}
                             <div className="flex-1 text-sm text-gray-800">

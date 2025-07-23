@@ -3,19 +3,19 @@ const db = require('../config/db'); // PostgreSQL db instance
 
 
 const fetchUserConversations = async (userId) => {
-
   const query = `
-   SELECT 
-  c.id AS conversation_id,
-  u.id AS girl_id,
-  u.full_name AS girl_name,
-  p.profile_image_url AS avatar,
-  c.last_activity
-FROM conversations c
-JOIN users u ON c.girl_id = u.id
-LEFT JOIN profiles p ON p.user_id = u.id
-WHERE c.user_id = $1
-ORDER BY c.last_activity DESC
+    SELECT 
+      c.id AS conversation_id,
+      u.id AS girl_id,
+      u.full_name AS girl_name,
+      p.profile_image_url AS avatar,
+      p.is_verified,
+      c.last_activity
+    FROM conversations c
+    JOIN users u ON c.girl_id = u.id
+    LEFT JOIN profiles p ON p.user_id = u.id
+    WHERE c.user_id = $1
+    ORDER BY c.last_activity DESC
   `;
   const result = await db.query(query, [userId]);
   return result.rows;
