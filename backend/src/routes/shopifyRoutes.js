@@ -45,15 +45,15 @@ router.post(
 
             console.log("📝 Extracted Note:", finalNote);
 
-            // Extract user_id and coins from note string
-            const userIdMatch = finalNote.match(/user_id:([^;]+)/);
-            const coinsMatch = finalNote.match(/coins:([^;]+)/);
+            // Extract user_id and coins (works with comma, semicolon, extra spaces, extra text)
+            const userIdMatch = finalNote.match(/user_id\s*:\s*([0-9]+)/i);
+            const coinsMatch = finalNote.match(/coins\s*:\s*([0-9]+)/i);
 
             if (!userIdMatch || !coinsMatch) {
-                throw new Error("Missing or invalid user_id or coins in order note");
+                throw new Error(`Missing or invalid user_id or coins in order note: ${finalNote}`);
             }
 
-            const userId = userIdMatch[1];
+            const userId = parseInt(userIdMatch[1], 10);
             const coins = parseInt(coinsMatch[1], 10);
 
             // Start transaction
