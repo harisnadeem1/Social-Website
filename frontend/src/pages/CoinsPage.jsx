@@ -31,7 +31,7 @@ const CoinsPage = () => {
 
   // Shopify configuration - UPDATE THESE VALUES
   const SHOPIFY_CONFIG = {
-    domain: '365dailyprayers.com', // Replace with your Shopify domain
+    domain: 'payments.liebenly.com', // Replace with your Shopify domain
     storefrontAccessToken: 'your-storefront-access-token', // Replace with your token
     // Map each package to a Shopify variant ID
     productVariants: {
