@@ -25,38 +25,47 @@ router.post(
 
         try {
             const order = req.body;
-            console.log("📦 Shopify Order Payload:", JSON.stringify(order, null, 2));
 
+            // Debug log full order object
+            console.log("🔹 Shopify Order Payload:", JSON.stringify(order, null, 2));
+
+            // Shopify sometimes sends customer note here:
             const note = order.note || "";
-            console.log("📝 Order Note:", note);
 
-            // Parse note into key/value pairs
-            const noteParts = note.split(";").reduce((acc, part) => {
-                const [key, value] = part.split(":").map((x) => x?.trim());
-                if (key && value) acc[key] = value;
-                return acc;
-            }, {});
+            // Shopify might send custom attributes here:
+            let attrsNote = "";
+            if (order.note_attributes && order.note_attributes.length > 0) {
+                attrsNote = order.note_attributes
+                    .map(attr => `${attr.name}:${attr.value}`)
+                    .join(";");
+            }
 
-            const userId = noteParts.user_id;
-            const coins = parseInt(noteParts.coins, 10);
+            // Use whichever has data
+            const finalNote = note || attrsNote;
 
-            if (!userId || isNaN(coins)) {
+            console.log("📝 Extracted Note:", finalNote);
+
+            // Extract user_id and coins from note string
+            const userIdMatch = finalNote.match(/user_id:([^;]+)/);
+            const coinsMatch = finalNote.match(/coins:([^;]+)/);
+
+            if (!userIdMatch || !coinsMatch) {
                 throw new Error("Missing or invalid user_id or coins in order note");
             }
 
-            // Start DB transaction
+            const userId = userIdMatch[1];
+            const coins = parseInt(coinsMatch[1], 10);
+
+            // Start transaction
             await client.query("BEGIN");
 
-            // 1️⃣ Add coins to user
-            const updateResult = await client.query(
-                "UPDATE users SET coins = coins + $1 WHERE id = $2 RETURNING coins",
+            // Add coins to user
+            await client.query(
+                "UPDATE users SET coins = coins + $1 WHERE id = $2",
                 [coins, userId]
             );
-            if (updateResult.rowCount === 0) {
-                throw new Error(`User with id ${userId} not found`);
-            }
 
-            // 2️⃣ Insert into transactions table
+            // Log the transaction
             await client.query(
                 `INSERT INTO transactions (user_id, amount, transaction_type, reference, status)
                  VALUES ($1, $2, 'coin_purchase', $3, 'completed')`,
