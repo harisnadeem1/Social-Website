@@ -1,11 +1,12 @@
 const express = require("express");
 const cors = require("cors");
+const bodyParser = require("body-parser");
 require("dotenv").config();
 
 const authRoutes = require("./src/routes/authRoutes");
 const profileRoutes = require('./src/routes/profileRoutes');
-const adminRouter = require("./src/routes/adminRoutes"); // adjust path as needed
-const girlRoutes = require("./src/routes/girlRoutes");
+const adminRouter = require("./src/routes/adminRoutes");
+const girlRoutes = require('./src/routes/girlRoutes');
 const winkRoutes = require('./src/routes/winkRoutes');
 const likeRoutes = require('./src/routes/likeRoutes');
 const coinRoutes = require('./src/routes/coinsRoutes');
@@ -14,7 +15,6 @@ const conversationRoutes = require('./src/routes/conversationRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
 const chatterRoutes = require('./src/routes/chatterRoutes');
 const chatterLockRoutes = require('./src/routes/chatterLockRoutes');
-
 const chatterLikeRoutes = require('./src/routes/chatterLikes');
 const boostRoutes = require('./src/routes/boostRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
@@ -25,57 +25,47 @@ const publicProfileRoutes = require('./src/routes/publicProfileRoutes');
 const autoEngagementRoutes = require('./src/routes/autoEngagementRoutes');
 const mobilenavRoutes = require('./src/routes/mobilenav');
 
-
-
-
-
-
+// Shopify webhook routes
+const shopifyRoutes = require("./src/routes/shopifyRoutes");
 
 const app = express();
-// app.use(cors());
 
-
+// --- CORS ---
 app.use(cors({
-  origin: ["http://localhost:5173", "http://91.99.139.75","https://liebenly.com"],
+  origin: ["http://localhost:5173", "http://91.99.139.75", "https://liebenly.com"],
   credentials: true
 }));
 
+// --- Shopify raw body middleware for webhook verification ---
+app.use('/api/shopify/webhook/orders-paid', bodyParser.raw({ type: 'application/json' }));
 
+// --- Standard JSON body parser for all other routes ---
+app.use(bodyParser.json());
 
-app.use(express.json());
-
+// --- Routes ---
 app.use("/api/auth", authRoutes);
-
-
 app.use('/api/profile', profileRoutes);
-
-app.use("/api/admin", adminRouter); // This means /api/admin/create is valid
+app.use("/api/admin", adminRouter);
 app.use("/api/girls", girlRoutes);
 app.use('/api/coins', coinRoutes);
-
 app.use('/api/winks', winkRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/users', userConversationRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
-
 app.use('/api/chatter', chatterRoutes);
 app.use('/api/chatter-lock', chatterLockRoutes);
 app.use('/api/auto-engagement', autoEngagementRoutes);
-
-
 app.use('/api/chatter/likes', chatterLikeRoutes);
 app.use('/api/boost-profile', boostRoutes);
 app.use('/api/notifications', notificationRoutes);
-
 app.use('/api/users/settings', userRoutes);
 app.use('/api/gifts', giftRoutes);
-
 app.use('/api/images', imageRoutes);
 app.use('/api/public', publicProfileRoutes);
-
 app.use('/api/mobilenav', mobilenavRoutes);
 
-
+// Shopify webhook handler
+app.use('/api/shopify', shopifyRoutes);
 
 module.exports = app;

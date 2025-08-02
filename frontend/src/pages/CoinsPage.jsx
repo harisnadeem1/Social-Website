@@ -23,11 +23,29 @@ import AuthContext from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const CoinsPage = () => {
-  const { coins } = useContext(AuthContext);
+  const { coins, user } = useContext(AuthContext); // Added user from context
   const { toast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const TOTAL_TIME = 30 * 60; // 30 minutes in seconds
+
+  // Shopify configuration - UPDATE THESE VALUES
+  const SHOPIFY_CONFIG = {
+    domain: '365dailyprayers.com', // Replace with your Shopify domain
+    storefrontAccessToken: 'your-storefront-access-token', // Replace with your token
+    // Map each package to a Shopify variant ID
+    productVariants: {
+      1: '44465038393481', // Quick Hello
+      2: '44465082138761', // Starter Spark
+      3: '44465082171529', // Flirty Vibes
+      4: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_4', // Romantic Bundle
+      5: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_5', // True Connection
+      6: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_6', // Elite Charmer
+      7: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_7', // Soulmate Hunter
+      8: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_8', // Lover's Legacy
+      9: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_9', // The Eternal Bond
+    }
+  };
 
   const [timeLeft, setTimeLeft] = useState(() => {
     const savedStart = localStorage.getItem('countdown_start_time');
@@ -81,6 +99,122 @@ const CoinsPage = () => {
         {price.slice(1)}
       </>
     );
+  };
+
+  // NEW: Function to create Shopify checkout using Storefront API
+  const createShopifyCheckout = async (packageData) => {
+    try {
+      const variantId = SHOPIFY_CONFIG.productVariants[packageData.id];
+      
+      if (!variantId) {
+        throw new Error('Product variant not found');
+      }
+
+      // Create checkout using Shopify Storefront API
+      const checkoutMutation = `
+        mutation checkoutCreate($input: CheckoutCreateInput!) {
+          checkoutCreate(input: $input) {
+            checkout {
+              id
+              webUrl
+            }
+            checkoutUserErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        input: {
+          lineItems: [
+            {
+              variantId: variantId,
+              quantity: 1
+            }
+          ],
+          note: `user_id:${user?.id || user?.email || 'anonymous'};package_id:${packageData.id};coins:${packageData.coins + packageData.bonus}`,
+          customAttributes: [
+            {
+              key: "user_id",
+              value: user?.id?.toString() || user?.email || 'anonymous'
+            },
+            {
+              key: "package_name",
+              value: packageData.name
+            },
+            {
+              key: "total_coins",
+              value: (packageData.coins + packageData.bonus).toString()
+            },
+            {
+              key: "base_coins",
+              value: packageData.coins.toString()
+            },
+            {
+              key: "bonus_coins",
+              value: packageData.bonus.toString()
+            }
+          ]
+        }
+      };
+
+      const response = await fetch(`https://${SHOPIFY_CONFIG.domain}/api/2023-10/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': SHOPIFY_CONFIG.storefrontAccessToken,
+        },
+        body: JSON.stringify({
+          query: checkoutMutation,
+          variables: variables
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.data?.checkoutCreate?.checkout?.webUrl) {
+        // Redirect to Shopify checkout
+        window.location.href = result.data.checkoutCreate.checkout.webUrl;
+      } else {
+        throw new Error('Failed to create checkout');
+      }
+
+    } catch (error) {
+      console.error('Shopify checkout error:', error);
+      toast({
+        title: "Checkout Error",
+        description: "Unable to process payment. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // NEW: Alternative method using direct cart URL (simpler but less flexible)
+  const redirectToShopifyCart = (packageData) => {
+    const variantId = SHOPIFY_CONFIG.productVariants[packageData.id];
+    
+    if (!variantId) {
+      toast({
+        title: "Product Error",
+        description: "Product not found. Please contact support.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Extract numeric ID from Shopify GID
+    const numericVariantId = variantId.split('/').pop();
+    
+    // Create cart note with user information
+    const cartNote = `user_id:${user?.id || user?.email || 'anonymous'};package_id:${packageData.id};coins:${packageData.coins + packageData.bonus}`;
+    
+    // Construct Shopify cart URL
+    const shopifyUrl = `https://${SHOPIFY_CONFIG.domain}/cart/${numericVariantId}:1?note=${encodeURIComponent(cartNote)}`;
+    
+    // Redirect to Shopify
+    window.location.href = shopifyUrl;
   };
 
 const coinPackages = [
@@ -191,7 +325,7 @@ const coinPackages = [
   },
   {
     id: 8,
-    name: "Lover’s Legacy",
+    name: "Lover's Legacy",
     coins: 1025,
     bonus: 150,
     price: '€249.00',
@@ -229,19 +363,33 @@ const coinPackages = [
   }
 ];
 
-
   const handlePurchaseClick = (packageData) => {
     setSelectedPackage(packageData);
     setShowPurchaseModal(true);
   };
 
+  // UPDATED: Handle buy now with Shopify integration
   const handleBuyNow = () => {
     setShowPurchaseModal(false);
-    toast({
-      title: "Payment system not configured yet",
-      description: "Please check back soon. We're working on integrating secure payment options! 💳",
-      variant: "destructive"
-    });
+    
+    if (!user?.id && !user?.email) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to purchase coins.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Choose between Storefront API or direct cart redirect
+    // For more control, use createShopifyCheckout
+    // For simplicity, use redirectToShopifyCart
+    
+    // Option 1: Using Storefront API (recommended)
+    //createShopifyCheckout(selectedPackage);
+    
+    // Option 2: Direct cart redirect (uncomment to use instead)
+    redirectToShopifyCart(selectedPackage);
   };
 
   return (
@@ -275,22 +423,6 @@ const coinPackages = [
             <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
               Find your perfect match faster with premium features and exclusive bonuses
             </p>
-
-            {/* Clean Social Proof */}
-            {/* <div className="flex items-center justify-center space-x-8 mb-8">
-              <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-gray-700">127K+ Happy Couples</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <span className="text-sm font-medium text-gray-700">4.9/5 Rating</span>
-              </div>
-            </div> */}
           </div>
 
           {/* Left-Aligned Card Layout */}
@@ -314,7 +446,6 @@ const coinPackages = [
                         </Badge>
                       </div>
                     )}
-
 
                     <CardContent className="p-8 px-4">
                       {/* Package Name */}
@@ -402,20 +533,17 @@ const coinPackages = [
                       <div className="text-xxs text-gray-400">
                         <div className="flex items-center">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span className="leading-none">Refill For Only $0.9 A Day
-</span>
+                          <span className="leading-none">Refill For Only $0.9 A Day</span>
                         </div>
                         <div className="flex items-center -mt-[2px]">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span className="leading-none">Stay active and keep messaging
-</span>
+                          <span className="leading-none">Stay active and keep messaging</span>
                         </div>
                         <div className="flex items-center -mt-[2px]">
                           <Check className="w-3 h-3 text-gray-400 mr-2" />
-                          <span className="leading-none">“No More Dates” fast cancellation</span>
+                          <span className="leading-none">"No More Dates" fast cancellation</span>
                         </div>
                       </div>
-
                     </CardContent>
                   </Card>
                 </motion.div>
