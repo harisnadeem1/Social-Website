@@ -1,89 +1,11 @@
-const express = require("express");
-const crypto = require("crypto");
-const pool = require("../config/db"); // PostgreSQL connection
-
+const express = require('express');
 const router = express.Router();
+const ShopifyController = require('../controllers/shopifyController');
 
-// Verify Shopify webhook signature
-function verifyShopifyWebhook(req, res, buf) {
-    const hmac = req.get("X-Shopify-Hmac-Sha256");
-    const generatedHash = crypto
-        .createHmac("sha256", process.env.SHOPIFY_WEBHOOK_SECRET)
-        .update(buf, "utf8")
-        .digest("base64");
+// Webhook endpoints (no auth required for webhooks)
+router.post('/webhook/order/paid', ShopifyController.handleOrderPaid);
 
-    if (generatedHash !== hmac) {
-        throw new Error("Invalid Shopify webhook signature");
-    }
-}
-
-router.post(
-    "/webhook/orders-paid",
-    express.json({ verify: verifyShopifyWebhook }),
-    async (req, res) => {
-        const client = await pool.connect();
-
-        try {
-            const order = req.body;
-
-            // Debug log full order object
-            console.log("🔹 Shopify Order Payload:", JSON.stringify(order, null, 2));
-
-            // Shopify sometimes sends customer note here:
-            const note = order.note || "";
-
-            // Shopify might send custom attributes here:
-            let attrsNote = "";
-            if (order.note_attributes && order.note_attributes.length > 0) {
-                attrsNote = order.note_attributes
-                    .map(attr => `${attr.name}:${attr.value}`)
-                    .join(";");
-            }
-
-            // Use whichever has data
-            const finalNote = note || attrsNote;
-
-            console.log("📝 Extracted Note:", finalNote);
-
-            // Extract user_id and coins (works with comma, semicolon, extra spaces, extra text)
-            const userIdMatch = finalNote.match(/user_id\s*:\s*([0-9]+)/i);
-            const coinsMatch = finalNote.match(/coins\s*:\s*([0-9]+)/i);
-
-            if (!userIdMatch || !coinsMatch) {
-                throw new Error(`Missing or invalid user_id or coins in order note: ${finalNote}`);
-            }
-
-            const userId = parseInt(userIdMatch[1], 10);
-            const coins = parseInt(coinsMatch[1], 10);
-
-            // Start transaction
-            await client.query("BEGIN");
-
-            // Add coins to user
-            await client.query(
-                "UPDATE users SET coins = coins + $1 WHERE id = $2",
-                [coins, userId]
-            );
-
-            // Log the transaction
-            await client.query(
-                `INSERT INTO transactions (user_id, amount, transaction_type, reference, status)
-                 VALUES ($1, $2, 'coin_purchase', $3, 'completed')`,
-                [userId, coins, `shopify_order_${order.id}`]
-            );
-
-            await client.query("COMMIT");
-
-            console.log(`✅ Added ${coins} coins to user ${userId}`);
-            res.status(200).send("OK");
-        } catch (err) {
-            await client.query("ROLLBACK");
-            console.error("❌ Shopify webhook error:", err);
-            res.status(400).send("Webhook error");
-        } finally {
-            client.release();
-        }
-    }
-);
+// Coin balance endpoint (with auth)
+router.get('/coins/balance', ShopifyController.getCoinBalanceAPI);
 
 module.exports = router;
