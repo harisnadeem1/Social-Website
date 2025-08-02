@@ -38,12 +38,12 @@ const CoinsPage = () => {
       1: '44465038393481', // Quick Hello
       2: '44465082138761', // Starter Spark
       3: '44465082171529', // Flirty Vibes
-      4: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_4', // Romantic Bundle
-      5: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_5', // True Connection
-      6: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_6', // Elite Charmer
-      7: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_7', // Soulmate Hunter
-      8: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_8', // Lover's Legacy
-      9: 'gid://shopify/ProductVariant/YOUR_VARIANT_ID_9', // The Eternal Bond
+      4: '44467883704457', // Romantic Bundle
+      5: '44467883737225', // True Connection
+      6: '44467883769993', // Elite Charmer
+      7: '44467883802761', // Soulmate Hunter
+      8: '44467883835529', // Lover's Legacy
+      9: '44467883868297', // The Eternal Bond
     }
   };
 
