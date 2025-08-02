@@ -208,7 +208,7 @@ const CoinsPage = () => {
     const numericVariantId = variantId.split('/').pop();
     
     // Create cart note with user information
-    const cartNote = `user_id:${user?.id || user?.email || 'anonymous'};package_id:${packageData.id};coins:${packageData.coins + packageData.bonus}`;
+    const cartNote = `user_id:${user?.id };package_price:${packageData.price};coins:${packageData.coins + packageData.bonus}`;
     
     // Construct Shopify cart URL
     const shopifyUrl = `https://${SHOPIFY_CONFIG.domain}/cart/${numericVariantId}:1?note=${encodeURIComponent(cartNote)}`;

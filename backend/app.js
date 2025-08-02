@@ -26,8 +26,7 @@ const autoEngagementRoutes = require('./src/routes/autoEngagementRoutes');
 const mobilenavRoutes = require('./src/routes/mobilenav');
 
 // Shopify integration
-const shopifyWebhookMiddleware = require("./src/middleware/shopifyWebhookMiddleware");
-const shopifyRoutes = require("./src/routes/shopifyRoutes");
+const shopifyRoutes = require("./src/routes/shopify");
 
 const app = express();
 
@@ -37,13 +36,13 @@ app.use(cors({
   credentials: true
 }));
 
-// --- Shopify webhook middleware (MUST be before bodyParser.json()) ---
-app.use('/api/shopify', shopifyWebhookMiddleware);
+// --- Shopify webhook routes with raw body parser (MUST be before bodyParser.json()) ---
+app.use('/api/shopify', express.raw({ type: 'application/json' }), shopifyRoutes);
 
 // --- Standard JSON body parser for all other routes ---
 app.use(bodyParser.json());
 
-// --- Routes ---
+// --- Other Routes ---
 app.use("/api/auth", authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use("/api/admin", adminRouter);
@@ -65,8 +64,5 @@ app.use('/api/gifts', giftRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/public', publicProfileRoutes);
 app.use('/api/mobilenav', mobilenavRoutes);
-
-// --- Shopify webhook routes ---
-app.use('/api/shopify', shopifyRoutes);
 
 module.exports = app;
