@@ -27,6 +27,21 @@ const ChatterChatWindow = ({
   const [userProfileData, setUserProfileData] = useState(null);
   const [girlProfileData, setGirlProfileData] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
+
+  // Track current conversation to prevent message mixing
+  useEffect(() => {
+    if (selectedChat?.conversation_id !== currentConversationId) {
+      setCurrentConversationId(selectedChat?.conversation_id);
+      // Clear any previous state when switching conversations
+      setShowMenu(false);
+      setShowUserProfileModal(false);
+      setShowGirlProfileModal(false);
+      setUserProfileData(null);
+      setGirlProfileData(null);
+      setShowEmojiPicker(false);
+    }
+  }, [selectedChat?.conversation_id, currentConversationId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,28 +54,55 @@ const ChatterChatWindow = ({
     }
   };
 
+  // Enhanced message handling with strict validation
   useEffect(() => {
-    if (!selectedChat || !newIncomingMessage) return;
+    if (!selectedChat || !newIncomingMessage || !currentConversationId) return;
 
-    if (newIncomingMessage.conversation_id === selectedChat.conversation_id) {
-      const formatted = {
-        id: newIncomingMessage.id || Date.now(),
-        senderId: newIncomingMessage.sender_id,
-        text: newIncomingMessage.content,
-        message_type: newIncomingMessage.message_type || 'text',
-        gift_id: newIncomingMessage.gift_id,
-        gift_name: newIncomingMessage.gift_name,
-        gift_image_path: newIncomingMessage.gift_image_path,
-        image_url: newIncomingMessage.image_url,
-        timestamp: formatTime(newIncomingMessage.sent_at),
-      };
+    // Only process messages for the current conversation
+    if (newIncomingMessage.conversation_id !== currentConversationId) {
+      console.log(`Ignoring message for conversation ${newIncomingMessage.conversation_id}, current is ${currentConversationId}`);
+      return;
+    }
 
-      setSelectedChat((prev) => ({
+    // Validate sender belongs to this conversation
+    const expectedUserIds = [selectedChat.user_id, selectedChat.girl_id];
+    if (!expectedUserIds.includes(newIncomingMessage.sender_id)) {
+      console.warn(`Rejecting message with invalid sender ${newIncomingMessage.sender_id} for conversation ${currentConversationId}`);
+      return;
+    }
+
+    const formatted = {
+      id: newIncomingMessage.id || Date.now(),
+      senderId: newIncomingMessage.sender_id,
+      text: newIncomingMessage.content,
+      message_type: newIncomingMessage.message_type || 'text',
+      gift_id: newIncomingMessage.gift_id,
+      gift_name: newIncomingMessage.gift_name,
+      gift_image_path: newIncomingMessage.gift_image_path,
+      image_url: newIncomingMessage.image_url,
+      timestamp: formatTime(newIncomingMessage.sent_at),
+      conversation_id: currentConversationId,
+    };
+
+    // Only add if message doesn't already exist and belongs to current conversation
+    setSelectedChat((prev) => {
+      if (!prev || prev.conversation_id !== currentConversationId) {
+        return prev;
+      }
+
+      const messageExists = prev.messages.some(msg => msg.id === formatted.id);
+      if (messageExists) {
+        console.log(`Message ${formatted.id} already exists, skipping`);
+        return prev;
+      }
+
+      console.log(`Adding new message ${formatted.id} to conversation ${currentConversationId}`);
+      return {
         ...prev,
         messages: [...prev.messages, formatted],
-      }));
-    }
-  }, [newIncomingMessage]);
+      };
+    });
+  }, [newIncomingMessage, selectedChat, currentConversationId]);
 
   const formatTime = (timestamp) => {
     if (timestamp === 'now') return 'now';
@@ -81,7 +123,7 @@ const ChatterChatWindow = ({
   }
 
   const userProfile = allUsers.find(u => u.id === selectedChat.participants.user.id);
-  console.log(selectedChat);
+  console.log('Current selectedChat:', selectedChat);
 
   const fetchProfileData = async (userId, setProfileFn) => {
     try {
@@ -100,8 +142,33 @@ const ChatterChatWindow = ({
     }
   };
 
+  // Validate messages belong to current conversation
+  const validMessages = selectedChat.messages?.filter(msg => {
+    const expectedUserIds = [selectedChat.user_id, selectedChat.girl_id];
+    const isValidSender = expectedUserIds.includes(msg.senderId);
+    const hasConversationId = !msg.conversation_id || msg.conversation_id === selectedChat.conversation_id;
+    
+    if (!isValidSender) {
+      console.warn(`Filtering out message ${msg.id} with invalid sender ${msg.senderId}`);
+      return false;
+    }
+    
+    if (!hasConversationId) {
+      console.warn(`Filtering out message ${msg.id} from wrong conversation`);
+      return false;
+    }
+    
+    return true;
+  }) || [];
+
+  // Remove duplicate messages by ID
+  const uniqueMessages = validMessages.filter((msg, index, arr) => 
+    arr.findIndex(m => m.id === msg.id) === index
+  );
+
   return (
     <div className="h-full flex flex-col flex-1">
+      {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -159,6 +226,7 @@ const ChatterChatWindow = ({
         </div>
       </div>
 
+      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {isLockedByOther ? (
           <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center space-x-2">
@@ -177,11 +245,11 @@ const ChatterChatWindow = ({
         )}
 
         <AnimatePresence>
-          {selectedChat.messages.map((msg) => {
+          {uniqueMessages.map((msg) => {
             const isGirlMessage = msg.senderId === selectedChat.participants.girl.id;
             return (
               <motion.div
-                key={msg.id}
+                key={`${msg.id}-${selectedChat.conversation_id}`} // Ensure unique keys per conversation
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
@@ -225,6 +293,7 @@ const ChatterChatWindow = ({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input Area */}
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(prev => !prev)}>
@@ -255,6 +324,7 @@ const ChatterChatWindow = ({
             </div>
           )}
 
+          {/* Profile Modals */}
           {showUserProfileModal && userProfileData && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
               <div className="bg-white rounded-lg max-w-md w-full p-6 relative">

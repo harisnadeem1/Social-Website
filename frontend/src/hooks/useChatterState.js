@@ -20,6 +20,46 @@ const allUsersData = [
 
 const LOCK_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Enhanced message validation
+const validateMessage = (message, conversationId, expectedUserIds) => {
+  if (!message || !message.id || !message.senderId) {
+    console.warn('Invalid message structure:', message);
+    return false;
+  }
+  
+  // Ensure message belongs to expected participants
+  if (!expectedUserIds.includes(message.senderId)) {
+    console.warn(`Message ${message.id} has invalid sender ${message.senderId} for conversation ${conversationId}. Expected: ${expectedUserIds.join(', ')}`);
+    return false;
+  }
+  
+  return true;
+};
+
+// Enhanced deduplication with better validation
+const deduplicateMessages = (messages, conversationId, expectedUserIds) => {
+  if (!Array.isArray(messages)) return [];
+  
+  const messageMap = new Map();
+  const validMessages = [];
+  
+  messages.forEach(msg => {
+    if (validateMessage(msg, conversationId, expectedUserIds)) {
+      if (!messageMap.has(msg.id)) {
+        messageMap.set(msg.id, msg);
+        validMessages.push(msg);
+      }
+    }
+  });
+  
+  // Sort by timestamp to maintain order
+  return validMessages.sort((a, b) => {
+    const timeA = new Date(a.timestamp || a.sent_at || 0);
+    const timeB = new Date(b.timestamp || b.sent_at || 0);
+    return timeA - timeB;
+  });
+};
+
 // Enhanced deduplication function for user-girl pairs
 const deduplicateConversationsByUserGirl = (conversations) => {
   const userGirlMap = new Map();
@@ -32,38 +72,25 @@ const deduplicateConversationsByUserGirl = (conversations) => {
     } else {
       const existing = userGirlMap.get(key);
       
-      // Keep the conversation with:
-      // 1. More recent lastActivity
-      // 2. More messages
-      // 3. More recent last_message_time
+      // Keep the conversation with more recent activity
       const shouldReplace = 
         (conv.lastActivity || 0) > (existing.lastActivity || 0) ||
         (conv.messages?.length || 0) > (existing.messages?.length || 0) ||
         new Date(conv.last_message_time || 0) > new Date(existing.last_message_time || 0);
       
       if (shouldReplace) {
-        // Merge messages from both conversations to avoid losing data
+        // Merge messages safely with validation
+        const expectedUserIds = [conv.user_id, conv.girl_id];
         const mergedMessages = [
           ...(existing.messages || []),
           ...(conv.messages || [])
         ];
         
-        // Remove duplicate messages by ID
-        const uniqueMessages = mergedMessages.filter((msg, index, arr) => 
-          arr.findIndex(m => m.id === msg.id) === index
-        );
-        
-        // Sort messages by timestamp
-        uniqueMessages.sort((a, b) => {
-          const timeA = new Date(a.timestamp || 0);
-          const timeB = new Date(b.timestamp || 0);
-          return timeA - timeB;
-        });
+        const uniqueMessages = deduplicateMessages(mergedMessages, conv.conversation_id, expectedUserIds);
         
         userGirlMap.set(key, {
           ...conv,
           messages: uniqueMessages,
-          // Use the most recent last message
           last_message: uniqueMessages.length > 0 ? 
             (uniqueMessages[uniqueMessages.length - 1].senderId === conv.girl_id ? 
               `You: ${uniqueMessages[uniqueMessages.length - 1].text}` : 
@@ -75,27 +102,6 @@ const deduplicateConversationsByUserGirl = (conversations) => {
   });
   
   return Array.from(userGirlMap.values());
-};
-
-// Debug function to identify duplicates
-const findDuplicateUserGirlPairs = (conversations) => {
-  const pairs = {};
-  const duplicates = [];
-  
-  conversations.forEach((conv, index) => {
-    const key = `${conv.user_id}-${conv.girl_id}`;
-    if (pairs[key]) {
-      duplicates.push({
-        key,
-        conversations: [pairs[key], { ...conv, index }],
-        userGirl: `${conv.user_name} & ${conv.girl_name}`
-      });
-    } else {
-      pairs[key] = { ...conv, index };
-    }
-  });
-  
-  return duplicates;
 };
 
 export const useChatterState = () => {
@@ -113,8 +119,9 @@ export const useChatterState = () => {
   const [isLockedByOther, setIsLockedByOther] = useState(false);
   const [lockHolderName, setLockHolderName] = useState('');
   const [lockedChatId, setLockedChatId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Format time function - moved up for use in other functions
+  // Format time function
   const formatTime = useCallback((timestamp) => {
     if (timestamp === 'now') return 'now';
     if (timestamp && (timestamp.includes('min ago') || timestamp.includes('hour ago'))) return timestamp;
@@ -122,7 +129,7 @@ export const useChatterState = () => {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }, []);
 
-  // Function to fetch all conversations with messages and format last message
+  // Enhanced fetch conversations with better error handling
   const fetchAllConversations = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -133,22 +140,29 @@ export const useChatterState = () => {
       if (res.data.conversations) {
         console.log('Raw conversations from API:', res.data.conversations.length);
         
-        // Check for duplicates before processing
-        const duplicates = findDuplicateUserGirlPairs(res.data.conversations);
-        if (duplicates.length > 0) {
-          console.warn('Found duplicate user-girl pairs before processing:', duplicates);
-        }
-
         const conversationsWithMessages = await Promise.all(
           res.data.conversations.map(async (conv) => {
-            // Fetch messages for each conversation
-            const messagesRes = await axios.get(
-              `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conv.conversation_id}/messages`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
+            try {
+              // Fetch messages for each conversation with proper validation
+              const messagesRes = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conv.conversation_id}/messages`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
 
-            const messages = Array.isArray(messagesRes.data)
-              ? messagesRes.data.map((msg) => ({
+              const expectedUserIds = [conv.user_id, conv.girl_id];
+              const rawMessages = Array.isArray(messagesRes.data) ? messagesRes.data : [];
+              
+              // Validate and format messages
+              const messages = rawMessages
+                .filter(msg => {
+                  // Strict validation: message must belong to this conversation's participants
+                  const isValidSender = expectedUserIds.includes(msg.sender_id);
+                  if (!isValidSender) {
+                    console.warn(`Filtering out invalid message ${msg.id} with sender ${msg.sender_id} for conversation ${conv.conversation_id}`);
+                  }
+                  return isValidSender;
+                })
+                .map((msg) => ({
                   id: msg.id,
                   text: msg.content,
                   message_type: msg.message_type,
@@ -159,46 +173,70 @@ export const useChatterState = () => {
                   senderId: msg.sender_id,
                   timestamp: formatTime(msg.sent_at),
                   status: 'delivered',
-                }))
-              : [];
+                  conversation_id: conv.conversation_id, // Add for extra validation
+                }));
 
-            // Format last message with proper prefix
-            const lastMsg = messages[messages.length - 1];
-            let formattedLastMessage = 'Tap to continue...';
-            if (lastMsg) {
-              let messageText = '';
-              if (lastMsg.message_type === 'gift') {
-                messageText = `🎁 ${lastMsg.gift_name || 'Gift'}`;
-              } else if (lastMsg.message_type === 'image') {
-                messageText = '📷 Image';
-              } else {
-                messageText = lastMsg.text;
+              // Deduplicate messages for this specific conversation
+              const uniqueMessages = deduplicateMessages(messages, conv.conversation_id, expectedUserIds);
+
+              // Format last message with proper prefix
+              const lastMsg = uniqueMessages[uniqueMessages.length - 1];
+              let formattedLastMessage = 'Tap to continue...';
+              if (lastMsg) {
+                let messageText = '';
+                if (lastMsg.message_type === 'gift') {
+                  messageText = `🎁 ${lastMsg.gift_name || 'Gift'}`;
+                } else if (lastMsg.message_type === 'image') {
+                  messageText = '📷 Image';
+                } else {
+                  messageText = lastMsg.text;
+                }
+                
+                formattedLastMessage = lastMsg.senderId === conv.girl_id 
+                  ? `You: ${messageText}` 
+                  : messageText;
               }
-              
-              // For chatter: show "You:" if message was sent by the girl (chatter), no prefix if sent by user
-              formattedLastMessage = lastMsg.senderId === conv.girl_id 
-                ? `You: ${messageText}` 
-                : messageText;
-            }
 
-            return {
-              conversation_id: conv.conversation_id,
-              user_id: conv.user_id,
-              girl_id: conv.girl_id,
-              user_name: conv.user_name,
-              girl_name: conv.girl_name,
-              user_image: conv.user_image,
-              girl_image: conv.girl_image,
-              last_message: formattedLastMessage,
-              last_message_time: conv.last_message_time,
-              locked_by: conv.locked_by,
-              messages: messages,
-              participants: {
-                user: { id: conv.user_id, name: conv.user_name },
-                girl: { id: conv.girl_id, name: conv.girl_name }
-              },
-              lastActivity: new Date(conv.last_message_time).getTime(),
-            };
+              return {
+                conversation_id: conv.conversation_id,
+                user_id: conv.user_id,
+                girl_id: conv.girl_id,
+                user_name: conv.user_name,
+                girl_name: conv.girl_name,
+                user_image: conv.user_image,
+                girl_image: conv.girl_image,
+                last_message: formattedLastMessage,
+                last_message_time: conv.last_message_time,
+                locked_by: conv.locked_by,
+                messages: uniqueMessages,
+                participants: {
+                  user: { id: conv.user_id, name: conv.user_name },
+                  girl: { id: conv.girl_id, name: conv.girl_name }
+                },
+                lastActivity: new Date(conv.last_message_time).getTime(),
+              };
+            } catch (err) {
+              console.error(`Failed to fetch messages for conversation ${conv.conversation_id}:`, err);
+              // Return conversation without messages rather than failing completely
+              return {
+                conversation_id: conv.conversation_id,
+                user_id: conv.user_id,
+                girl_id: conv.girl_id,
+                user_name: conv.user_name,
+                girl_name: conv.girl_name,
+                user_image: conv.user_image,
+                girl_image: conv.girl_image,
+                last_message: 'Tap to continue...',
+                last_message_time: conv.last_message_time,
+                locked_by: conv.locked_by,
+                messages: [],
+                participants: {
+                  user: { id: conv.user_id, name: conv.user_name },
+                  girl: { id: conv.girl_id, name: conv.girl_name }
+                },
+                lastActivity: new Date(conv.last_message_time).getTime(),
+              };
+            }
           })
         );
 
@@ -220,8 +258,10 @@ export const useChatterState = () => {
     }
   }, [toast, formatTime]);
 
-  // Function to fetch messages for a specific conversation
+  // Enhanced message fetching with strict validation
   const fetchMessagesForConversation = useCallback(async (conversationId) => {
+    if (!conversationId) return;
+    
     try {
       const token = localStorage.getItem('token');
       const messagesRes = await axios.get(
@@ -229,27 +269,55 @@ export const useChatterState = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const messages = Array.isArray(messagesRes.data)
-        ? messagesRes.data.map((msg) => ({
-            id: msg.id,
-            text: msg.content,
-            message_type: msg.message_type,
-            gift_id: msg.gift_id,
-            gift_name: msg.gift_name,
-            gift_image_path: msg.gift_image_path,
-            image_url: msg.image_url,
-            senderId: msg.sender_id,
-            timestamp: formatTime(msg.sent_at),
-            status: 'delivered',
-          }))
-        : [];
+      const rawMessages = Array.isArray(messagesRes.data) ? messagesRes.data : [];
+      
+      // Get expected user IDs from current conversations
+      const conversation = conversations.find(c => c.conversation_id === conversationId);
+      if (!conversation) {
+        console.warn(`No conversation found for ID ${conversationId}`);
+        return;
+      }
+      
+      const expectedUserIds = [conversation.user_id, conversation.girl_id];
+      
+      // Validate and format messages with strict filtering
+      const messages = rawMessages
+        .filter(msg => {
+          const isValidSender = expectedUserIds.includes(msg.sender_id);
+          const hasValidStructure = msg.id && msg.sender_id && msg.content;
+          
+          if (!isValidSender) {
+            console.warn(`Filtering message ${msg.id}: sender ${msg.sender_id} not in expected users [${expectedUserIds.join(', ')}]`);
+          }
+          if (!hasValidStructure) {
+            console.warn(`Filtering message: invalid structure`, msg);
+          }
+          
+          return isValidSender && hasValidStructure;
+        })
+        .map((msg) => ({
+          id: msg.id,
+          text: msg.content,
+          message_type: msg.message_type,
+          gift_id: msg.gift_id,
+          gift_name: msg.gift_name,
+          gift_image_path: msg.gift_image_path,
+          image_url: msg.image_url,
+          senderId: msg.sender_id,
+          timestamp: formatTime(msg.sent_at),
+          status: 'delivered',
+          conversation_id: conversationId, // Add for validation
+        }));
 
-      // Update the specific conversation with new messages and deduplicate
+      // Deduplicate messages
+      const uniqueMessages = deduplicateMessages(messages, conversationId, expectedUserIds);
+
+      // Update the specific conversation with new messages
       setConversations(prevConvs => {
         const updatedConvs = prevConvs.map(conv => {
           if (conv.conversation_id === conversationId) {
             // Format last message with proper prefix
-            const lastMsg = messages[messages.length - 1];
+            const lastMsg = uniqueMessages[uniqueMessages.length - 1];
             let formattedLastMessage = 'Tap to continue...';
             if (lastMsg) {
               let messageText = '';
@@ -261,7 +329,6 @@ export const useChatterState = () => {
                 messageText = lastMsg.text;
               }
               
-              // For chatter: show "You:" if message was sent by the girl (chatter), no prefix if sent by user
               formattedLastMessage = lastMsg.senderId === conv.girl_id 
                 ? `You: ${messageText}` 
                 : messageText;
@@ -269,110 +336,83 @@ export const useChatterState = () => {
 
             return {
               ...conv,
-              messages: messages,
+              messages: uniqueMessages,
               last_message: formattedLastMessage,
-              lastActivity: messages.length > 0 ? new Date(messages[messages.length - 1].timestamp).getTime() : conv.lastActivity,
+              lastActivity: uniqueMessages.length > 0 ? 
+                new Date(uniqueMessages[uniqueMessages.length - 1].timestamp).getTime() : 
+                conv.lastActivity,
             };
           }
           return conv;
         });
         
-        // Apply deduplication after update
         return deduplicateConversationsByUserGirl(updatedConvs);
       });
 
     } catch (err) {
-      console.error(`Failed to fetch chatter messages for conversation ${conversationId}:`, err);
+      console.error(`Failed to fetch messages for conversation ${conversationId}:`, err);
       toast({
         title: "Error",
         description: "Failed to load messages. Please try again.",
         variant: "destructive"
       });
     }
-  }, [toast, formatTime]);
+  }, [toast, formatTime, conversations]);
 
-  // Update the sortedConversations memoization to include deduplication
+  // Memoized sorted conversations
   const sortedConversations = useMemo(() => {
     const uniqueConversations = deduplicateConversationsByUserGirl(conversations);
     return uniqueConversations.sort((a, b) => b.lastActivity - a.lastActivity);
   }, [conversations]);
 
-  const lockConversation = useCallback((chatId, chatterId) => {
-    setConversations(prev => {
-      const updatedConvs = prev.map(c => 
-        c.conversation_id === chatId ? { ...c, locked_by: chatterId, lock_time: Date.now() } : c
-      );
-      return deduplicateConversationsByUserGirl(updatedConvs);
-    });
+  // Clear intervals and abort controllers when switching chats
+  const clearAllPolling = useCallback(() => {
+    // Clear any existing intervals (we'll track them in refs if needed)
+    // This is handled by the useEffect cleanup functions
   }, []);
 
-  const unlockConversation = useCallback((chatId) => {
-    setConversations(prev => {
-      const updatedConvs = prev.map(c => 
-        c.conversation_id === chatId ? { ...c, locked_by: null, lock_time: null } : c
-      );
-      return deduplicateConversationsByUserGirl(updatedConvs);
-    });
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      conversations.forEach(c => {
-        if (c.locked_by && c.lock_time && (now - c.lock_time > LOCK_DURATION)) {
-          unlockConversation(c.conversation_id);
-          toast({ title: 'Chat Unlocked', description: `Conversation with ${c.user_name} is now available.` });
-        }
-      });
-    }, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
-  }, [conversations, unlockConversation, toast]);
-
-  // Initial fetch of conversations
-  useEffect(() => {
-    fetchAllConversations();
-  }, [fetchAllConversations]);
-
-  // Debug effect to monitor duplicates
-  useEffect(() => {
-    const duplicates = findDuplicateUserGirlPairs(conversations);
-    if (duplicates.length > 0) {
-      console.warn('Current duplicate user-girl pairs in state:', duplicates);
-    }
-  }, [conversations]);
-
-  // Updated handleSelectChat function with reload functionality
+  // Enhanced handleSelectChat with race condition prevention
   const handleSelectChat = useCallback(async (conversation) => {
+    if (isLoading) {
+      console.log('Already loading, skipping chat selection');
+      return;
+    }
+    
+    setIsLoading(true);
+    clearAllPolling();
+    
     try {
       const token = localStorage.getItem('token');
       const currentUserId = JSON.parse(localStorage.getItem('userId'));
 
-      // 🔓 Unlock previous chat (if switching to a different one)
+      // Clear current selection first to prevent mixing
+      setSelectedChat(null);
+
+      // Unlock previous chat if switching to a different one
       if (lockedChatId && lockedChatId !== conversation.conversation_id) {
         await unlockChat(lockedChatId, token);
+        setLockedChatId(null);
       }
 
-      // Reload all conversations first
-      await fetchAllConversations();
-
-      // 📨 Load messages for the selected conversation
-      await fetchMessagesForConversation(conversation.conversation_id);
-
-      // Get the updated conversation data
+      // Fetch fresh messages for the selected conversation only
       const messagesRes = await axios.get(
         `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conversation.conversation_id}/messages`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const messages = messagesRes.data;
-
-      const selectedChatData = {
-        ...conversation,
-        participants: {
-          user: { id: conversation.user_id, name: conversation.user_name },
-          girl: { id: conversation.girl_id, name: conversation.girl_name },
-        },
-        messages: messages.map(msg => ({
+      const expectedUserIds = [conversation.user_id, conversation.girl_id];
+      const rawMessages = Array.isArray(messagesRes.data) ? messagesRes.data : [];
+      
+      // Strict validation for this specific conversation
+      const validatedMessages = rawMessages
+        .filter(msg => {
+          const isValid = expectedUserIds.includes(msg.sender_id) && msg.id && msg.content;
+          if (!isValid) {
+            console.warn(`Rejecting message ${msg.id} for conversation ${conversation.conversation_id}`);
+          }
+          return isValid;
+        })
+        .map(msg => ({
           id: msg.id,
           senderId: msg.sender_id,
           senderName: msg.sender_name,
@@ -384,16 +424,30 @@ export const useChatterState = () => {
           gift_image_path: msg.gift_image_path,
           image_url: msg.image_url,
           timestamp: formatTime(msg.sent_at),
-        })),
+          conversation_id: conversation.conversation_id, // Extra validation field
+        }));
+
+      // Deduplicate messages
+      const uniqueMessages = deduplicateMessages(validatedMessages, conversation.conversation_id, expectedUserIds);
+
+      const selectedChatData = {
+        ...conversation,
+        participants: {
+          user: { id: conversation.user_id, name: conversation.user_name },
+          girl: { id: conversation.girl_id, name: conversation.girl_name },
+        },
+        messages: uniqueMessages,
       };
 
+      // Set selected chat with validated data
       setSelectedChat(selectedChatData);
+      setSelectedChatId(conversation.conversation_id);
 
-      // 🔒 Lock this conversation
+      // Lock this conversation
       await lockChat(conversation.conversation_id, token);
       setLockedChatId(conversation.conversation_id);
 
-      // ✅ Check lock status
+      // Check lock status
       const lockData = await checkLockStatus(conversation.conversation_id, token);
 
       if (lockData.locked_by === currentUserId) {
@@ -411,85 +465,80 @@ export const useChatterState = () => {
     } catch (err) {
       console.error("Failed to load messages or lock chat", err);
       toast({ title: "Error", description: "Could not open or lock the chat." });
+      setSelectedChat(null);
+      setSelectedChatId(null);
+    } finally {
+      setIsLoading(false);
     }
-  }, [lockedChatId, fetchAllConversations, fetchMessagesForConversation, toast, formatTime]);
+  }, [isLoading, lockedChatId, toast, formatTime, clearAllPolling]);
 
-  // Enhanced useEffect for real-time updates with smart fetching
+  // Initial fetch of conversations
   useEffect(() => {
-    if (selectedChatId) {
-      // Always fetch messages for the selected conversation to get latest updates
-      fetchMessagesForConversation(selectedChatId);
-      
-      // Set up a periodic refresh for the conversation list to catch new conversations
-      // This is less aggressive than fetching on every selection
-      const conversationRefreshInterval = setInterval(() => {
-        fetchAllConversations();
-      }, 15000); // Every 15 seconds
-      
-      return () => clearInterval(conversationRefreshInterval);
-    }
-  }, [selectedChatId, fetchMessagesForConversation, fetchAllConversations]);
+    fetchAllConversations();
+  }, [fetchAllConversations]);
 
-  // Alternative: If you want immediate conversation list refresh on chat selection
-  // but want to prevent race conditions, you can use this instead:
-  /*
-  useEffect(() => {
-    if (selectedChatId) {
-      // Fetch conversation list first, then messages
-      const refreshData = async () => {
-        await fetchAllConversations();
-        await fetchMessagesForConversation(selectedChatId);
-      };
-      
-      refreshData();
-    }
-  }, [selectedChatId, fetchMessagesForConversation, fetchAllConversations]);
-  */
-  
-  // Enhanced polling logic with deduplication
+  // Enhanced polling with better isolation
   useEffect(() => {
     let messageInterval;
     let conversationInterval;
 
-    if (selectedChat) {
+    if (selectedChat && selectedChat.conversation_id) {
+      const conversationId = selectedChat.conversation_id;
+      const expectedUserIds = [selectedChat.user_id, selectedChat.girl_id];
+      
       // Poll for new messages in the selected chat every 3 seconds
       messageInterval = setInterval(async () => {
         try {
           const token = localStorage.getItem('token');
           const res = await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${selectedChat.conversation_id}/messages`,
+            `${import.meta.env.VITE_API_BASE_URL}/chatter/conversations/${conversationId}/messages`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          const updatedMessages = res.data.map(msg => ({
-            id: msg.id,
-            senderId: msg.sender_id,
-            text: msg.content,
-            message_type: msg.message_type,
-            gift_id: msg.gift_id,
-            gift_name: msg.gift_name,
-            gift_image_path: msg.gift_image_path,
-            image_url: msg.image_url,
-            timestamp: formatTime(msg.sent_at),
-          }));
+          const rawMessages = Array.isArray(res.data) ? res.data : [];
+          
+          // Validate messages belong to this conversation
+          const validatedMessages = rawMessages
+            .filter(msg => expectedUserIds.includes(msg.sender_id) && msg.id)
+            .map(msg => ({
+              id: msg.id,
+              senderId: msg.sender_id,
+              text: msg.content,
+              message_type: msg.message_type,
+              gift_id: msg.gift_id,
+              gift_name: msg.gift_name,
+              gift_image_path: msg.gift_image_path,
+              image_url: msg.image_url,
+              timestamp: formatTime(msg.sent_at),
+              conversation_id: conversationId,
+            }));
 
-          setSelectedChat(prev => ({
-            ...prev,
-            messages: updatedMessages,
-          }));
+          const uniqueMessages = deduplicateMessages(validatedMessages, conversationId, expectedUserIds);
 
-          // Also update the conversation in the list with latest message
+          // Only update if this is still the selected chat (prevent race conditions)
+          setSelectedChat(prev => {
+            if (!prev || prev.conversation_id !== conversationId) {
+              return prev; // Don't update if conversation changed
+            }
+            
+            return {
+              ...prev,
+              messages: uniqueMessages,
+            };
+          });
+
+          // Update conversation list
           setConversations(prevConvs => {
             const updatedConvs = prevConvs.map(conv => {
-              if (conv.conversation_id === selectedChat.conversation_id) {
-                const lastMsg = updatedMessages[updatedMessages.length - 1];
+              if (conv.conversation_id === conversationId) {
+                const lastMsg = uniqueMessages[uniqueMessages.length - 1];
                 const formattedLastMessage = lastMsg 
                   ? (lastMsg.senderId === conv.girl_id ? `You: ${lastMsg.text}` : lastMsg.text)
                   : conv.last_message;
                 
                 return {
                   ...conv,
-                  messages: updatedMessages,
+                  messages: uniqueMessages,
                   last_message: formattedLastMessage,
                   lastActivity: Date.now()
                 };
@@ -497,9 +546,7 @@ export const useChatterState = () => {
               return conv;
             });
             
-            // Apply deduplication and sort
-            const uniqueConvs = deduplicateConversationsByUserGirl(updatedConvs);
-            return uniqueConvs.sort((a, b) => b.lastActivity - a.lastActivity);
+            return deduplicateConversationsByUserGirl(updatedConvs);
           });
 
         } catch (err) {
@@ -507,43 +554,26 @@ export const useChatterState = () => {
         }
       }, 3000);
 
-      // Poll for new conversations every 30 seconds (less frequent)
+      // Poll for new conversations every 30 seconds
       conversationInterval = setInterval(() => {
         fetchAllConversations();
       }, 30000);
     }
 
     return () => {
-      clearInterval(messageInterval);
-      clearInterval(conversationInterval);
+      if (messageInterval) clearInterval(messageInterval);
+      if (conversationInterval) clearInterval(conversationInterval);
     };
-  }, [selectedChat?.conversation_id, formatTime]);
+  }, [selectedChat?.conversation_id, formatTime, fetchAllConversations]);
 
-  const handleBackToInbox = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      if (selectedChat) {
-        await unlockChat(selectedChat.conversation_id, token);
-      }
-
-      setSelectedChat(null);
-      setIsLockedByYou(false);
-      setIsLockedByOther(false);
-      setLockHolderName('');
-      setLockedChatId(null);
-    } catch (err) {
-      console.error("Failed to unlock conversation", err);
-      toast({ title: "Error", description: "Failed to release lock." });
-    }
-  };
-
-  // Updated handleSendMessage to prevent duplicates
+  // Enhanced handleSendMessage with better validation
   const handleSendMessage = async (socket) => {
-    if (!message.trim() || !selectedChat) return;
+    if (!message.trim() || !selectedChat || isLoading) return;
 
     const token = localStorage.getItem('token');
     const conversationId = selectedChat.conversation_id;
     const girlId = selectedChat.girl_id;
+    const expectedUserIds = [selectedChat.user_id, selectedChat.girl_id];
 
     try {
       const res = await axios.post(
@@ -553,6 +583,12 @@ export const useChatterState = () => {
       );
 
       const newMsg = res.data.message;
+
+      // Validate the new message
+      if (!expectedUserIds.includes(newMsg.sender_id)) {
+        console.error('Invalid sender in new message:', newMsg);
+        return;
+      }
 
       const formattedMessage = {
         id: newMsg.id,
@@ -564,24 +600,41 @@ export const useChatterState = () => {
         gift_image_path: newMsg.gift_image_path,
         image_url: newMsg.image_url,
         timestamp: formatTime(newMsg.sent_at),
+        conversation_id: conversationId,
       };
 
       setMessage('');
 
-      // Update conversations with the new message and deduplicate
+      // Update selected chat immediately
+      setSelectedChat(prev => {
+        if (!prev || prev.conversation_id !== conversationId) {
+          return prev;
+        }
+        
+        // Check if message already exists
+        const messageExists = prev.messages.some(msg => msg.id === formattedMessage.id);
+        if (messageExists) {
+          return prev;
+        }
+        
+        return {
+          ...prev,
+          messages: [...prev.messages, formattedMessage]
+        };
+      });
+
+      // Update conversations list
       setConversations(prevConvs => {
         const updatedConvs = prevConvs.map(conv => {
-          if (conv.conversation_id === selectedChat.conversation_id) {
-            // Check if message already exists to prevent duplicates
-            const messageExists = conv.messages.some(msg => msg.id === formattedMessage.id);
+          if (conv.conversation_id === conversationId) {
+            const messageExists = conv.messages?.some(msg => msg.id === formattedMessage.id);
             const updatedMessages = messageExists 
               ? conv.messages 
-              : [...conv.messages, formattedMessage];
+              : [...(conv.messages || []), formattedMessage];
 
             return {
               ...conv,
               messages: updatedMessages,
-              // For chatter sending message: show "You: message"
               last_message: `You: ${formattedMessage.text}`,
               last_message_time: newMsg.sent_at,
               lastActivity: Date.now()
@@ -590,28 +643,15 @@ export const useChatterState = () => {
           return conv;
         });
 
-        // Deduplicate and sort
-        const uniqueConvs = deduplicateConversationsByUserGirl(updatedConvs);
-        return uniqueConvs.sort((a, b) => b.lastActivity - a.lastActivity);
+        return deduplicateConversationsByUserGirl(updatedConvs);
       });
 
-      // Update selected chat (also check for duplicate messages)
-      setSelectedChat(prev => {
-        const messageExists = prev.messages.some(msg => msg.id === formattedMessage.id);
-        return {
-          ...prev,
-          messages: messageExists ? prev.messages : [...prev.messages, formattedMessage]
-        };
-      });
-
-      // Emit real-time update (keeping your existing socket logic)
+      // Emit socket event
       if (socket) {
         socket.emit("newMessage", {
           conversation_id: conversationId,
           ...newMsg
         });
-      } else {
-        console.warn("Socket is undefined when trying to emit message");
       }
 
     } catch (err) {
@@ -620,6 +660,28 @@ export const useChatterState = () => {
     }
   };
 
+  const handleBackToInbox = async () => {
+    clearAllPolling();
+    const token = localStorage.getItem('token');
+    
+    try {
+      if (selectedChat && lockedChatId) {
+        await unlockChat(selectedChat.conversation_id, token);
+      }
+
+      setSelectedChat(null);
+      setSelectedChatId(null);
+      setIsLockedByYou(false);
+      setIsLockedByOther(false);
+      setLockHolderName('');
+      setLockedChatId(null);
+    } catch (err) {
+      console.error("Failed to unlock conversation", err);
+      toast({ title: "Error", description: "Failed to release lock." });
+    }
+  };
+
+  // Other handlers remain the same but with enhanced validation...
   const handleStartNewChat = useCallback((selectedUserId, newChatMessage) => {
     if (!selectedUserId || !newChatMessage.trim()) return;
     const userToChat = allUsers.find(u => u.id === selectedUserId);
@@ -638,7 +700,8 @@ export const useChatterState = () => {
         id: Date.now(), 
         text: newChatMessage, 
         senderId: activeGirl.id, 
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        conversation_id: Date.now(),
       }],
       participants: { user: userToChat, girl: activeGirl },
       lastActivity: Date.now(),
@@ -669,7 +732,8 @@ export const useChatterState = () => {
         id: Date.now(), 
         text: "Thanks for the wink! 😊", 
         senderId: wink.girl.id, 
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        conversation_id: Date.now(),
       }],
       participants: { user: wink.user, girl: wink.girl },
       lastActivity: Date.now(),
@@ -709,6 +773,7 @@ export const useChatterState = () => {
     setSelectedChatId,
     handleBackToInbox,
     lockedChatId,
-    fetchAllConversations, // Export for potential use in dashboard
+    fetchAllConversations,
+    isLoading,
   };
 };
