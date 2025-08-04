@@ -32,6 +32,8 @@ const ChatterSidebar = ({
         }
       });
       const data = await res.json();
+      console.log("Fetched likes: ", data);
+      console.log(data);
       setLikes(data);
     };
 
@@ -46,6 +48,7 @@ const ChatterSidebar = ({
         }
       });
       const data = await res.json();
+      console.log("Fetched winks: ", data);
       setWinks(data);
     };
 
