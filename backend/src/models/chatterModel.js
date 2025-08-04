@@ -98,22 +98,24 @@ const sendMessageFromGirl = async (conversationId, girlId, content) => {
 const getAllWinks = async () => {
   const query = `
     SELECT 
-  w.id, 
-  w.created_at, 
-  u.full_name AS user_name,
-  p.profile_image_url AS user_image,
-  p.name AS girl_name,
-  p.id AS girl_id,
-  w.status
-FROM winks w
-JOIN users u ON w.sender_id = u.id
-JOIN profiles p ON w.receiver_id = p.user_id
-ORDER BY w.created_at DESC
-LIMIT 50
+      w.id, 
+      w.created_at, 
+      u.full_name AS user_name,
+      p.profile_image_url AS user_image,
+      p.name AS girl_name,
+      p.id AS girl_id,
+      w.status
+    FROM winks w
+    JOIN users u ON w.sender_id = u.id
+    JOIN profiles p ON w.receiver_id = p.user_id
+    WHERE u.role = 'user'
+    ORDER BY w.created_at DESC
+    LIMIT 50
   `;
   const result = await db.query(query);
   return result.rows;
 };
+
 
 
 
