@@ -9,20 +9,23 @@ const { generateToken } = require('../utils/jwt');
 
 const registerUser = async (req, res) => {
   try {
-    const { email, password, full_name, role } = req.body;
+    const { email, password, role } = req.body;
 
-    if (!email || !password || !full_name || !role) {
-      return res.status(400).json({ error: "All fields are required" });
+    if (!email || !password || !role) {
+      return res.status(400).json({ error: "Email, password, and role are required" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Use email as default full_name or set it to null/empty string
+    const full_name = email.split('@')[0]; // Use email prefix as default name
+    
     const newUser = await createUserByEmail(email, hashedPassword, full_name, role);
 
     await createInitialCoinBalance(newUser.id);
 
     const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "30d", // Changed from 7d to 30d
     });
 
     res.status(201).json({ user: newUser, token });

@@ -12,6 +12,8 @@ const createProfile = async ({
   profile_image_url,
   name
 }) => {
+
+  console.log(user_id);
   const insertQuery = `
     INSERT INTO profiles 
     (user_id, age, gender, city, height, bio, interests, profile_image_url, name)

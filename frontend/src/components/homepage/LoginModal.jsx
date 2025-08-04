@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/use-toast';
 import AuthContext from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { GoogleLogin } from "@react-oauth/google";
+import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -20,66 +22,58 @@ const LoginModal = ({ open, onOpenChange, onSwitchToSignup }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleLoginSuccess = (data) => {
+    const { token, user } = data;
+
+    // Save to localStorage
+    localStorage.setItem('token', token);
+    localStorage.setItem('userId', user.id);
+
+    login({
+      id: user.id,
+      name: user.full_name,
+      email: user.email,
+      role: user.role,
+      avatar: user.profile?.profile_image_url || null,
+    });
+
+    toast({
+      title: `Welcome back, ${user.full_name}! 💕`,
+      description: user.role === 'admin' ? 'Admin access granted!' : 'Let\'s find your perfect match!',
+    });
+
+    // Clear form
+    setEmail('');
+    setPassword('');
+    onOpenChange(false);
+
+    // Conditional navigation
+    if(user.role === "admin"){
+      navigate("/admin");
+    } 
+    else if (user.role === "chatter") {
+      navigate("/chatter-dashboard");
+    }
+    else if (!user.profile) {
+      navigate("/create-profile", {
+        state: {
+          userId: user.id,
+          userData: user
+        }
+      });
+    }
+    else {
+      navigate("/dashboard");
+    }
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       const res = await axios.post(`${BASE_URL}/auth/login`, { email, password });
-
-      const { token, user } = res.data;
-
-      // Save to localStorage (optional)
-      localStorage.setItem('token', token);
-      localStorage.setItem('userId', user.id); // for profile creation
-
-      login({
-        id: user.id,
-        name: user.full_name,
-        email: user.email,
-        role: user.role,
-        avatar: user.profile?.profile_image_url || null,
-      });
-
-      toast({
-        title: `Welcome back, ${user.full_name}! 💕`,
-        description: user.role === 'admin' ? 'Admin access granted!' : 'Let\'s find your perfect match!',
-      });
-
-      setEmail('');
-      setPassword('');
-      onOpenChange(false);
-
-      // Conditional navigation
-
-      
-//     if (!user.profile) {
-//   navigate("/create-profile", {
-//     state: {
-//       userId: user.id,
-//       userData: user
-//     }
-//   });
-// }
-if(user.role === "admin"){
-  navigate("/admin");
-} 
-else if (user.role === "chatter") {
-  navigate("/chatter-dashboard");
-}
-else if (!user.profile) {
-  navigate("/create-profile", {
-    state: {
-      userId: user.id,
-      userData: user
-    }
-  });
-}
-
-else {
-  navigate("/dashboard");
-}
-
+      handleLoginSuccess(res.data);
     } catch (err) {
       console.error(err);
       toast({
@@ -92,6 +86,45 @@ else {
     setIsLoading(false);
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // Step 1: Register or fetch existing user
+      const res = await axios.post(`${BASE_URL}/auth/google`, {
+        credential: credentialResponse.credential,
+      });
+
+      const { email, password, isNewUser } = res.data;
+
+      // Step 2: Login with generated password
+      const loginRes = await axios.post(`${BASE_URL}/auth/login`, {
+        email,
+        password,
+      });
+
+      // Step 3: Pass skipProfile based on isNewUser
+      handleLoginSuccess(loginRes.data, !isNewUser);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Google signup/login failed", variant: "destructive" });
+    }
+  };
+
+  const handleFacebookResponse = async (response) => {
+    try {
+      const resLogin = await axios.post(`${BASE_URL}/auth/facebook-login`, {
+        accessToken: response.accessToken,
+      });
+
+      handleLoginSuccess(resLogin.data);
+    } catch (error) {
+      toast({
+        title: "Facebook login failed",
+        description: error.response?.data?.error || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -100,6 +133,32 @@ else {
             Welcome Back
           </DialogTitle>
         </DialogHeader>
+
+        {/* Social Login Buttons */}
+        <div className="flex flex-col gap-3 mb-4">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => toast({ title: "Google Login Failed", variant: "destructive" })}
+          />
+          <FacebookLogin
+            appId={import.meta.env.VITE_FACEBOOK_APP_ID}
+            autoLoad={false}
+            fields="name,email,picture"
+            callback={handleFacebookResponse}
+            render={(renderProps) => (
+              <Button onClick={renderProps.onClick} className="bg-blue-600 text-white w-full">
+                Continue with Facebook
+              </Button>
+            )}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-4 my-4">
+          <div className="flex-1 h-px bg-gray-300"></div>
+          <span className="text-sm text-gray-500">or</span>
+          <div className="flex-1 h-px bg-gray-300"></div>
+        </div>
 
         <form onSubmit={handleLoginSubmit} className="space-y-4">
           <div>

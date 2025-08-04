@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Toaster } from '@/components/ui/toaster';
+import { GoogleOAuthProvider } from "@react-oauth/google"; // ✅ Added
 import PublicHomepage from '@/pages/PublicHomepage';
 import Dashboard from '@/pages/Dashboard';
 import ProfileDetail from '@/pages/ProfileDetail';
@@ -21,7 +22,6 @@ import BottomNav from './components/BottomNav';
 import NotificationsPage from '@/pages/NotificationsPage';
 import PublicProfilePage from '@/pages/PublicProfilePage';
 
-
 import AboutUsPage from '@/pages/info/AboutUsPage';
 import ContactPage from '@/pages/info/ContactPage';
 import CareersPage from '@/pages/info/CareersPage';
@@ -31,17 +31,72 @@ import TermsAndConditionsPage from '@/pages/info/TermsAndConditionsPage';
 import CookiePolicyPage from '@/pages/info/CookiePolicyPage';
 import SafetyTipsPage from '@/pages/info/SafetyTipsPage';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 const HomeRedirect = () => {
   const { user, loading } = React.useContext(AuthContext);
 
-  if (loading) {
-    return null; 
-  }
+  if (loading) return null;
 
   if (!user) return <PublicHomepage />;
   if (user.role === 'admin') return <Navigate to="/admin" />;
   if (user.role === 'chatter') return <Navigate to="/chatter-dashboard" />;
   return <Dashboard />;
+};
+
+const AppContent = ({ user, login, logout, coins, updateCoins, loading }) => {
+  const location = useLocation();
+
+  const hideBottomNavPaths = [
+    '/create-profile',
+    '/admin',
+    '/chatter-dashboard'
+  ];
+
+  const showBottomNav =
+    user &&
+    user.role === 'user' &&
+    !hideBottomNavPaths.includes(location.pathname);
+
+  return (
+    <div className={`min-h-screen bg-gray-50 ${showBottomNav ? 'pb-14' : ''} lg:pb-0`}>
+      <Helmet>
+        <title>Liebenly - Find Your Perfect Match Today</title>
+        <meta
+          name="description"
+          content="Join Liebenly, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment."
+        />
+      </Helmet>
+
+      <Routes>
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="/create-profile" element={<PrivateRoute><ProfileCreation /></PrivateRoute>} />
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/profile/:id" element={<PrivateRoute><ProfileDetail /></PrivateRoute>} />
+        <Route path="/coins" element={<PrivateRoute><CoinsPage /></PrivateRoute>} />
+        <Route path="/search" element={<PrivateRoute><SearchPage /></PrivateRoute>} />
+        <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
+        <Route path="/my-profile" element={<PrivateRoute><MyProfile /></PrivateRoute>} />
+        <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+        <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+        <Route path="/chatter-dashboard" element={<ChatterRoute><ChatterDashboard /></ChatterRoute>} />
+
+        <Route path="/about" element={<AboutUsPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+        <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+        <Route path="/safety-tips" element={<SafetyTipsPage />} />
+        <Route path="/:username" element={<PublicProfilePage />} />
+      </Routes>
+
+      {showBottomNav && <BottomNav />}
+      <Toaster />
+    </div>
+  );
 };
 
 function App() {
@@ -52,7 +107,7 @@ function App() {
   useEffect(() => {
     const savedUser = localStorage.getItem('flirtduo_user');
     const savedCoins = localStorage.getItem('flirtduo_coins');
-    
+
     if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
@@ -61,7 +116,7 @@ function App() {
         localStorage.removeItem('flirtduo_user');
       }
     }
-    
+
     if (savedCoins) {
       setCoins(parseInt(savedCoins, 10));
     }
@@ -71,10 +126,10 @@ function App() {
   const login = (userData) => {
     setUser(userData);
     localStorage.setItem('flirtduo_user', JSON.stringify(userData));
-    if(userData.role === 'user') {
-        const initialCoins = 100;
-        setCoins(initialCoins);
-        localStorage.setItem('flirtduo_coins', initialCoins.toString());
+    if (userData.role === 'user') {
+      const initialCoins = 100;
+      setCoins(initialCoins);
+      localStorage.setItem('flirtduo_coins', initialCoins.toString());
     }
   };
 
@@ -88,56 +143,23 @@ function App() {
     setCoins(newCoins);
     localStorage.setItem('flirtduo_coins', newCoins.toString());
   };
-const showBottomNav = user && user.role === 'user';
+
   return (
-    
-    <AuthContext.Provider value={{ user, login, logout, coins, updateCoins, loading }}>
-      <Router>
-        <div className={`min-h-screen bg-gray-50 ${showBottomNav ? 'pb-14' : ''} lg:pb-0`}>
-          <Helmet>
-            <title>Liebenly - Find Your Perfect Match Today</title>
-            <meta name="description" content="Join Liebenly, the modern dating platform where real connections happen. Find love, make meaningful relationships, and discover your perfect match in a safe and private environment." />
-          </Helmet>
-          
-          <Routes>
-            <Route path="/" element={<HomeRedirect />} />
-              <Route path="/create-profile" element={<PrivateRoute><ProfileCreation /></PrivateRoute>} />
-            <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            <Route path="/profile/:id" element={<PrivateRoute><ProfileDetail /></PrivateRoute>} />
-            <Route path="/coins" element={<PrivateRoute><CoinsPage /></PrivateRoute>} />
-            <Route path="/search" element={<PrivateRoute><SearchPage /></PrivateRoute>} />
-            <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
-            <Route path="/my-profile" element={<PrivateRoute><MyProfile /></PrivateRoute>} />
-            <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
-            <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminPanel />
-              </AdminRoute>
-            } />
-            <Route path="/chatter-dashboard" element={
-              <ChatterRoute>
-                <ChatterDashboard />
-              </ChatterRoute>
-            } />
-
-
-             <Route path="/about" element={<AboutUsPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/careers" element={<CareersPage />} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
-            <Route path="/cookie-policy" element={<CookiePolicyPage />} />
-            <Route path="/safety-tips" element={<SafetyTipsPage />} />
-            <Route path="/:username" element={<PublicProfilePage />} />
-          </Routes>
-          {showBottomNav && <BottomNav />}
-          <Toaster />
-        </div>
-      </Router>
-    </AuthContext.Provider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}> {/* ✅ FIX */}
+      <AuthContext.Provider value={{ user, login, logout, coins, updateCoins, loading }}>
+        <Router>
+          <AppContent
+            user={user}
+            login={login}
+            logout={logout}
+            coins={coins}
+            updateCoins={updateCoins}
+            loading={loading}
+          />
+        </Router>
+      </AuthContext.Provider>
+    </GoogleOAuthProvider>
   );
-};
+}
 
 export default App;

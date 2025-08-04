@@ -14,8 +14,11 @@ const createProfile = async (req, res) => {
       profile_image_url,
     } = req.body;
 
-    if (!name|| !user_id || !age || !gender || !city || !bio) {
-      return res.status(400).json({ error: "Required fields missing" });
+    console.log("Creating profile for user:", user_id);
+
+    // Only require essential fields: name, user_id, age, gender, city
+    if (!name || !user_id || !age || !gender || !city) {
+      return res.status(400).json({ error: "Required fields missing: name, age, gender, and city are required" });
     }
 
     const newProfile = await profileModel.createProfile({
@@ -24,10 +27,10 @@ const createProfile = async (req, res) => {
       age,
       gender,
       city,
-      height,
-      bio,
-      interests,
-      profile_image_url,
+      height: height || null, // Optional
+      bio: bio || `Hi! I'm ${name} from ${city}. Looking forward to meeting new people!`, // Auto-generated if not provided
+      interests: interests || null, // Optional
+      profile_image_url: profile_image_url || null, // Optional
     });
 
     return res.status(201).json({ message: "Profile created", profile: newProfile });

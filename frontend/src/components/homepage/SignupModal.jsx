@@ -1,26 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import AuthContext from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { GoogleLogin } from "@react-oauth/google";
+import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
+  const { login } = useContext(AuthContext);
   const { toast } = useToast();
   const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-
+  const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
@@ -30,13 +29,8 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
 
   const validate = () => {
     const newErrors = {};
-    if (!form.full_name.trim()) newErrors.full_name = "Full name is required";
-    if (!form.email.includes("@") || !/\S+@\S+\.\S+/.test(form.email))
-      newErrors.email = "Enter a valid email";
-    if (form.password.length < 8)
-      newErrors.password = "Password must be at least 8 characters";
-    if (form.password !== form.confirmPassword)
-      newErrors.confirmPassword = "Passwords do not match";
+    if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Enter a valid email";
+    if (form.password.length < 8) newErrors.password = "Password must be at least 8 characters";
     return newErrors;
   };
 
@@ -47,41 +41,100 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
       setErrors(validationErrors);
       return;
     }
-
     setIsLoading(true);
     try {
-      const res = await axios.post(`${BASE_URL}/auth/register`, {
-        full_name: form.full_name,
+      await axios.post(`${BASE_URL}/auth/register`, {
         email: form.email,
         password: form.password,
-        role: "user", // hardcoded
+        role: "user",
       });
 
-      // console.log('Signup response:', res.data); // Debug log
-
-      // Close the modal first
-      onOpenChange(false);
-
-      // Show success toast
-      toast({
-        title: "Account created successfully!",
-        description: `Welcome, ${res.data.user?.full_name || form.full_name}! Let's complete your profile.`,
+      const res1 = await axios.post(`${BASE_URL}/auth/login`, {
+        email: form.email,
+        password: form.password,
       });
 
-      // Small delay to ensure modal closes before navigation
-     setTimeout(() => {
-  onSwitchToLogin();
-}, 200);
-
+      handleLoginSuccess(res1.data);
     } catch (err) {
-      console.error('Signup error:', err); // Debug log
       toast({
         title: "Signup failed",
-        description: err.response?.data?.error || err.response?.data?.message || "Something went wrong",
+        description: err.response?.data?.error || "Something went wrong",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLoginSuccess = (data, skipProfile = false) => {
+    const { token, user } = data;
+    localStorage.setItem("token", token);
+    localStorage.setItem("userId", user.id);
+
+    login({
+      id: user.id,
+      name: user.full_name,
+      email: user.email,
+      role: user.role,
+      avatar: user.profile?.profile_image_url || null,
+    });
+
+    toast({
+      title: "Welcome to Liebenly! 💕",
+      description: skipProfile
+        ? "Welcome back!"
+        : "Let's complete your profile.",
+    });
+
+    onOpenChange(false);
+
+    if (skipProfile) {
+      navigate("/dashboard");
+    } else {
+      navigate("/create-profile", { state: { userId: user.id, userData: user } });
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // Step 1: Register or fetch existing user
+      const res = await axios.post(`${BASE_URL}/auth/google`, {
+        credential: credentialResponse.credential,
+      });
+
+      const { email, password, isNewUser } = res.data;
+
+      // Step 2: Login with generated password
+      const loginRes = await axios.post(`${BASE_URL}/auth/login`, {
+        email,
+        password,
+      });
+
+      // Step 3: Pass skipProfile based on isNewUser
+      handleLoginSuccess(loginRes.data, !isNewUser);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Google signup/login failed", variant: "destructive" });
+    }
+  };
+
+  const handleFacebookResponse = async (response) => {
+    try {
+      await axios.post(`${BASE_URL}/auth/facebook-register`, {
+        accessToken: response.accessToken,
+      });
+
+      const resLogin = await axios.post(`${BASE_URL}/auth/facebook-login`, {
+        accessToken: response.accessToken,
+      });
+
+      handleLoginSuccess(resLogin.data);
+    } catch (error) {
+      toast({
+        title: "Facebook signup/login failed",
+        description: error.response?.data?.error || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
@@ -94,50 +147,39 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
           </DialogTitle>
         </DialogHeader>
 
+        {/* Social Signup Buttons */}
+        <div className="flex flex-col gap-3 mb-4">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => toast({ title: "Google Login Failed", variant: "destructive" })}
+          />
+          <FacebookLogin
+            appId={import.meta.env.VITE_FACEBOOK_APP_ID}
+            autoLoad={false}
+            fields="name,email,picture"
+            callback={handleFacebookResponse}
+            render={(renderProps) => (
+              <Button onClick={renderProps.onClick} className="bg-blue-600 text-white w-full">
+                Continue with Facebook
+              </Button>
+            )}
+          />
+        </div>
+
         <form onSubmit={handleSignupSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Full Name
-            </label>
-            <Input
-              name="full_name"
-              type="text"
-              placeholder="Enter your full name"
-              value={form.full_name}
-              onChange={handleChange}
-              required
-            />
-            {errors.full_name && (
-              <p className="text-sm text-red-600 mt-1">{errors.full_name}</p>
-            )}
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Email</label>
+            <Input name="email" type="email" placeholder="Enter your email" value={form.email} onChange={handleChange} required />
+            {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Email
-            </label>
-            <Input
-              name="email"
-              type="email"
-              placeholder="Enter your email"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
-            {errors.email && (
-              <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Password
-            </label>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Password</label>
             <div className="relative">
               <Input
                 name="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Create a password (min 8 characters)"
+                placeholder="Create a password"
                 value={form.password}
                 onChange={handleChange}
                 required
@@ -145,47 +187,20 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {errors.password && (
-              <p className="text-sm text-red-600 mt-1">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-sm text-red-600 mt-1">{errors.password}</p>}
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">
-              Confirm Password
-            </label>
-            <Input
-              name="confirmPassword"
-              type={showPassword ? "text" : "password"}
-              placeholder="Re-enter your password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              required
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-          >
+          <Button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-pink-500 to-purple-600">
             {isLoading ? "Creating Account..." : "Create Account"}
           </Button>
 
           <div className="text-center">
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="text-sm text-pink-600 hover:text-pink-700 transition-colors"
-            >
+            <button type="button" onClick={onSwitchToLogin} className="text-sm text-pink-600">
               Already have an account? Sign in
             </button>
           </div>
