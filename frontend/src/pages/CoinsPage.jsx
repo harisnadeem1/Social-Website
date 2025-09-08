@@ -23,28 +23,24 @@ import AuthContext from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const CoinsPage = () => {
-  const { coins, user } = useContext(AuthContext); // Added user from context
+  const { coins, user } = useContext(AuthContext);
   const { toast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const TOTAL_TIME = 30 * 60; // 30 minutes in seconds
 
-  // Shopify configuration - UPDATE THESE VALUES
-  const SHOPIFY_CONFIG = {
-    domain: 'payments.liebenly.com', // Replace with your Shopify domain
-    storefrontAccessToken: 'your-storefront-access-token', // Replace with your token
-    // Map each package to a Shopify variant ID
-    productVariants: {
-      1: '44465038393481', // Quick Hello
-      2: '44465082138761', // Starter Spark
-      3: '44465082171529', // Flirty Vibes
-      4: '44467883704457', // Romantic Bundle
-      5: '44467883737225', // True Connection
-      6: '44467883769993', // Elite Charmer
-      7: '44467883802761', // Soulmate Hunter
-      8: '44467883835529', // Lover's Legacy
-      9: '44467883868297', // The Eternal Bond
-    }
+  // Stripe configuration - UPDATE THESE PAYMENT LINKS
+  const STRIPE_PAYMENT_LINKS = {
+    1: 'https://buy.stripe.com/9B65kEfwy8xx5gc6c69ws03', // Quick Hello
+    2: 'https://buy.stripe.com/4gM3cw4RU3dd0ZW1VQ9ws04', // Starter Spark
+    3: 'https://buy.stripe.com/aFa4gAckm2996kg1VQ9ws05', // Flirty Vibes
+    4: 'https://buy.stripe.com/cNidRa846dRR5gc7ga9ws06', // Romantic Bundle
+    5: 'https://buy.stripe.com/cNi3cwace4hheQM2ZU9ws07', // True Connection
+    6: 'https://buy.stripe.com/28E9AUdoqdRR8so1VQ9ws08', // Elite Charmer
+    7: 'https://buy.stripe.com/3cI3cwesu299dMIbwq9ws09'
+    // , // Soulmate Hunter
+    // 8: 'https://buy.stripe.com/your-link-8', // Lover's Legacy
+    // 9: 'https://buy.stripe.com/your-link-9', // The Eternal Bond
   };
 
   const [timeLeft, setTimeLeft] = useState(() => {
@@ -101,120 +97,38 @@ const CoinsPage = () => {
     );
   };
 
-  // NEW: Function to create Shopify checkout using Storefront API
-  const createShopifyCheckout = async (packageData) => {
-    try {
-      const variantId = SHOPIFY_CONFIG.productVariants[packageData.id];
-      
-      if (!variantId) {
-        throw new Error('Product variant not found');
-      }
-
-      // Create checkout using Shopify Storefront API
-      const checkoutMutation = `
-        mutation checkoutCreate($input: CheckoutCreateInput!) {
-          checkoutCreate(input: $input) {
-            checkout {
-              id
-              webUrl
-            }
-            checkoutUserErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-      const variables = {
-        input: {
-          lineItems: [
-            {
-              variantId: variantId,
-              quantity: 1
-            }
-          ],
-          note: `user_id:${user?.id || user?.email || 'anonymous'};package_id:${packageData.id};coins:${packageData.coins + packageData.bonus}`,
-          customAttributes: [
-            {
-              key: "user_id",
-              value: user?.id?.toString() || user?.email || 'anonymous'
-            },
-            {
-              key: "package_name",
-              value: packageData.name
-            },
-            {
-              key: "total_coins",
-              value: (packageData.coins + packageData.bonus).toString()
-            },
-            {
-              key: "base_coins",
-              value: packageData.coins.toString()
-            },
-            {
-              key: "bonus_coins",
-              value: packageData.bonus.toString()
-            }
-          ]
-        }
-      };
-
-      const response = await fetch(`https://${SHOPIFY_CONFIG.domain}/api/2023-10/graphql.json`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': SHOPIFY_CONFIG.storefrontAccessToken,
-        },
-        body: JSON.stringify({
-          query: checkoutMutation,
-          variables: variables
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.data?.checkoutCreate?.checkout?.webUrl) {
-        // Redirect to Shopify checkout
-        window.location.href = result.data.checkoutCreate.checkout.webUrl;
-      } else {
-        throw new Error('Failed to create checkout');
-      }
-
-    } catch (error) {
-      console.error('Shopify checkout error:', error);
-      toast({
-        title: "Checkout Error",
-        description: "Unable to process payment. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // NEW: Alternative method using direct cart URL (simpler but less flexible)
-  const redirectToShopifyCart = (packageData) => {
-    const variantId = SHOPIFY_CONFIG.productVariants[packageData.id];
+  // NEW: Function to redirect to Stripe payment link
+  const redirectToStripePayment = (packageData) => {
+    const paymentLink = STRIPE_PAYMENT_LINKS[packageData.id];
     
-    if (!variantId) {
+    if (!paymentLink || paymentLink.includes('your-link-')) {
       toast({
-        title: "Product Error",
-        description: "Product not found. Please contact support.",
+        title: "Payment Link Not Available",
+        description: "This payment option is not yet configured. Please contact support.",
         variant: "destructive"
       });
       return;
     }
 
-    // Extract numeric ID from Shopify GID
-    const numericVariantId = variantId.split('/').pop();
+    // Add user information as URL parameters (optional - Stripe will handle this in metadata)
+    const urlParams = new URLSearchParams();
+    if (user?.id) {
+      urlParams.append('client_reference_id', user.id.toString());
+    }
+    if (user?.email) {
+      urlParams.append('prefilled_email', user.email);
+    }
     
-    // Create cart note with user information
-    const cartNote = `user_id:${user?.id };package_price:${packageData.price};coins:${packageData.coins + packageData.bonus}`;
+    // Add package information
+    urlParams.append('package_name', packageData.name);
+    urlParams.append('total_coins', (packageData.coins + packageData.bonus).toString());
+
+    const finalUrl = urlParams.toString() 
+      ? `${paymentLink}?${urlParams.toString()}`
+      : paymentLink;
     
-    // Construct Shopify cart URL
-    const shopifyUrl = `https://${SHOPIFY_CONFIG.domain}/cart/${numericVariantId}:1?note=${encodeURIComponent(cartNote)}`;
-    
-    // Redirect to Shopify
-    window.location.href = shopifyUrl;
+    // Redirect to Stripe
+    window.location.href = finalUrl;
   };
 
 const coinPackages = [
@@ -322,45 +236,46 @@ const coinPackages = [
     savings: "25% OFF",
     dealTag: "SERIOUS DATER PACK",
     freeGifts: ["VIP Badge", "100 Free Winks", "Weekly Spotlight", "Premium Themes", "Boosted Visibility", "Advanced Filters"]
-  },
-  {
-    id: 8,
-    name: "Lover's Legacy",
-    coins: 1025,
-    bonus: 150,
-    price: '€249.00',
-    originalPrice: '€329.00',
-    popular: false,
-    icon: Infinity,
-    color: 'from-rose-600 to-fuchsia-700',
-    description: "Fuel a long-term love journey",
-    savings: "24% OFF",
-    dealTag: "LEGENDARY VALUE",
-    freeGifts: ["Platinum Badge", "150 Free Winks", "Exclusive Themes", "Priority Support", "Unlimited Read Receipts", "Legacy Sticker Pack"]
-  },
-  {
-    id: 9,
-    name: "The Eternal Bond",
-    coins: 2100,
-    bonus: 300,
-    price: '€499.00',
-    originalPrice: '€659.00',
-    popular: false,
-    icon: Trophy,
-    color: 'from-amber-500 to-red-600',
-    description: "Unlimited charm. Endless possibilities.",
-    savings: "24% OFF",
-    dealTag: "ALL-IN DEAL",
-    freeGifts: [
-      "Diamond Supreme Badge",
-      "Unlimited Winks",
-      "Unlimited Spotlight",
-      "Premium Chat Themes",
-      "Priority Support",
-      "All Features Unlocked",
-      "1-on-1 Matchmaking Session"
-    ]
   }
+  // ,
+  // {
+  //   id: 8,
+  //   name: "Lover's Legacy",
+  //   coins: 1025,
+  //   bonus: 150,
+  //   price: '€249.00',
+  //   originalPrice: '€329.00',
+  //   popular: false,
+  //   icon: Infinity,
+  //   color: 'from-rose-600 to-fuchsia-700',
+  //   description: "Fuel a long-term love journey",
+  //   savings: "24% OFF",
+  //   dealTag: "LEGENDARY VALUE",
+  //   freeGifts: ["Platinum Badge", "150 Free Winks", "Exclusive Themes", "Priority Support", "Unlimited Read Receipts", "Legacy Sticker Pack"]
+  // },
+  // {
+  //   id: 9,
+  //   name: "The Eternal Bond",
+  //   coins: 2100,
+  //   bonus: 300,
+  //   price: '€499.00',
+  //   originalPrice: '€659.00',
+  //   popular: false,
+  //   icon: Trophy,
+  //   color: 'from-amber-500 to-red-600',
+  //   description: "Unlimited charm. Endless possibilities.",
+  //   savings: "24% OFF",
+  //   dealTag: "ALL-IN DEAL",
+  //   freeGifts: [
+  //     "Diamond Supreme Badge",
+  //     "Unlimited Winks",
+  //     "Unlimited Spotlight",
+  //     "Premium Chat Themes",
+  //     "Priority Support",
+  //     "All Features Unlocked",
+  //     "1-on-1 Matchmaking Session"
+  //   ]
+  // }
 ];
 
   const handlePurchaseClick = (packageData) => {
@@ -368,7 +283,7 @@ const coinPackages = [
     setShowPurchaseModal(true);
   };
 
-  // UPDATED: Handle buy now with Shopify integration
+  // UPDATED: Handle buy now with Stripe integration
   const handleBuyNow = () => {
     setShowPurchaseModal(false);
     
@@ -381,15 +296,8 @@ const coinPackages = [
       return;
     }
 
-    // Choose between Storefront API or direct cart redirect
-    // For more control, use createShopifyCheckout
-    // For simplicity, use redirectToShopifyCart
-    
-    // Option 1: Using Storefront API (recommended)
-    //createShopifyCheckout(selectedPackage);
-    
-    // Option 2: Direct cart redirect (uncomment to use instead)
-    redirectToShopifyCart(selectedPackage);
+    // Redirect to Stripe payment link
+    redirectToStripePayment(selectedPackage);
   };
 
   return (

@@ -30,6 +30,7 @@ import PrivacyPolicyPage from '@/pages/info/PrivacyPolicyPage';
 import TermsAndConditionsPage from '@/pages/info/TermsAndConditionsPage';
 import CookiePolicyPage from '@/pages/info/CookiePolicyPage';
 import SafetyTipsPage from '@/pages/info/SafetyTipsPage';
+import DataDeletionPage from '@/pages/info/DataDeletion'; // ✅ Added
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -91,6 +92,7 @@ const AppContent = ({ user, login, logout, coins, updateCoins, loading }) => {
         <Route path="/cookie-policy" element={<CookiePolicyPage />} />
         <Route path="/safety-tips" element={<SafetyTipsPage />} />
         <Route path="/:username" element={<PublicProfilePage />} />
+        <Route path="/data-deletion" element={<DataDeletionPage />} /> {/* ✅ Added */}
       </Routes>
 
       {showBottomNav && <BottomNav />}

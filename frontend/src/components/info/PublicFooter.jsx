@@ -15,6 +15,8 @@ const PublicFooter = () => {
       { name: 'Privacy Policy', path: '/privacy-policy' },
       { name: 'Terms & Conditions', path: '/terms-and-conditions' },
       { name: 'Cookie Policy', path: '/cookie-policy' },
+      { name: 'Data Policy', path: '/data-deletion' },
+
     ],
     Support: [
       { name: 'Safety Tips', path: '/safety-tips' },

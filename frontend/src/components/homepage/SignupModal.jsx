@@ -119,24 +119,23 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
   };
 
   const handleFacebookResponse = async (response) => {
-    try {
-      await axios.post(`${BASE_URL}/auth/facebook-register`, {
-        accessToken: response.accessToken,
-      });
+  try {
+    const res = await axios.post(`${BASE_URL}/auth/facebook`, {
+      accessToken: response.accessToken,
+    });
 
-      const resLogin = await axios.post(`${BASE_URL}/auth/facebook-login`, {
-        accessToken: response.accessToken,
-      });
+    const { email, password, isNewUser } = res.data;
 
-      handleLoginSuccess(resLogin.data);
-    } catch (error) {
-      toast({
-        title: "Facebook signup/login failed",
-        description: error.response?.data?.error || "Something went wrong",
-        variant: "destructive",
-      });
-    }
-  };
+    const loginRes = await axios.post(`${BASE_URL}/auth/login`, { email, password });
+    handleLoginSuccess(loginRes.data, !isNewUser);
+  } catch (error) {
+    toast({
+      title: "Facebook signup/login failed",
+      description: error.response?.data?.error || "Something went wrong",
+      variant: "destructive",
+    });
+  }
+};
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,7 +152,7 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
             onSuccess={handleGoogleSuccess}
             onError={() => toast({ title: "Google Login Failed", variant: "destructive" })}
           />
-          <FacebookLogin
+          {/* <FacebookLogin
             appId={import.meta.env.VITE_FACEBOOK_APP_ID}
             autoLoad={false}
             fields="name,email,picture"
@@ -163,7 +162,7 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
                 Continue with Facebook
               </Button>
             )}
-          />
+          /> */}
         </div>
 
         <form onSubmit={handleSignupSubmit} className="space-y-4">

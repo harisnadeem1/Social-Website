@@ -4,7 +4,9 @@ const { registerUser } = require("../controllers/authController");
 const { loginUser } = require('../controllers/authController');
 const { googleRegisterUser,googleLoginUser} = require('../controllers/googleAuth');
 
+const { facebookRegisterUser } = require('../controllers/facebookAuth');
 
+router.post("/facebook", facebookRegisterUser);
 
 router.post("/register", registerUser);
 

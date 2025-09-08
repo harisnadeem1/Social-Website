@@ -206,6 +206,9 @@ const PublicHomepage = () => {
                 <Link to="/safety-tips" className="block cursor-pointer hover:text-pink-400 transition-colors">
                   Safety Tips
                 </Link>
+                <Link to="/data-deletion" className="block cursor-pointer hover:text-pink-400 transition-colors">
+                  Data Deletion Policy
+                </Link>
               </div>
             </div>
           </div>

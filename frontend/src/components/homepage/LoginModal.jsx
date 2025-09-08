@@ -140,7 +140,7 @@ const LoginModal = ({ open, onOpenChange, onSwitchToSignup }) => {
             onSuccess={handleGoogleSuccess}
             onError={() => toast({ title: "Google Login Failed", variant: "destructive" })}
           />
-          <FacebookLogin
+          {/* <FacebookLogin
             appId={import.meta.env.VITE_FACEBOOK_APP_ID}
             autoLoad={false}
             fields="name,email,picture"
@@ -150,7 +150,7 @@ const LoginModal = ({ open, onOpenChange, onSwitchToSignup }) => {
                 Continue with Facebook
               </Button>
             )}
-          />
+          /> */}
         </div>
 
         {/* Divider */}
