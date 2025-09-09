@@ -385,6 +385,8 @@ const AdminPanel = () => {
     setLocationInput('');
     setLocationSuggestions([]);
     setSelectedLocation('');
+    window.location.reload();
+
 
   } catch (err) {
     console.error(err);
