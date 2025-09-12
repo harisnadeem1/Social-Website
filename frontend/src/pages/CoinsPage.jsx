@@ -23,24 +23,29 @@ import AuthContext from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const CoinsPage = () => {
-  const { coins, user } = useContext(AuthContext);
+  const { coins, user } = useContext(AuthContext); // Added user from context
   const { toast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const TOTAL_TIME = 30 * 60; // 30 minutes in seconds
 
-  // Stripe configuration - UPDATE THESE PAYMENT LINKS
-  const STRIPE_PAYMENT_LINKS = {
-    1: 'https://buy.stripe.com/9B65kEfwy8xx5gc6c69ws03', // Quick Hello
-    2: 'https://buy.stripe.com/4gM3cw4RU3dd0ZW1VQ9ws04', // Starter Spark
-    3: 'https://buy.stripe.com/aFa4gAckm2996kg1VQ9ws05', // Flirty Vibes
-    4: 'https://buy.stripe.com/cNidRa846dRR5gc7ga9ws06', // Romantic Bundle
-    5: 'https://buy.stripe.com/cNi3cwace4hheQM2ZU9ws07', // True Connection
-    6: 'https://buy.stripe.com/28E9AUdoqdRR8so1VQ9ws08', // Elite Charmer
-    7: 'https://buy.stripe.com/3cI3cwesu299dMIbwq9ws09'
-    // , // Soulmate Hunter
-    // 8: 'https://buy.stripe.com/your-link-8', // Lover's Legacy
-    // 9: 'https://buy.stripe.com/your-link-9', // The Eternal Bond
+  // Shopify configuration - UPDATE THESE VALUES
+  const SHOPIFY_CONFIG = {
+    domain: 'payments.liebenly.com', // Replace with your Shopify domain
+    storefrontAccessToken: 'your-storefront-access-token', // Replace with your token
+    // Map each package to a Shopify variant ID
+    productVariants: {
+      1: '50596902076714', // Quick Hello
+      2: '50596902109482', // Starter Spark
+      3: '50596902142250', // Flirty Vibes
+      4: '50596902175018', // Romantic Bundle
+      5: '50596902207786', // True Connection
+      6: '50596902240554', // Elite Charmer
+      7: '50596902273322'
+      // , // Soulmate Hunter
+      // 8: '44467883835529', // Lover's Legacy
+      // 9: '44467883868297', // The Eternal Bond
+    }
   };
 
   const [timeLeft, setTimeLeft] = useState(() => {
@@ -97,38 +102,120 @@ const CoinsPage = () => {
     );
   };
 
-  // NEW: Function to redirect to Stripe payment link
-  const redirectToStripePayment = (packageData) => {
-    const paymentLink = STRIPE_PAYMENT_LINKS[packageData.id];
-    
-    if (!paymentLink || paymentLink.includes('your-link-')) {
+  // NEW: Function to create Shopify checkout using Storefront API
+  const createShopifyCheckout = async (packageData) => {
+    try {
+      const variantId = SHOPIFY_CONFIG.productVariants[packageData.id];
+      
+      if (!variantId) {
+        throw new Error('Product variant not found');
+      }
+
+      // Create checkout using Shopify Storefront API
+      const checkoutMutation = `
+        mutation checkoutCreate($input: CheckoutCreateInput!) {
+          checkoutCreate(input: $input) {
+            checkout {
+              id
+              webUrl
+            }
+            checkoutUserErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        input: {
+          lineItems: [
+            {
+              variantId: variantId,
+              quantity: 1
+            }
+          ],
+          note: `user_id:${user?.id || user?.email || 'anonymous'};package_id:${packageData.id};coins:${packageData.coins + packageData.bonus}`,
+          customAttributes: [
+            {
+              key: "user_id",
+              value: user?.id?.toString() || user?.email || 'anonymous'
+            },
+            {
+              key: "package_name",
+              value: packageData.name
+            },
+            {
+              key: "total_coins",
+              value: (packageData.coins + packageData.bonus).toString()
+            },
+            {
+              key: "base_coins",
+              value: packageData.coins.toString()
+            },
+            {
+              key: "bonus_coins",
+              value: packageData.bonus.toString()
+            }
+          ]
+        }
+      };
+
+      const response = await fetch(`https://${SHOPIFY_CONFIG.domain}/api/2023-10/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': SHOPIFY_CONFIG.storefrontAccessToken,
+        },
+        body: JSON.stringify({
+          query: checkoutMutation,
+          variables: variables
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.data?.checkoutCreate?.checkout?.webUrl) {
+        // Redirect to Shopify checkout
+        window.location.href = result.data.checkoutCreate.checkout.webUrl;
+      } else {
+        throw new Error('Failed to create checkout');
+      }
+
+    } catch (error) {
+      console.error('Shopify checkout error:', error);
       toast({
-        title: "Payment Link Not Available",
-        description: "This payment option is not yet configured. Please contact support.",
+        title: "Checkout Error",
+        description: "Unable to process payment. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // NEW: Alternative method using direct cart URL (simpler but less flexible)
+  const redirectToShopifyCart = (packageData) => {
+    const variantId = SHOPIFY_CONFIG.productVariants[packageData.id];
+    
+    if (!variantId) {
+      toast({
+        title: "Product Error",
+        description: "Product not found. Please contact support.",
         variant: "destructive"
       });
       return;
     }
 
-    // Add user information as URL parameters (optional - Stripe will handle this in metadata)
-    const urlParams = new URLSearchParams();
-    if (user?.id) {
-      urlParams.append('client_reference_id', user.id.toString());
-    }
-    if (user?.email) {
-      urlParams.append('prefilled_email', user.email);
-    }
+    // Extract numeric ID from Shopify GID
+    const numericVariantId = variantId.split('/').pop();
     
-    // Add package information
-    urlParams.append('package_name', packageData.name);
-    urlParams.append('total_coins', (packageData.coins + packageData.bonus).toString());
-
-    const finalUrl = urlParams.toString() 
-      ? `${paymentLink}?${urlParams.toString()}`
-      : paymentLink;
+    // Create cart note with user information
+    const cartNote = `user_id:${user?.id };package_price:${packageData.price};coins:${packageData.coins + packageData.bonus}`;
     
-    // Redirect to Stripe
-    window.location.href = finalUrl;
+    // Construct Shopify cart URL
+    const shopifyUrl = `https://${SHOPIFY_CONFIG.domain}/cart/${numericVariantId}:1?note=${encodeURIComponent(cartNote)}`;
+    
+    // Redirect to Shopify
+    window.location.href = shopifyUrl;
   };
 
 const coinPackages = [
@@ -197,7 +284,7 @@ const coinPackages = [
     name: "True Connection",
     coins: 155,
     bonus: 30,
-    price: '€39.00',
+    price: '€39.99',
     originalPrice: '€54.99',
     popular: false,
     icon: Heart,
@@ -212,8 +299,8 @@ const coinPackages = [
     name: "Elite Charmer",
     coins: 350,
     bonus: 60,
-    price: '€89.00',
-    originalPrice: '€129.00',
+    price: '€89.99',
+    originalPrice: '€129.99',
     popular: false,
     icon: Diamond,
     color: 'from-blue-500 to-indigo-600',
@@ -283,7 +370,7 @@ const coinPackages = [
     setShowPurchaseModal(true);
   };
 
-  // UPDATED: Handle buy now with Stripe integration
+  // UPDATED: Handle buy now with Shopify integration
   const handleBuyNow = () => {
     setShowPurchaseModal(false);
     
@@ -296,8 +383,15 @@ const coinPackages = [
       return;
     }
 
-    // Redirect to Stripe payment link
-    redirectToStripePayment(selectedPackage);
+    // Choose between Storefront API or direct cart redirect
+    // For more control, use createShopifyCheckout
+    // For simplicity, use redirectToShopifyCart
+    
+    // Option 1: Using Storefront API (recommended)
+    //createShopifyCheckout(selectedPackage);
+    
+    // Option 2: Direct cart redirect (uncomment to use instead)
+    redirectToShopifyCart(selectedPackage);
   };
 
   return (
