@@ -5,7 +5,7 @@ const { buildEmailHTML } = require("../utils/emailTemplates");
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-cron.schedule("*/1 * * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   console.log("📨 Running notification email job...");
 
   try {
