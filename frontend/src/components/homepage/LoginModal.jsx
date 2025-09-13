@@ -8,7 +8,6 @@ import AuthContext from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { GoogleLogin } from "@react-oauth/google";
-import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
