@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
@@ -12,10 +12,14 @@ import AuthContext from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  
   const [profiles, setProfiles] = useState([]);
-  const [filteredProfiles, setFilteredProfiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
   const [showBoostModal, setShowBoostModal] = useState(false);
-    const { user, logout } = useContext(AuthContext);
+  const [userLocation, setUserLocation] = useState('');
   
   const [filters, setFilters] = useState({
     ageMin: 18,
@@ -25,123 +29,167 @@ const Dashboard = () => {
     intent: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Refs for managing state
+  const isInitialLoad = useRef(true);
+  const debounceTimer = useRef(null);
 
+  // Fetch user location once
+  useEffect(() => {
+    const fetchUserLocation = async () => {
+      try {
+        if (user?.id) {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
+          const userProfile = await res.json();
+          const location = userProfile.profileLocation?.split(",")[0]?.trim() || "";
+          setUserLocation(location);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile", error);
+      }
+    };
+    
+    fetchUserLocation();
+  }, [user?.id]);
 
-//match city
-//   useEffect(() => {
-//   const fetchProfiles = async () => {
-//     try {
-//       const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
-//       const userprofile = await res1.json();
-//       const userLocation = userprofile.profileLocation?.trim() || ""; // Handle null/undefined
-
-//       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
-//       const data = await res.json();
-
-//       // Split profiles based on city match
-//       const sameLocation = data.filter(profile => profile.city?.trim() === userLocation);
-//       const differentLocation = data.filter(profile => profile.city?.trim() !== userLocation);
-
-//       // Shuffle both arrays independently
-//       const randomizedSameLocation = sameLocation.length ? shuffleArray(sameLocation) : [];
-//       const randomizedDifferentLocation = differentLocation.length ? shuffleArray(differentLocation) : [];
-
-//       // Merge: same location first, then other locations
-//       const finalProfiles = [...randomizedSameLocation, ...randomizedDifferentLocation];
-
-//       console.log(finalProfiles);
-
-//       setProfiles(finalProfiles);
-//       setFilteredProfiles(finalProfiles);
-//     } catch (error) {
-//       console.error("Failed to fetch profiles", error);
-//     }
-//   };
-
-//   fetchProfiles();
-// }, []);
-
-// const shuffleArray = (array) => {
-//   const shuffled = [...array];
-//   for (let i = shuffled.length - 1; i > 0; i--) {
-//     const j = Math.floor(Math.random() * (i + 1));
-//     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-//   }
-//   return shuffled;
-// };
-
-
-
-useEffect(() => {
-  const fetchProfiles = async () => {
+  // Fetch profiles function
+  const fetchProfiles = useCallback(async (pageNum = 1, resetProfiles = false, currentFilters = filters, currentSearch = searchTerm) => {
+    if (loading && !resetProfiles) return;
+    
+    setLoading(true);
     try {
-      // Get the user's profile to fetch their location
-      const res1 = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
-      const userProfile = await res1.json();
+      const queryParams = new URLSearchParams({
+        page: pageNum.toString(),
+        limit: '20'
+      });
 
-      // Extract only the city (before the comma)
-      const userLocation = userProfile.profileLocation?.split(",")[0]?.trim() || "";
+      // Add filters to query params
+      if (currentFilters.ageMin && currentFilters.ageMin !== 18) {
+        queryParams.append('ageMin', currentFilters.ageMin.toString());
+      }
+      if (currentFilters.ageMax && currentFilters.ageMax !== 100) {
+        queryParams.append('ageMax', currentFilters.ageMax.toString());
+      }
+      if (currentFilters.gender) queryParams.append('gender', currentFilters.gender);
+      if (currentFilters.location) queryParams.append('location', currentFilters.location);
+      if (currentFilters.intent) queryParams.append('intent', currentFilters.intent);
+      if (currentSearch) queryParams.append('search', currentSearch);
 
-      // Get all public girl profiles
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public`);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/girls/public?${queryParams}`);
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch profiles');
+      }
+      
       const data = await res.json();
 
-      // Update every profile's city to the user's city (only city, not country)
-      const updatedProfiles = data.map(profile => ({
+      // Handle response - check if it's paginated response or direct array
+      let profilesData, paginationInfo;
+      
+      if (data.profiles && data.pagination) {
+        // New paginated API response
+        profilesData = data.profiles;
+        paginationInfo = data.pagination;
+      } else if (Array.isArray(data)) {
+        // Old direct array response
+        profilesData = data;
+        paginationInfo = {
+          hasMore: data.length === 20,
+          page: pageNum,
+          totalPages: pageNum + (data.length === 20 ? 1 : 0)
+        };
+      } else {
+        throw new Error('Unexpected API response format');
+      }
+
+      // Update profiles with user's location
+      const updatedProfiles = profilesData.map(profile => ({
         ...profile,
-        city: userLocation,
+        city: userLocation || profile.city,
       }));
 
-      // Shuffle the updated profiles
-      const randomizedProfiles = shuffleArray(updatedProfiles);
+      if (resetProfiles || pageNum === 1) {
+        setProfiles(updatedProfiles);
+        setPage(1);
+      } else {
+        setProfiles(prev => [...prev, ...updatedProfiles]);
+        setPage(pageNum);
+      }
 
-      console.log(randomizedProfiles);
-
-      // Set profiles in state
-      setProfiles(randomizedProfiles);
-      setFilteredProfiles(randomizedProfiles);
+      setHasMore(paginationInfo.hasMore || false);
+      
     } catch (error) {
       console.error("Failed to fetch profiles", error);
+      // If it's the first load and fails, try to show some fallback
+      if (resetProfiles) {
+        setProfiles([]);
+        setHasMore(false);
+      }
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [userLocation, loading]);
 
-  fetchProfiles();
-}, []);
+  // Initial load
+  useEffect(() => {
+    if (isInitialLoad.current) {
+      fetchProfiles(1, true);
+      isInitialLoad.current = false;
+    }
+  }, [fetchProfiles]);
 
-const shuffleArray = (array) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+    setPage(1);
+    fetchProfiles(1, true, newFilters, searchTerm);
+  }, [searchTerm, fetchProfiles]);
 
-
-
-  const handleFiltersChange = (newFilters) => {
-    setFilters(newFilters); // store filters
-    applyAllFilters(newFilters, searchTerm);
-  };
-
-  const applyAllFilters = (filterValues, searchText) => {
-    const filtered = profiles.filter(profile => {
-      const ageMatch = profile.age >= filterValues.ageMin && profile.age <= filterValues.ageMax;
-      const genderMatch = !filterValues.gender || profile.gender === filterValues.gender;
-      const locationMatch = !filterValues.location || profile.city.toLowerCase().includes(filterValues.location.toLowerCase());
-      const intentMatch = !filterValues.intent || profile.intent === filterValues.intent;
-      const nameMatch = profile.name.toLowerCase().includes(searchText.toLowerCase());
-
-      return ageMatch && genderMatch && locationMatch && intentMatch && nameMatch;
-    });
-
-    setFilteredProfiles(filtered);
-  };
-
-  const handleSearchChange = (value) => {
+  // Handle search changes with debouncing
+  const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
-    applyAllFilters(filters, value); // use current filters + updated search
-  };
+    
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    
+    // Set new timer
+    debounceTimer.current = setTimeout(() => {
+      setPage(1);
+      fetchProfiles(1, true, filters, value);
+    }, 300);
+  }, [filters, fetchProfiles]);
+
+  // Load more profiles for infinite scroll
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      const nextPage = page + 1;
+      fetchProfiles(nextPage, false);
+    }
+  }, [hasMore, loading, page, fetchProfiles]);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >= 
+        document.documentElement.offsetHeight - 1000 && // Load more when 1000px from bottom
+        hasMore && 
+        !loading
+      ) {
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [loadMore, hasMore, loading]);
 
   const handleProfileClick = (profile) => {
     navigate(`/profile/${profile.id}`);
@@ -169,36 +217,19 @@ const shuffleArray = (array) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {/* <div className="mb-6 lg:mb-8">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                  Discover People Near You
-                </h1>
-                <p className="text-base lg:text-lg text-gray-600">
-                  Find your perfect match among {filteredProfiles.length} incredible singles
-                </p>
-              </div> */}
-              {/* <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Search by name..."
-                  className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                />
-              </div> */}
-
               <FilterPanel 
-  onFiltersChange={handleFiltersChange} 
-  onSearchChange={handleSearchChange}
-  searchTerm={searchTerm}
-/>
+                onFiltersChange={handleFiltersChange} 
+                onSearchChange={handleSearchChange}
+                searchTerm={searchTerm}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-                {filteredProfiles.map((profile, index) => (
+                {profiles.map((profile, index) => (
                   <motion.div
-                    key={profile.id}
+                    key={`${profile.id}-${index}`}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.05 }}
+                    transition={{ duration: 0.6, delay: (index % 20) * 0.05 }}
                   >
                     <ProfileCard
                       profile={profile}
@@ -208,15 +239,52 @@ const shuffleArray = (array) => {
                 ))}
               </div>
 
-              {filteredProfiles.length === 0 && (
+              {/* Loading indicator */}
+              {loading && profiles.length > 0 && (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto"></div>
+                  <p className="mt-2 text-gray-600 text-sm">Loading more profiles...</p>
+                </div>
+              )}
+
+              {/* Initial loading state */}
+              {loading && profiles.length === 0 && (
+                <div className="text-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading profiles...</p>
+                </div>
+              )}
+
+              {/* Load more button (fallback) */}
+              {!loading && hasMore && profiles.length > 0 && (
+                <div className="text-center py-8">
+                  <button
+                    onClick={loadMore}
+                    className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 font-medium"
+                  >
+                    Load More Profiles
+                  </button>
+                </div>
+              )}
+
+              {/* No profiles message */}
+              {!loading && profiles.length === 0 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-center py-12"
                 >
-                  <div className="text-gray-500 text-lg mb-2">No profiles match your filters</div>
+                  <div className="text-gray-500 text-lg mb-2">No profiles found</div>
                   <div className="text-gray-400">Try adjusting your search criteria</div>
                 </motion.div>
+              )}
+
+              {/* End of results message */}
+              {!loading && !hasMore && profiles.length > 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-lg mb-1">🎉 You've seen all available profiles!</div>
+                  <div className="text-sm">Check back later for new matches</div>
+                </div>
               )}
             </motion.div>
           </div>
