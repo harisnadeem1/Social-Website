@@ -52,12 +52,10 @@ const Dashboard = () => {
       if (!user?.id) return;
       
       try {
-        console.log('Fetching location for user:', user.id);
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
         const userProfile = await res.json();
         const location = userProfile.profileLocation?.split(",")[0]?.trim() || "";
         
-        console.log('User location fetched:', location);
         setUserLocation(location);
         
       } catch (error) {
@@ -126,9 +124,7 @@ const Dashboard = () => {
         city: userLocation || profile.city,
       }));
 
-      console.log("User location in fetchProfiles:", userLocation);
-      console.log("Raw profiles from API:", profilesData.map(p => p.id));
-      console.log("Current seen profile IDs:", Array.from(seenProfileIdsRef.current));
+     
 
       if (resetProfiles || pageNum === 1) {
         // First page or reset - shuffle all profiles and reset seen IDs
@@ -136,12 +132,12 @@ const Dashboard = () => {
         setProfiles(shuffledProfiles);
         seenProfileIdsRef.current = new Set(shuffledProfiles.map(p => p.id));
         setPage(1);
-        console.log("Reset - New seen IDs:", Array.from(seenProfileIdsRef.current));
+       
       } else {
         // Subsequent pages - use ref for current seen IDs (no stale closure)
         const newProfiles = updatedProfiles.filter(profile => !seenProfileIdsRef.current.has(profile.id));
         
-        console.log("Filtered new profiles:", newProfiles.map(p => p.id));
+      
         
         if (newProfiles.length > 0) {
           const shuffledNewProfiles = shuffleArray(newProfiles);
@@ -152,11 +148,11 @@ const Dashboard = () => {
           // Update profiles state
           setProfiles(prev => {
             const combined = [...prev, ...shuffledNewProfiles];
-            console.log("Combined profiles count:", combined.length);
+          
             return combined;
           });
           
-          console.log("Added new profiles. Total seen IDs:", seenProfileIdsRef.current.size);
+         
         } else {
           console.log("No new profiles to add (all were duplicates)");
         }
@@ -179,7 +175,7 @@ const Dashboard = () => {
   // Initial load - wait for location to be loaded
   useEffect(() => {
     if (isInitialLoad.current && user?.id && locationLoaded) {
-      console.log('Initializing dashboard with location:', userLocation);
+     
       fetchProfiles(1, true);
       isInitialLoad.current = false;
     }
@@ -214,7 +210,7 @@ const Dashboard = () => {
   const loadMore = useCallback(() => {
     if (hasMore && !loading) {
       const nextPage = page + 1;
-      console.log("Loading more - page:", nextPage);
+     
       fetchProfiles(nextPage, false);
     }
   }, [hasMore, loading, page, fetchProfiles]);
