@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import MobileHeader from '@/components/MobileHeader';
+
 
 const NotificationsPage = () => {
     const { user } = useContext(AuthContext);
@@ -91,6 +93,9 @@ const NotificationsPage = () => {
     }, [user]);
 
     return (
+        <div>
+            <MobileHeader  />
+
         <div className="min-h-screen bg-white pb-16 px-4 pt-4">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Activity</h2>
@@ -161,6 +166,8 @@ const NotificationsPage = () => {
                 </div>
             )}
         </div>
+        </div>
+
     );
 };
 

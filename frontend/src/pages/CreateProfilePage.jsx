@@ -197,7 +197,7 @@ const ProfileCreation = () => {
 
       toast({
         title: "🎉 Profile Complete!",
-        description: "Welcome to Liebenly! You've received 50 free coins to start chatting.",
+        description: "Welcome to Liebenly! You've received 20 free coins to start chatting.",
       });
 
       // Auto-engagement setup
