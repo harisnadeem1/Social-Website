@@ -28,69 +28,11 @@ function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
 }
 
-exports.createRotationLoop = async (userId) => {
-  const girlIds = await getAllRandomGirlIds(100);
-  if (girlIds.length < 30) throw new Error("Not enough girl accounts for rotation loop");
-
-  const messageGirls = shuffle(girlIds).slice(0, 29); // 29 unique girls for messages
-
-  const weeklyPattern = [
-    { dm: 1, like: 1, wink: 1 }, // Day 2
-    { dm: 1, like: 1, wink: 0 }, // Day 3
-    { dm: 1, like: 0, wink: 1 }, // Day 4
-    { dm: 1, like: 1, wink: 1 }, // Day 5
-    { dm: 1, like: 0, wink: 0 }, // Day 6
-    { dm: 1, like: 1, wink: 1 }, // Day 7
-    { dm: 1, like: 1, wink: 0 }, // Day 8
-  ];
-
-  const insertValues = [];
-
-  for (let i = 0; i < 29; i++) {
-    const day = i + 2;
-    const pattern = weeklyPattern[i % 7];
-    const usedGirls = new Set();
-
-    // Add DM
-    if (pattern.dm === 1) {
-      const girlId = messageGirls[i];
-      insertValues.push({ user_id: userId, girl_id: girlId, day_number: day, action: 'message' });
-      usedGirls.add(girlId);
-    }
-
-    // Add Like
-    if (pattern.like === 1) {
-      const available = girlIds.filter(id => !usedGirls.has(id));
-      const likeGirl = shuffle(available)[0];
-      insertValues.push({ user_id: userId, girl_id: likeGirl, day_number: day, action: 'like' });
-      usedGirls.add(likeGirl);
-    }
-
-    // Add Wink
-    if (pattern.wink === 1) {
-      const available = girlIds.filter(id => !usedGirls.has(id));
-      const winkGirl = shuffle(available)[0];
-      insertValues.push({ user_id: userId, girl_id: winkGirl, day_number: day, action: 'wink' });
-    }
-  }
-
-  // Insert into DB
-  for (const row of insertValues) {
-    await db.query(`
-      INSERT INTO rotation_loops (user_id, girl_id, day_number, action)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT DO NOTHING
-    `, [row.user_id, row.girl_id, row.day_number, row.action]);
-  }
-};
-
-
-
-//If we have 87 girls
-
 // exports.createRotationLoop = async (userId) => {
 //   const girlIds = await getAllRandomGirlIds(100);
-//   if (girlIds.length < 87) throw new Error("Need at least 87 girl accounts");
+//   if (girlIds.length < 30) throw new Error("Not enough girl accounts for rotation loop");
+
+//   const messageGirls = shuffle(girlIds).slice(0, 29); // 29 unique girls for messages
 
 //   const weeklyPattern = [
 //     { dm: 1, like: 1, wink: 1 }, // Day 2
@@ -102,52 +44,110 @@ exports.createRotationLoop = async (userId) => {
 //     { dm: 1, like: 1, wink: 0 }, // Day 8
 //   ];
 
-//   const shuffledGirls = shuffle(girlIds);
 //   const insertValues = [];
-
-//   let girlIndex = 0;
 
 //   for (let i = 0; i < 29; i++) {
 //     const day = i + 2;
 //     const pattern = weeklyPattern[i % 7];
+//     const usedGirls = new Set();
 
-//     // Ensure unique girls for each action per day
+//     // Add DM
 //     if (pattern.dm === 1) {
-//       insertValues.push({
-//         user_id: userId,
-//         girl_id: shuffledGirls[girlIndex++],
-//         day_number: day,
-//         action: 'message',
-//       });
+//       const girlId = messageGirls[i];
+//       insertValues.push({ user_id: userId, girl_id: girlId, day_number: day, action: 'message' });
+//       usedGirls.add(girlId);
 //     }
+
+//     // Add Like
 //     if (pattern.like === 1) {
-//       insertValues.push({
-//         user_id: userId,
-//         girl_id: shuffledGirls[girlIndex++],
-//         day_number: day,
-//         action: 'like',
-//       });
+//       const available = girlIds.filter(id => !usedGirls.has(id));
+//       const likeGirl = shuffle(available)[0];
+//       insertValues.push({ user_id: userId, girl_id: likeGirl, day_number: day, action: 'like' });
+//       usedGirls.add(likeGirl);
 //     }
+
+//     // Add Wink
 //     if (pattern.wink === 1) {
-//       insertValues.push({
-//         user_id: userId,
-//         girl_id: shuffledGirls[girlIndex++],
-//         day_number: day,
-//         action: 'wink',
-//       });
+//       const available = girlIds.filter(id => !usedGirls.has(id));
+//       const winkGirl = shuffle(available)[0];
+//       insertValues.push({ user_id: userId, girl_id: winkGirl, day_number: day, action: 'wink' });
 //     }
 //   }
 
 //   // Insert into DB
 //   for (const row of insertValues) {
-//     await db.query(
-//       `INSERT INTO rotation_loops (user_id, girl_id, day_number, action)
-//        VALUES ($1, $2, $3, $4)
-//        ON CONFLICT DO NOTHING`,
-//       [row.user_id, row.girl_id, row.day_number, row.action]
-//     );
+//     await db.query(`
+//       INSERT INTO rotation_loops (user_id, girl_id, day_number, action)
+//       VALUES ($1, $2, $3, $4)
+//       ON CONFLICT DO NOTHING
+//     `, [row.user_id, row.girl_id, row.day_number, row.action]);
 //   }
 // };
+
+
+
+//If we have 87 girls
+
+exports.createRotationLoop = async (userId) => {
+  const girlIds = await getAllRandomGirlIds(100);
+  if (girlIds.length < 87) throw new Error("Need at least 87 girl accounts");
+
+  const weeklyPattern = [
+    { dm: 1, like: 1, wink: 1 }, // Day 2
+    { dm: 1, like: 1, wink: 0 }, // Day 3
+    { dm: 1, like: 0, wink: 1 }, // Day 4
+    { dm: 1, like: 1, wink: 1 }, // Day 5
+    { dm: 1, like: 0, wink: 0 }, // Day 6
+    { dm: 1, like: 1, wink: 1 }, // Day 7
+    { dm: 1, like: 1, wink: 0 }, // Day 8
+  ];
+
+  const shuffledGirls = shuffle(girlIds);
+  const insertValues = [];
+
+  let girlIndex = 0;
+
+  for (let i = 0; i < 29; i++) {
+    const day = i + 2;
+    const pattern = weeklyPattern[i % 7];
+
+    // Ensure unique girls for each action per day
+    if (pattern.dm === 1) {
+      insertValues.push({
+        user_id: userId,
+        girl_id: shuffledGirls[girlIndex++],
+        day_number: day,
+        action: 'message',
+      });
+    }
+    if (pattern.like === 1) {
+      insertValues.push({
+        user_id: userId,
+        girl_id: shuffledGirls[girlIndex++],
+        day_number: day,
+        action: 'like',
+      });
+    }
+    if (pattern.wink === 1) {
+      insertValues.push({
+        user_id: userId,
+        girl_id: shuffledGirls[girlIndex++],
+        day_number: day,
+        action: 'wink',
+      });
+    }
+  }
+
+  // Insert into DB
+  for (const row of insertValues) {
+    await db.query(
+      `INSERT INTO rotation_loops (user_id, girl_id, day_number, action)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT DO NOTHING`,
+      [row.user_id, row.girl_id, row.day_number, row.action]
+    );
+  }
+};
 
 
 

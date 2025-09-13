@@ -20,7 +20,7 @@ const Dashboard = () => {
   const [page, setPage] = useState(1);
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [userLocation, setUserLocation] = useState('');
-  const [seenProfileIds, setSeenProfileIds] = useState(new Set());
+  const [locationLoaded, setLocationLoaded] = useState(false);
   
   const [filters, setFilters] = useState({
     ageMin: 18,
@@ -34,6 +34,7 @@ const Dashboard = () => {
   // Refs for managing state
   const isInitialLoad = useRef(true);
   const debounceTimer = useRef(null);
+  const seenProfileIdsRef = useRef(new Set());
 
   // Shuffle function - Fisher-Yates algorithm
   const shuffleArray = (array) => {
@@ -48,22 +49,28 @@ const Dashboard = () => {
   // Fetch user location once
   useEffect(() => {
     const fetchUserLocation = async () => {
+      if (!user?.id) return;
+      
       try {
-        if (user?.id) {
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
-          const userProfile = await res.json();
-          const location = userProfile.profileLocation?.split(",")[0]?.trim() || "";
-          setUserLocation(location);
-        }
+        console.log('Fetching location for user:', user.id);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profile/user/${user.id}`);
+        const userProfile = await res.json();
+        const location = userProfile.profileLocation?.split(",")[0]?.trim() || "";
+        
+        console.log('User location fetched:', location);
+        setUserLocation(location);
+        
       } catch (error) {
         console.error("Failed to fetch user profile", error);
+      } finally {
+        setLocationLoaded(true);
       }
     };
     
     fetchUserLocation();
   }, [user?.id]);
 
-  // Fetch profiles function
+  // Fetch profiles function - removed seenProfileIds from dependencies
   const fetchProfiles = useCallback(async (pageNum = 1, resetProfiles = false, currentFilters = filters, currentSearch = searchTerm) => {
     if (loading && !resetProfiles) return;
     
@@ -119,26 +126,39 @@ const Dashboard = () => {
         city: userLocation || profile.city,
       }));
 
+      console.log("User location in fetchProfiles:", userLocation);
+      console.log("Raw profiles from API:", profilesData.map(p => p.id));
+      console.log("Current seen profile IDs:", Array.from(seenProfileIdsRef.current));
+
       if (resetProfiles || pageNum === 1) {
         // First page or reset - shuffle all profiles and reset seen IDs
         const shuffledProfiles = shuffleArray(updatedProfiles);
         setProfiles(shuffledProfiles);
-        setSeenProfileIds(new Set(shuffledProfiles.map(p => p.id)));
+        seenProfileIdsRef.current = new Set(shuffledProfiles.map(p => p.id));
         setPage(1);
+        console.log("Reset - New seen IDs:", Array.from(seenProfileIdsRef.current));
       } else {
-        // Subsequent pages - filter duplicates, shuffle new batch, then append
-        const newProfiles = updatedProfiles.filter(profile => !seenProfileIds.has(profile.id));
+        // Subsequent pages - use ref for current seen IDs (no stale closure)
+        const newProfiles = updatedProfiles.filter(profile => !seenProfileIdsRef.current.has(profile.id));
+        
+        console.log("Filtered new profiles:", newProfiles.map(p => p.id));
         
         if (newProfiles.length > 0) {
           const shuffledNewProfiles = shuffleArray(newProfiles);
-          setProfiles(prev => [...prev, ...shuffledNewProfiles]);
           
-          // Update seen profile IDs
-          setSeenProfileIds(prev => {
-            const newSet = new Set(prev);
-            shuffledNewProfiles.forEach(profile => newSet.add(profile.id));
-            return newSet;
+          // Add to seen IDs immediately
+          shuffledNewProfiles.forEach(profile => seenProfileIdsRef.current.add(profile.id));
+          
+          // Update profiles state
+          setProfiles(prev => {
+            const combined = [...prev, ...shuffledNewProfiles];
+            console.log("Combined profiles count:", combined.length);
+            return combined;
           });
+          
+          console.log("Added new profiles. Total seen IDs:", seenProfileIdsRef.current.size);
+        } else {
+          console.log("No new profiles to add (all were duplicates)");
         }
         setPage(pageNum);
       }
@@ -147,7 +167,6 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error("Failed to fetch profiles", error);
-      // If it's the first load and fails, try to show some fallback
       if (resetProfiles) {
         setProfiles([]);
         setHasMore(false);
@@ -155,20 +174,22 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [userLocation, seenProfileIds]);
+  }, [userLocation, filters, searchTerm]); // Removed seenProfileIds dependency
 
-  // Initial load
+  // Initial load - wait for location to be loaded
   useEffect(() => {
-    if (isInitialLoad.current && user?.id) {
+    if (isInitialLoad.current && user?.id && locationLoaded) {
+      console.log('Initializing dashboard with location:', userLocation);
       fetchProfiles(1, true);
       isInitialLoad.current = false;
     }
-  }, [fetchProfiles, user?.id]);
+  }, [fetchProfiles, user?.id, locationLoaded, userLocation]);
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters) => {
     setFilters(newFilters);
     setPage(1);
+    seenProfileIdsRef.current = new Set(); // Reset seen IDs on filter change
     fetchProfiles(1, true, newFilters, searchTerm);
   }, [searchTerm, fetchProfiles]);
 
@@ -184,6 +205,7 @@ const Dashboard = () => {
     // Set new timer
     debounceTimer.current = setTimeout(() => {
       setPage(1);
+      seenProfileIdsRef.current = new Set(); // Reset seen IDs on search
       fetchProfiles(1, true, filters, value);
     }, 300);
   }, [filters, fetchProfiles]);
@@ -192,6 +214,7 @@ const Dashboard = () => {
   const loadMore = useCallback(() => {
     if (hasMore && !loading) {
       const nextPage = page + 1;
+      console.log("Loading more - page:", nextPage);
       fetchProfiles(nextPage, false);
     }
   }, [hasMore, loading, page, fetchProfiles]);
@@ -253,7 +276,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {profiles.map((profile, index) => (
                   <motion.div
-                    key={profile.id}
+                    key={`${profile.id}-${index}`}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: (index % 20) * 0.05 }}
@@ -275,10 +298,12 @@ const Dashboard = () => {
               )}
 
               {/* Initial loading state */}
-              {loading && profiles.length === 0 && (
+              {(loading && profiles.length === 0) || (!locationLoaded && user?.id) && (
                 <div className="text-center py-16">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Loading profiles...</p>
+                  <p className="mt-4 text-gray-600">
+                    {!locationLoaded ? "Loading your profile..." : "Loading profiles..."}
+                  </p>
                 </div>
               )}
 
@@ -295,7 +320,7 @@ const Dashboard = () => {
               )}
 
               {/* No profiles message */}
-              {!loading && profiles.length === 0 && (
+              {!loading && profiles.length === 0 && locationLoaded && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
