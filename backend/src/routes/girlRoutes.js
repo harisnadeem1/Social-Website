@@ -73,8 +73,8 @@ router.get("/public", async (req, res) => {
       FROM profiles p
       JOIN users u ON p.user_id = u.id
       WHERE ${whereClause}
-      ORDER BY RANDOM()
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      ORDER BY p.id ASC
+      LIMIT ${paramIndex} OFFSET ${paramIndex + 1}
     `, queryParams);
 
     // Get total count with same filters (for pagination info)

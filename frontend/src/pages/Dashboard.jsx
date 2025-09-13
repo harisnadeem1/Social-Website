@@ -20,6 +20,7 @@ const Dashboard = () => {
   const [page, setPage] = useState(1);
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [userLocation, setUserLocation] = useState('');
+  const [seenProfileIds, setSeenProfileIds] = useState(new Set());
   
   const [filters, setFilters] = useState({
     ageMin: 18,
@@ -33,6 +34,16 @@ const Dashboard = () => {
   // Refs for managing state
   const isInitialLoad = useRef(true);
   const debounceTimer = useRef(null);
+
+  // Shuffle function - Fisher-Yates algorithm
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
 
   // Fetch user location once
   useEffect(() => {
@@ -109,14 +120,30 @@ const Dashboard = () => {
       }));
 
       if (resetProfiles || pageNum === 1) {
-        setProfiles(updatedProfiles);
+        // First page or reset - shuffle all profiles and reset seen IDs
+        const shuffledProfiles = shuffleArray(updatedProfiles);
+        setProfiles(shuffledProfiles);
+        setSeenProfileIds(new Set(shuffledProfiles.map(p => p.id)));
         setPage(1);
       } else {
-        setProfiles(prev => [...prev, ...updatedProfiles]);
+        // Subsequent pages - filter duplicates, shuffle new batch, then append
+        const newProfiles = updatedProfiles.filter(profile => !seenProfileIds.has(profile.id));
+        
+        if (newProfiles.length > 0) {
+          const shuffledNewProfiles = shuffleArray(newProfiles);
+          setProfiles(prev => [...prev, ...shuffledNewProfiles]);
+          
+          // Update seen profile IDs
+          setSeenProfileIds(prev => {
+            const newSet = new Set(prev);
+            shuffledNewProfiles.forEach(profile => newSet.add(profile.id));
+            return newSet;
+          });
+        }
         setPage(pageNum);
       }
 
-      setHasMore(paginationInfo.hasMore || false);
+      setHasMore(paginationInfo.hasMore !== false);
       
     } catch (error) {
       console.error("Failed to fetch profiles", error);
@@ -128,20 +155,21 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [userLocation, loading]);
+  }, [userLocation, seenProfileIds]);
 
   // Initial load
   useEffect(() => {
-    if (isInitialLoad.current) {
+    if (isInitialLoad.current && user?.id) {
       fetchProfiles(1, true);
       isInitialLoad.current = false;
     }
-  }, [fetchProfiles]);
+  }, [fetchProfiles, user?.id]);
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters) => {
     setFilters(newFilters);
     setPage(1);
+    setSeenProfileIds(new Set()); // Reset seen profiles when filters change
     fetchProfiles(1, true, newFilters, searchTerm);
   }, [searchTerm, fetchProfiles]);
 
@@ -157,6 +185,7 @@ const Dashboard = () => {
     // Set new timer
     debounceTimer.current = setTimeout(() => {
       setPage(1);
+      setSeenProfileIds(new Set()); // Reset seen profiles when search changes
       fetchProfiles(1, true, filters, value);
     }, 300);
   }, [filters, fetchProfiles]);
@@ -226,7 +255,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {profiles.map((profile, index) => (
                   <motion.div
-                    key={`${profile.id}-${index}`}
+                    key={profile.id}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: (index % 20) * 0.05 }}
@@ -282,7 +311,7 @@ const Dashboard = () => {
               {/* End of results message */}
               {!loading && !hasMore && profiles.length > 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  <div className="text-lg mb-1">🎉 You've seen all available profiles!</div>
+                  <div className="text-lg mb-1">You've seen all available profiles!</div>
                   <div className="text-sm">Check back later for new matches</div>
                 </div>
               )}
