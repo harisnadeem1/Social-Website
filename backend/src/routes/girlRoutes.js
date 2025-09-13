@@ -73,7 +73,7 @@ router.get("/public", async (req, res) => {
       FROM profiles p
       JOIN users u ON p.user_id = u.id
       WHERE ${whereClause}
-      ORDER BY RANDOM()
+      ORDER BY p.id DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `, queryParams);
 
