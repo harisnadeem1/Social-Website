@@ -31,7 +31,6 @@
     "lucide-react": "^0.285.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-facebook-login": "^4.1.1",
     "react-helmet": "^6.1.0",
     "react-router-dom": "^6.16.0",
     "recharts": "^3.0.2",
