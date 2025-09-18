@@ -42,10 +42,13 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
     }
     setIsLoading(true);
     try {
+       const referral_slug = localStorage.getItem("referral_slug") || null;
       await axios.post(`${BASE_URL}/auth/register`, {
         email: form.email,
         password: form.password,
         role: "user",
+        referral_slug: referral_slug,
+        
       });
 
       const res1 = await axios.post(`${BASE_URL}/auth/login`, {
@@ -95,10 +98,12 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
+    const referral_slug = localStorage.getItem("referral_slug") || null;
     try {
       // Step 1: Register or fetch existing user
       const res = await axios.post(`${BASE_URL}/auth/google`, {
         credential: credentialResponse.credential,
+        referral_slug: referral_slug,
       });
 
       const { email, password, isNewUser } = res.data;

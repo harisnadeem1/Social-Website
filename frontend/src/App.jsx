@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Toaster } from '@/components/ui/toaster';
@@ -12,6 +12,7 @@ import ChatPage from '@/pages/ChatPage';
 import MyProfile from '@/pages/MyProfile';
 import Settings from '@/pages/Settings';
 import AdminPanel from '@/pages/AdminPanel';
+import AffiliateDetail from '@/pages/AffiliateDetail';
 import ChatterDashboard from '@/pages/ChatterDashboard';
 import AdminRoute from '@/components/routes/AdminRoute';
 import ChatterRoute from '@/components/routes/ChatterRoute';
@@ -21,6 +22,7 @@ import ProfileCreation from '@/pages/CreateProfilePage';
 import BottomNav from './components/BottomNav';
 import NotificationsPage from '@/pages/NotificationsPage';
 import PublicProfilePage from '@/pages/PublicProfilePage';
+import AffiliateDashboard from '@/pages/AffiliateDashboard';
 
 import AboutUsPage from '@/pages/info/AboutUsPage';
 import ContactPage from '@/pages/info/ContactPage';
@@ -42,6 +44,7 @@ const HomeRedirect = () => {
   if (!user) return <PublicHomepage />;
   if (user.role === 'admin') return <Navigate to="/admin" />;
   if (user.role === 'chatter') return <Navigate to="/chatter-dashboard" />;
+  if (user.role === 'affiliate') return <Navigate to="/affiliate-dashboard" />;
   return <Dashboard />;
 };
 
@@ -79,9 +82,12 @@ const AppContent = ({ user, login, logout, coins, updateCoins, loading }) => {
         <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
         <Route path="/my-profile" element={<PrivateRoute><MyProfile /></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+
         <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+        <Route path="/admin/affiliates/:id" element={<AdminRoute><AffiliateDetail /></AdminRoute>} />
         <Route path="/chatter-dashboard" element={<ChatterRoute><ChatterDashboard /></ChatterRoute>} />
+        <Route path="/affiliate-dashboard" element={<PrivateRoute><AffiliateDashboard /></PrivateRoute>} />
 
         <Route path="/about" element={<AboutUsPage />} />
         <Route path="/contact" element={<ContactPage />} />
@@ -105,6 +111,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [coins, setCoins] = useState(100);
   const [loading, setLoading] = useState(true);
+  const hasTracked = useRef(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('flirtduo_user');
@@ -124,6 +131,45 @@ function App() {
     }
     setLoading(false);
   }, []);
+
+useEffect(() => {
+  if (hasTracked.current) return;
+  hasTracked.current = true;
+
+  const pathname = window.location.pathname;
+  const search = window.location.search;
+  let fullSlug = pathname + search;
+
+    if (fullSlug.startsWith("/")) {
+    fullSlug = fullSlug.slice(1);            // "defne?ref=Ws3Qjtggfq"
+  }
+
+  if (search.includes("ref=")) {
+    localStorage.setItem("referral_slug", fullSlug);
+
+    const clickKey = `click_tracked_${fullSlug}`;
+    const lastClickTime = localStorage.getItem(clickKey);
+    const now = Date.now();
+
+    // 1 hours in milliseconds (change this if you want 1 hour, 1 week, etc.)
+    const TIME_LIMIT = 60 * 60 * 1000;
+
+    if (!lastClickTime || now - parseInt(lastClickTime) > TIME_LIMIT) {
+      localStorage.setItem(clickKey, now.toString());
+
+      fetch(`${import.meta.env.VITE_API_BASE_URL}/referral/click`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ link_slug: fullSlug })
+      })
+        .then((res) => res.json())
+        .then((data) => console.log("Referral click tracked:", data))
+        .catch((err) => console.error("Referral click error:", err));
+    }
+  }
+}, []);
+
+
 
   const login = (userData) => {
     setUser(userData);

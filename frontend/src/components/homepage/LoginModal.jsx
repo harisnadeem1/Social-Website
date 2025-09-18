@@ -53,6 +53,9 @@ const LoginModal = ({ open, onOpenChange, onSwitchToSignup }) => {
     else if (user.role === "chatter") {
       navigate("/chatter-dashboard");
     }
+    else if (user.role === "affiliate") {
+      navigate("/affiliate-dashboard");
+    }
     else if (!user.profile) {
       navigate("/create-profile", {
         state: {

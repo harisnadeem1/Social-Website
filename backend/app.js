@@ -25,6 +25,11 @@ const publicProfileRoutes = require('./src/routes/publicProfileRoutes');
 const autoEngagementRoutes = require('./src/routes/autoEngagementRoutes');
 const mobilenavRoutes = require('./src/routes/mobilenav');
 
+const affiliateRoutes = require("./src/routes/affiliateRoutes");
+const affiliateDashboardRoutes = require("./src/routes/affiliateDashboardRoutes");
+const referralRoutes = require("./src/routes/referralRoutes");
+
+
 // Shopify integration
 const shopifyRoutes = require("./src/routes/shopify");
 
@@ -64,5 +69,11 @@ app.use('/api/gifts', giftRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/public', publicProfileRoutes);
 app.use('/api/mobilenav', mobilenavRoutes);
+
+app.use("/api/affiliates", affiliateRoutes);
+app.use("/api/affiliate", affiliateDashboardRoutes);
+app.use("/api/referral", referralRoutes);
+
+
 
 module.exports = app;

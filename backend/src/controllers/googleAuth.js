@@ -33,7 +33,7 @@ const generateGooglePassword = (googleSub) => {
 
 const googleRegisterUser = async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential, referral_slug } = req.body;
 
     // Verify Google token
     const ticket = await client.verifyIdToken({
@@ -42,7 +42,7 @@ const googleRegisterUser = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { email, name, picture, sub } = payload;
+    const { email, name, sub } = payload;
 
     // Check if user exists
     const existingUser = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
@@ -66,12 +66,24 @@ const googleRegisterUser = async (req, res) => {
       isNewUser = true;
 
       // Add default coins
-      const defaultCoins = 20;
-      await pool.query(
-        `INSERT INTO coins (user_id, balance) VALUES ($1, $2)`,
-        [user.id, defaultCoins]
-      );
+      await pool.query(`INSERT INTO coins (user_id, balance) VALUES ($1, $2)`, [user.id, 20]);
 
+      // ✅ Link referral if slug exists
+      if (referral_slug) {
+        const cleanedSlug = referral_slug.startsWith("/") ? referral_slug.slice(1) : referral_slug;
+        const campaign = await pool.query(
+          `SELECT id, affiliate_id FROM referral_campaigns WHERE link_slug = $1`,
+          [cleanedSlug]
+        );
+
+        if (campaign.rows.length > 0) {
+          const { id: campaign_id, affiliate_id } = campaign.rows[0];
+          await pool.query(
+            `UPDATE users SET referral_campaign_id = $1, referred_by = $2 WHERE id = $3`,
+            [campaign_id, affiliate_id, user.id]
+          );
+        }
+      }
     } else {
       user = existingUser.rows[0];
       plainPassword = generateGooglePassword(sub);
@@ -89,6 +101,7 @@ const googleRegisterUser = async (req, res) => {
     res.status(400).json({ error: "Google authentication failed" });
   }
 };
+
 
 const googleLoginUser = async (req, res) => {
   try {

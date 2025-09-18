@@ -61,11 +61,7 @@ const sendWink = async (req, res) => {
       [senderId, receiverId]
     );
 
-    // Step 4: Log transaction
-    await db.query(
-      'INSERT INTO transactions (user_id, amount, type, purpose) VALUES ($1, $2, $3, $4)',
-      [senderId, 2, 'spend', 'wink']
-    );
+   
 
     await db.query('COMMIT');
 

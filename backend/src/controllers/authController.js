@@ -6,33 +6,59 @@ const userModel = require('../models/userModel');
 const profileModel = require('../models/profileModel');
 const { comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
+const db = require("../config/db");
+
 
 const registerUser = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, referral_slug } = req.body;
 
     if (!email || !password || !role) {
       return res.status(400).json({ error: "Email, password, and role are required" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const full_name = email.split('@')[0]; // Default name as prefix
 
-    // Use email as default full_name or set it to null/empty string
-    const full_name = email.split('@')[0]; // Use email prefix as default name
-    
+    // 1️⃣ Create the user first
     const newUser = await createUserByEmail(email, hashedPassword, full_name, role);
 
+    // 2️⃣ If referral_slug exists → find campaign and update user
+    if (referral_slug) {
+      // Remove leading slash if any
+      const cleanedSlug = referral_slug.startsWith("/") ? referral_slug.slice(1) : referral_slug;
+
+      const campaignResult = await db.query(
+        `SELECT id, affiliate_id FROM referral_campaigns WHERE link_slug = $1`,
+        [cleanedSlug]
+      );
+
+      if (campaignResult.rows.length > 0) {
+        const { id: campaign_id, affiliate_id } = campaignResult.rows[0];
+
+        // Update user with referral data
+        await db.query(
+          `UPDATE users SET referral_campaign_id = $1, referred_by = $2 WHERE id = $3`,
+          [campaign_id, affiliate_id, newUser.id]
+        );
+      }
+    }
+
+    // 3️⃣ Create initial coin balance
     await createInitialCoinBalance(newUser.id);
 
+    // 4️⃣ Generate JWT token
     const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET, {
-      expiresIn: "30d", // Changed from 7d to 30d
+      expiresIn: "30d",
     });
 
     res.status(201).json({ user: newUser, token });
   } catch (err) {
+    console.error("Register error:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 const loginUser = async (req, res) => {
   try {

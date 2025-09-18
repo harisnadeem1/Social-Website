@@ -65,12 +65,7 @@ const sendMessage = async (req, res) => {
       return res.status(403).json({ message: 'Insufficient coin balance' });
     }
 
-    // Log the transaction
-    await db.query(
-      `INSERT INTO transactions (user_id, amount, type, purpose) 
-       VALUES ($1, 5, 'spend', 'message')`,
-      [senderId]
-    );
+    
 
     // Insert the message
     const messageResult = await db.query(

@@ -21,6 +21,7 @@ import debounce from 'lodash.debounce';
 import imageCompression from "browser-image-compression";
 import { uploadToCloudinary } from "../lib/cloudinaryUpload";
 import EnhancedDashboardSection from "../components/admin/EnhancedDashboardSection";
+import AffiliatesManagement from '../components/admin/AffiliatesManagement';
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
   <Card className="border-0 shadow-lg bg-white transition-transform hover:scale-105">
@@ -34,6 +35,10 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
   </Card>
 );
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+
+
+
 
 
 const AdminPanel = () => {
@@ -1066,22 +1071,27 @@ const AdminPanel = () => {
                 </Table>
 
                 {/* Pagination controls */}
-                <div className="flex justify-center mt-4 space-x-2">
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                      key={i}
-                      className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                      onClick={() => setCurrentPage(i + 1)}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
+                <div className="flex justify-center mt-4 flex-wrap gap-2">
+  {Array.from({ length: totalPages }, (_, i) => (
+    <button
+      key={i}
+      className={`px-3 py-1 text-sm rounded transition ${
+        currentPage === i + 1
+          ? "bg-blue-500 text-white"
+          : "bg-gray-200 hover:bg-gray-300"
+      }`}
+      onClick={() => setCurrentPage(i + 1)}
+    >
+      {i + 1}
+    </button>
+  ))}
+</div>
+
               </CardContent>
             </Card>
           </section>
 
-          <section id="chat-monitoring">
+          {/* <section id="chat-monitoring">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">💬 Chat Monitoring</h2>
             <Card className="border-0 shadow-lg bg-white">
               <CardHeader>
@@ -1124,7 +1134,7 @@ const AdminPanel = () => {
                 </Table>
               </CardContent>
             </Card>
-          </section>
+          </section> */}
 
           {/* <section id="revenue-tracking">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 Revenue & Coin Tracking</h2>
@@ -1161,6 +1171,7 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
           </section> */}
+          <AffiliatesManagement />
         </motion.div>
       </main>
     </div>
