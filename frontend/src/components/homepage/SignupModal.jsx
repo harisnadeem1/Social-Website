@@ -51,6 +51,10 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
         
       });
 
+      if (window.fbq) {
+      window.fbq('track', 'SignUp');
+   }
+
       const res1 = await axios.post(`${BASE_URL}/auth/login`, {
         email: form.email,
         password: form.password,
@@ -107,6 +111,9 @@ const SignupModal = ({ open, onOpenChange, onSwitchToLogin }) => {
       });
 
       const { email, password, isNewUser } = res.data;
+      if (window.fbq) {
+      window.fbq('track', 'SignUp');
+   }
 
       // Step 2: Login with generated password
       const loginRes = await axios.post(`${BASE_URL}/auth/login`, {

@@ -391,6 +391,15 @@ const coinPackages = [
     //createShopifyCheckout(selectedPackage);
     
     // Option 2: Direct cart redirect (uncomment to use instead)
+    // Fire Facebook Purchase Event
+  if (window.fbq && selectedPackage) {
+    window.fbq('track', 'Purchase', {
+      value: parseFloat(selectedPackage.price.replace('€', '').replace('$', '')),
+      currency: 'USD', // or 'USD' if you're using dollars
+      package_name: selectedPackage.name,
+      coins: selectedPackage.coins + selectedPackage.bonus
+    });
+  }
     redirectToShopifyCart(selectedPackage);
   };
 
