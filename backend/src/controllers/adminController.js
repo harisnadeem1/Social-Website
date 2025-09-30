@@ -61,12 +61,15 @@ const getDashboardStats = async (req, res) => {
     `);
 
     const todayChatsRes = await db.query(`
-      SELECT COUNT(DISTINCT c.id) AS today_chats
+      SELECT 
+    COUNT(DISTINCT c.id) AS today_chats,    -- unique conversations with user replies today
+    COUNT(m.id) AS today_messages           -- total user messages today
 FROM conversations c
 JOIN messages m ON m.conversation_id = c.id
 JOIN users u ON m.sender_id = u.id
 WHERE u.role = 'user'
   AND DATE(m.sent_at) = CURRENT_DATE;
+
 
     `);
 
@@ -168,7 +171,8 @@ WHERE u.role = 'user'
     const dailyChatsRes = await db.query(`
     SELECT 
     DATE(m.sent_at) AS chat_date,
-    COUNT(DISTINCT c.id) AS new_chats
+    COUNT(DISTINCT c.id) AS new_chats,       -- count unique chats with user replies
+    COUNT(m.id) AS total_messages            -- count all user messages
 FROM conversations c
 JOIN messages m ON m.conversation_id = c.id
 JOIN users u ON m.sender_id = u.id
@@ -176,6 +180,7 @@ WHERE u.role = 'user'
   AND m.sent_at >= CURRENT_DATE - INTERVAL '7 days'
 GROUP BY DATE(m.sent_at)
 ORDER BY chat_date DESC;
+
     `);
 
     // ===================================
