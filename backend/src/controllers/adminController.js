@@ -169,16 +169,22 @@ WHERE u.role = 'user'
     // ===================================
     const dailyChatsRes = await db.query(`
       SELECT 
-    DATE(m.sent_at) AS chat_date,
-    COUNT(DISTINCT c.id) AS new_chats,    -- conversations with at least one user message
-    COUNT(m.id) AS messages               -- all user messages in those conversations
-FROM conversations c
-JOIN messages m ON m.conversation_id = c.id
-JOIN users u ON m.sender_id = u.id
-WHERE u.role = 'user'
-  AND m.sent_at >= CURRENT_DATE - INTERVAL '7 days'
-GROUP BY DATE(m.sent_at)
-ORDER BY chat_date DESC;
+    msg_date AS chat_date,
+    COUNT(DISTINCT conversation_id) AS new_chats,
+    COUNT(message_id) AS messages
+FROM (
+    SELECT 
+        c.id AS conversation_id,
+        m.id AS message_id,
+        DATE(m.sent_at) AS msg_date
+    FROM conversations c
+    JOIN messages m ON m.conversation_id = c.id
+    JOIN users u ON m.sender_id = u.id
+    WHERE u.role = 'user'
+      AND m.sent_at >= CURRENT_DATE - INTERVAL '7 days'
+) sub
+GROUP BY msg_date
+ORDER BY msg_date DESC;
 
     `);
 
