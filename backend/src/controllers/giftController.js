@@ -1,4 +1,6 @@
 const GiftModel = require('../models/giftModel');
+const { handleChatbotReply } = require('./messageController'); 
+
 
 exports.getGiftCatalog = async (req, res) => {
   try {
@@ -31,6 +33,7 @@ exports.sendGift = async (req, res) => {
       senderId,
       giftId
     });
+    handleChatbotReply(conversationId, senderId, `I sent you a gift: ${gift.name}`);
 
     const updatedBalance = await GiftModel.getUserCoinBalance(senderId);
 res.status(200).json({ message, updatedBalance });

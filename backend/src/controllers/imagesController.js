@@ -1,4 +1,5 @@
 const Images = require('../models/imageModel');
+const { handleChatbotReply } = require('./messageController'); 
 
 exports.uploadImageAndCreateMessage = async (req, res) => {
   try {
@@ -29,6 +30,8 @@ exports.uploadImageAndCreateMessage = async (req, res) => {
         content: ''
       },
     });
+
+    handleChatbotReply(conversation_id, sender_id, message.content || "");
 
     
   } catch (error) {
