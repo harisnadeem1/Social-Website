@@ -61,11 +61,15 @@ const getDashboardStats = async (req, res) => {
     `);
 
     const todayChatsRes = await db.query(`
-      SELECT COUNT(*) as today_chats
-      FROM conversations c
-      JOIN users u ON c.user_id = u.id
-      WHERE u.role = 'user'
-        AND DATE(c.started_at) = CURRENT_DATE
+      SELECT COUNT(DISTINCT c.id) AS today_chats
+FROM conversations c
+JOIN users u ON c.user_id = u.id
+JOIN messages m ON m.conversation_id = c.id
+WHERE u.role = 'user'
+  AND DATE(m.sent_at) = CURRENT_DATE  -- user sent a message today
+  AND m.sender_id = u.id              -- message sent by the user (not auto system)
+  AND DATE(c.started_at) = CURRENT_DATE;
+
     `);
 
     // ===================================
@@ -165,26 +169,18 @@ const getDashboardStats = async (req, res) => {
     // ===================================
     const dailyChatsRes = await db.query(`
       SELECT 
-        DATE(c.started_at) as chat_date,
-        COUNT(*) as new_chats,
-        COALESCE(msg_count.total_messages, 0) as messages
-      FROM conversations c
-      JOIN users u ON c.user_id = u.id
-      LEFT JOIN (
-        SELECT 
-          DATE(m.sent_at) as msg_date,
-          COUNT(*) as total_messages
-        FROM messages m
-        JOIN conversations conv ON m.conversation_id = conv.id
-        JOIN users usr ON conv.user_id = usr.id
-        WHERE usr.role = 'user'
-          AND m.sent_at >= CURRENT_DATE - INTERVAL '7 days'
-        GROUP BY DATE(m.sent_at)
-      ) msg_count ON DATE(c.started_at) = msg_count.msg_date
-      WHERE u.role = 'user'
-        AND c.started_at >= CURRENT_DATE - INTERVAL '7 days'
-      GROUP BY DATE(c.started_at), msg_count.total_messages
-      ORDER BY chat_date DESC
+    DATE(c.started_at) AS chat_date,
+    COUNT(DISTINCT c.id) AS new_chats,
+    COUNT(m.id) AS messages
+  FROM conversations c
+  JOIN users u ON c.user_id = u.id
+  JOIN messages m ON m.conversation_id = c.id
+  WHERE u.role = 'user'
+    AND m.sender_id = u.id  -- only user messages
+    AND m.sent_at >= CURRENT_DATE - INTERVAL '7 days'
+    AND c.started_at >= CURRENT_DATE - INTERVAL '7 days'
+  GROUP BY DATE(c.started_at)
+  ORDER BY chat_date DESC;
     `);
 
     // ===================================
