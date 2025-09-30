@@ -63,12 +63,10 @@ const getDashboardStats = async (req, res) => {
     const todayChatsRes = await db.query(`
       SELECT COUNT(DISTINCT c.id) AS today_chats
 FROM conversations c
-JOIN users u ON c.user_id = u.id
 JOIN messages m ON m.conversation_id = c.id
+JOIN users u ON m.sender_id = u.id
 WHERE u.role = 'user'
-  AND DATE(m.sent_at) = CURRENT_DATE  -- user sent a message today
-  AND m.sender_id = u.id              -- message sent by the user (not auto system)
-  AND DATE(c.started_at) = CURRENT_DATE;
+  AND DATE(m.sent_at) = CURRENT_DATE;
 
     `);
 
@@ -168,19 +166,16 @@ WHERE u.role = 'user'
     // 6. DAILY CHAT ACTIVITY (Last 7 days)
     // ===================================
     const dailyChatsRes = await db.query(`
-      SELECT 
-    DATE(c.started_at) AS chat_date,
-    COUNT(DISTINCT c.id) AS new_chats,
-    COUNT(m.id) AS messages
-  FROM conversations c
-  JOIN users u ON c.user_id = u.id
-  JOIN messages m ON m.conversation_id = c.id
-  WHERE u.role = 'user'
-    AND m.sender_id = u.id  -- only user messages
-    AND m.sent_at >= CURRENT_DATE - INTERVAL '7 days'
-    AND c.started_at >= CURRENT_DATE - INTERVAL '7 days'
-  GROUP BY DATE(c.started_at)
-  ORDER BY chat_date DESC;
+    SELECT 
+    DATE(m.sent_at) AS chat_date,
+    COUNT(DISTINCT c.id) AS new_chats
+FROM conversations c
+JOIN messages m ON m.conversation_id = c.id
+JOIN users u ON m.sender_id = u.id
+WHERE u.role = 'user'
+  AND m.sent_at >= CURRENT_DATE - INTERVAL '7 days'
+GROUP BY DATE(m.sent_at)
+ORDER BY chat_date DESC;
     `);
 
     // ===================================
