@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { handleLikeResponse } = require('./likeWinkBotController'); // NEW
 
 const addLike = async (req, res) => {
   const senderId = req.user.id;
@@ -14,10 +15,15 @@ const addLike = async (req, res) => {
       return res.status(200).json({ status: 'already_liked' });
     }
 
-    await db.query(
-      'INSERT INTO likes (sender_id, receiver_id) VALUES ($1, $2)',
+    const likeResult = await db.query(
+      'INSERT INTO likes (sender_id, receiver_id) VALUES ($1, $2) RETURNING id',
       [senderId, receiverId]
     );
+
+    const likeId = likeResult.rows[0].id;
+
+    // ✅ TRIGGER AUTOMATED BOT RESPONSE
+    handleLikeResponse(likeId, senderId, receiverId);
 
     return res.status(201).json({ status: 'like_sent' });
   } catch (err) {
@@ -44,4 +50,4 @@ const checkLikeStatus = async (req, res) => {
   }
 };
 
-module.exports = {checkLikeStatus,addLike}
+module.exports = { checkLikeStatus, addLike };

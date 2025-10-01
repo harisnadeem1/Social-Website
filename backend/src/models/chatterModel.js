@@ -58,11 +58,20 @@ const getMessagesByConversationId = async (conversationId) => {
   return rows;
 };
 
-
 const sendMessageFromGirl = async (conversationId, girlId, content) => {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
+
+    // Get user_id from conversation
+    const convQuery = `SELECT user_id FROM conversations WHERE id = $1`;
+    const convResult = await client.query(convQuery, [conversationId]);
+    const userId = convResult.rows[0]?.user_id;
+
+    // Get girl's name for notification
+    const girlQuery = `SELECT name FROM profiles WHERE user_id = $1`;
+    const girlResult = await client.query(girlQuery, [girlId]);
+    const girlName = girlResult.rows[0]?.name || 'Someone';
 
     // Insert the new message
     const insertQuery = `
@@ -73,6 +82,14 @@ const sendMessageFromGirl = async (conversationId, girlId, content) => {
     const insertValues = [conversationId, girlId, content];
     const { rows } = await client.query(insertQuery, insertValues);
     const newMessage = rows[0];
+
+    // Insert notification
+    if (userId) {
+      await client.query(`
+        INSERT INTO notifications (user_id, sender_id, type, content, is_read, created_at)
+        VALUES ($1, $2, 'message', $3, false, NOW())
+      `, [userId, girlId, `You received a new message from ${girlName}`]);
+    }
 
     // Update last_activity in conversations table
     const updateQuery = `

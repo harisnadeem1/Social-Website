@@ -1,23 +1,6 @@
 const db = require('../config/db');
 const WinksModel = require('../models/winksModel');
-
-const addWink = async (req, res) => {
-  const senderId = req.user.id;
-  const receiverId = parseInt(req.params.receiverId);
-
-  try {
-    await db.query(`
-      INSERT INTO winks (sender_id, receiver_id)
-      VALUES ($1, $2)
-      ON CONFLICT (sender_id, receiver_id) DO NOTHING
-    `, [senderId, receiverId]);
-
-    res.json({ message: 'Wink sent' });
-  } catch (err) {
-    console.error('Error sending wink:', err);
-    res.status(500).json({ message: 'Failed to send wink' });
-  }
-};
+const { handleWinkResponse } = require('./likeWinkBotController'); // NEW
 
 const sendWink = async (req, res) => {
   const senderId = req.user.id;
@@ -26,7 +9,6 @@ const sendWink = async (req, res) => {
   try {
     await db.query('BEGIN');
 
-    // Step 1: Check if wink already exists
     const existing = await db.query(
       'SELECT id FROM winks WHERE sender_id = $1 AND receiver_id = $2',
       [senderId, receiverId]
@@ -37,7 +19,6 @@ const sendWink = async (req, res) => {
       return res.status(200).json({ status: 'already_winked' });
     }
 
-    // Step 2: Deduct 2 coins only if enough balance
     const coinRes = await db.query(
       `UPDATE coins 
        SET balance = balance - 2, 
@@ -55,17 +36,19 @@ const sendWink = async (req, res) => {
 
     const remainingCoins = coinRes.rows[0].balance;
 
-    // Step 3: Insert wink
-    await db.query(
-      'INSERT INTO winks (sender_id, receiver_id) VALUES ($1, $2)',
+    // Insert wink and get ID
+    const winkResult = await db.query(
+      'INSERT INTO winks (sender_id, receiver_id) VALUES ($1, $2) RETURNING id',
       [senderId, receiverId]
     );
 
-   
+    const winkId = winkResult.rows[0].id;
 
     await db.query('COMMIT');
 
-    // Step 5: Return success + new balance
+    // ✅ TRIGGER AUTOMATED BOT RESPONSE
+    handleWinkResponse(winkId, senderId, receiverId);
+
     res.status(200).json({
       status: 'wink_sent',
       remainingCoins
@@ -95,4 +78,4 @@ const respondToWink = async (req, res) => {
   }
 };
 
-module.exports = { sendWink, addWink ,respondToWink};
+module.exports = { sendWink, respondToWink };
