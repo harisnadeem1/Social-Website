@@ -391,15 +391,19 @@ NEVER:
     const temperature = 1.1;
 
     // ============================================
-    // ✅ NEW: Delay before typing starts (8-10 seconds)
+    // ✅ UNIFIED DELAY SYSTEM (25-45 seconds total)
     // ============================================
-    const delayBeforeTyping = 8000 + Math.random() * 2000;
+    const totalDelay = 25000 + Math.random() * 20000; // 25-45 seconds
+    const typingDuration = 10000; // 10 seconds
+    const waitBeforeTyping = totalDelay - typingDuration;
     
-    console.log(`[Bot] Waiting ${Math.round(delayBeforeTyping/1000)}s before typing...`);
-    await new Promise(resolve => setTimeout(resolve, delayBeforeTyping));
+    console.log(`[Bot] Total delay: ${Math.round(totalDelay/1000)}s (typing starts at ${Math.round(waitBeforeTyping/1000)}s)`);
+    
+    // Wait silently (no typing indicator)
+    await new Promise(resolve => setTimeout(resolve, waitBeforeTyping));
 
     // ============================================
-    // ✅ START TYPING INDICATOR
+    // ✅ START TYPING INDICATOR (10 seconds before message)
     // ============================================
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("typing_start", { 
@@ -411,6 +415,8 @@ NEVER:
     // ============================================
     // ✅ CALL GPT (while typing indicator showing)
     // ============================================
+    const gptStartTime = Date.now();
+    
     const gptResponse = await openai.chat.completions.create({
       model,
       messages: [
@@ -435,21 +441,15 @@ NEVER:
     botReply = addNaturalImperfections(botReply, girlMessageCount);
 
     // ============================================
-    // ✅ TYPING SIMULATION (10-20 seconds based on message length)
+    // ✅ WAIT FOR REMAINING TYPING TIME
     // ============================================
-    const messageLength = botReply.length;
-    let typingDelay;
+    const gptCallDuration = Date.now() - gptStartTime;
+    const remainingTypingTime = typingDuration - gptCallDuration;
     
-    if (messageLength < 30) {
-      typingDelay = 10000 + Math.random() * 2000; // 10-12 seconds
-    } else if (messageLength < 80) {
-      typingDelay = 12000 + Math.random() * 4000; // 12-16 seconds
-    } else {
-      typingDelay = 16000 + Math.random() * 4000; // 16-20 seconds
+    if (remainingTypingTime > 0) {
+      console.log(`[Bot] Continuing typing for ${Math.round(remainingTypingTime/1000)}s more...`);
+      await new Promise(resolve => setTimeout(resolve, remainingTypingTime));
     }
-    
-    console.log(`[Bot] Typing message (${messageLength} chars) for ${Math.round(typingDelay/1000)}s...`);
-    await new Promise(resolve => setTimeout(resolve, typingDelay));
 
     // ============================================
     // ✅ STOP TYPING INDICATOR & SEND MESSAGE
@@ -474,7 +474,8 @@ NEVER:
           });
         }
 
-        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+        // Wait 3-6 seconds between split messages
+        await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 3000));
 
         if (global.io) {
           global.io.to(`chat-${conversationId}`).emit("typing_start", { 
@@ -483,18 +484,8 @@ NEVER:
           });
         }
 
-        const part2Length = part2.length;
-        let typing2;
-        
-        if (part2Length < 30) {
-          typing2 = 3000 + Math.random() * 2000; // 3-5 seconds
-        } else if (part2Length < 60) {
-          typing2 = 5000 + Math.random() * 3000; // 5-8 seconds
-        } else {
-          typing2 = 8000 + Math.random() * 4000; // 8-12 seconds
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, typing2));
+        // Type for 5-8 seconds for part 2
+        await new Promise(resolve => setTimeout(resolve, 5000 + Math.random() * 3000));
 
         if (global.io) {
           global.io.to(`chat-${conversationId}`).emit("typing_stop", { senderId: girlId });
