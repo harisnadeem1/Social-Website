@@ -99,6 +99,9 @@ const sendMessage = async (req, res) => {
   }
 };
 
+// This is the updated handleChatbotReply function with flirtier responses and better timing
+// Replace the existing handleChatbotReply function in your messageController.js
+
 async function handleChatbotReply(conversationId, userId, userMessage) {
   try {
     // 1. Fetch conversation data + message count for context
@@ -150,12 +153,10 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
 
     const reversed = historyRes.rows.reverse();
 
-    // 3. Analyze conversation patterns for natural variation
+    // 3. Analyze conversation patterns
     const girlMessages = reversed.filter(m => m.sender_id === girlId);
     const userEmojiCount = (userMessage.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
-    const userHasQuestion = userMessage.includes('?');
     const userMessageLength = userMessage.length;
-    const girlRecentQuestions = girlMessages.filter(m => m.content?.includes('?')).length;
     
     // Track emoji usage from last 3 messages to avoid repetition
     const recentEmojis = girlMessages
@@ -200,7 +201,7 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
     // 5. Choose model
     const model = useVision ? "gpt-4o" : "gpt-4o-mini";
 
-    // 6. NATURAL CONVERSATION SYSTEM PROMPT
+    // 6. Build system prompt
     const hour = new Date().getHours();
     const timeContext = hour < 6 ? "very late at night" :
                         hour < 12 ? "morning" :
@@ -208,240 +209,221 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
                         hour < 22 ? "evening" :
                         "late night";
 
-    // CRITICAL: Track message progression for engagement strategy
     const freeMessagesUsed = girlMessageCount;
     const isLastFreeMessage = freeMessagesUsed === 3;
-    const isSecondLastFree = freeMessagesUsed === 2;
 
-    // Natural emoji variation - match user's style but don't overuse
     let emojiGuidance = "";
     if (userEmojiCount === 0) {
-      emojiGuidance = "Use 0-1 emoji total, or skip entirely. Keep it minimal and natural.";
+      emojiGuidance = "Use 0-1 emoji total, or skip entirely.";
     } else if (userEmojiCount === 1) {
-      emojiGuidance = "Use 0-1 emoji. Match his casual vibe.";
+      emojiGuidance = "Use 0-1 emoji.";
     } else if (userEmojiCount >= 2) {
-      emojiGuidance = "Use 1-2 emojis max. Vary them naturally.";
+      emojiGuidance = "Use 1-2 emojis max.";
     }
     
-    // Add emoji variety instruction
     if (recentEmojis.length > 0) {
-      emojiGuidance += ` AVOID repeating these recently used: ${recentEmojis}. Use different ones or skip emojis.`;
+      emojiGuidance += ` Avoid these recently used: ${recentEmojis}`;
     }
 
-    // Question balance - ALWAYS engage with questions
-    let questionGuidance = "";
-    if (isLastFreeMessage) {
-      questionGuidance = "MUST end with a compelling, open-ended question that creates curiosity.";
-    } else {
-      questionGuidance = "Always end with an engaging question. Mix it up: sometimes about him, sometimes about plans, sometimes deeper, sometimes playful. Make him want to respond.";
-    }
-
-    // Recent phrases to avoid exact repetition
     const recentPhrases = girlMessages
       .map(m => m.content)
       .filter(Boolean)
       .slice(-5)
       .join(' | ');
 
-    // Personality hint
     const personalityHint = interests 
-      ? `Your interests: ${interests}. Mention naturally if relevant, but don't force it.` 
-      : "You're friendly, real, and casual.";
+      ? `Your interests: ${interests}. Weave them in naturally if relevant.` 
+      : "You're confident, playful, and know how to flirt.";
 
-    // MESSAGE-SPECIFIC STRATEGY with engaging questions
     let strategyPrompt = "";
     let lengthGuidance = "";
     
-    // Randomize message length style - LONGER and more varied
     const lengthStyle = Math.random();
     
     if (freeMessagesUsed === 0) {
-      // First message: Medium length, warm and questioning
-      if (lengthStyle < 0.4) {
-        lengthGuidance = "Reply in 2 sentences with a question.";
-      } else if (lengthStyle < 0.7) {
-        lengthGuidance = "Reply in 2-3 sentences, end with an engaging question.";
-      } else {
-        lengthGuidance = "Reply in 3 sentences with a curious question.";
-      }
-      strategyPrompt = `FIRST MESSAGE: Be warm, show interest, and ask something about him. ${lengthGuidance}
-Examples: "hey! 😊 you seem pretty interesting from your profile. what do you usually do for fun around here?"`;
+      // First message: Quick, flirty, intriguing - NO QUESTIONS
+      lengthGuidance = "2 sentences max. Just react.";
+      strategyPrompt = `FIRST MESSAGE: Just react to his message. Be flirty and playful. DO NOT ASK ANY QUESTIONS.
+
+Examples (NO questions):
+- "hey 😏 confident much"
+- "lol okay youre bold. i like that"
+- "well someone knows what they want"
+- "hmm not bad 👀"
+- "okay i see you"
+
+CRITICAL: ZERO QUESTIONS. Just vibe and react.`;
       
     } else if (freeMessagesUsed === 1) {
-      // Second message: Build connection with questions
-      if (lengthStyle < 0.3) {
-        lengthGuidance = "Reply in 2 sentences with a question.";
-      } else if (lengthStyle < 0.6) {
-        lengthGuidance = "Reply in 2-3 sentences, end with a question.";
-      } else {
-        lengthGuidance = "Reply in 3-4 sentences with an engaging question.";
-      }
-      strategyPrompt = `SECOND MESSAGE: React to what he said, share a bit about yourself, then ask something that digs deeper. ${lengthGuidance}
-Examples: "lol that sounds fun! i love doing spontaneous stuff too 😅 are you more of an outdoor person or do you prefer indoor activities? i'm trying to figure out your vibe haha"`;
+      // Second message: React more, maybe share something - AVOID QUESTIONS
+      lengthGuidance = "2-3 sentences. No questions unless absolutely natural.";
+      strategyPrompt = `SECOND MESSAGE: React to what he said and vibe. Share your thoughts. AVOID QUESTIONS.
+
+Examples (NO questions - use 70% of time):
+- "lol youre kinda funny ngl. i like your energy already"
+- "okay that made me laugh 😂 youre different from most guys on here"
+- "haha i can tell youre trouble. the good kind tho"
+- "ngl im already enjoying this. you got a good vibe"
+
+Examples with question (use only 30% of time):
+- "okay youre actually cool lol. so you always this smooth or just with me? 😏"
+
+PREFER: Just statements and reactions. Make HIM ask YOU questions.`;
       
-    } else if (isSecondLastFree) {
-      // Third message: Create intrigue with questions
-      if (lengthStyle < 0.3) {
-        lengthGuidance = "Reply in 2-3 sentences with an intriguing question.";
-      } else if (lengthStyle < 0.6) {
-        lengthGuidance = "Reply in 3 sentences with a personal question.";
-      } else {
-        lengthGuidance = "Reply in 3-4 sentences, build connection and ask something meaningful.";
-      }
-      strategyPrompt = `THIRD MESSAGE: Share something about yourself that creates curiosity, then ask him something personal. ${lengthGuidance}
-Examples: "okay you're definitely interesting lol 😏 i usually dont vibe with people this quick but you seem different. so what are you actually looking for on here? like are you just bored or actually trying to meet someone cool?"`;
+    } else if (freeMessagesUsed === 2) {
+      // Third message: Build connection - MINIMAL QUESTIONS
+      lengthGuidance = "2-3 sentences. Statement preferred over question.";
+      strategyPrompt = `THIRD MESSAGE: Show more interest. Share about yourself. Question is OPTIONAL.
+
+Examples WITHOUT question (use 60% of time):
+- "okay ngl youre keeping my attention and that doesnt happen often 👀 youre actually interesting"
+- "lol im kinda vibing with you rn. this is going way better than i expected"
+- "wait youre actually cool. i wasnt expecting to like talking to you this much 😅"
+
+Examples WITH question (use 40% of time):
+- "okay so youre funny AND cute? dangerous combo lol. whats the catch tho"
+
+TONE: Flirty compliments. Make him feel special. Questions are optional.`;
       
     } else if (isLastFreeMessage) {
-      // Fourth message: CRITICAL - Maximum engagement with strong question
-      lengthGuidance = "Reply in 3-4 sentences. MUST end with a compelling question.";
-      strategyPrompt = `🔥 FOURTH MESSAGE - MAXIMUM ENGAGEMENT (CRITICAL):
-This is the LAST free message. Create strong curiosity and connection.
+      // Fourth message: ONE good question that creates intrigue
+      lengthGuidance = "3 sentences. ONE question at the end.";
+      strategyPrompt = `🔥 FOURTH MESSAGE - MAXIMUM INTRIGUE:
+Build up tension, compliment him, THEN one compelling question.
 
-RULES:
-1. Acknowledge something he said or compliment him genuinely
-2. Share something personal or interesting about yourself
-3. Create a sense of connection or chemistry
-4. End with a STRONG question that makes him want to answer
+Structure:
+1. Compliment (youre different/interesting/cool)
+2. Share feeling (im actually interested/curious/intrigued)  
+3. ONE question that creates desire to keep talking
 
-QUESTION TYPES TO USE:
-- "what would you do if we actually met up? like what's your idea of a good time?"
-- "quick question - are you more of a romantic or adventurous type? i need to know lol"
-- "so tell me something real about yourself... what are you actually looking for?"
-- "if we were hanging out right now what would we be doing? i'm curious about your vibe 👀"
-- "okay real talk - what's your type? like personality-wise... this actually matters 😅"
-- "what made you message me anyway? lol i'm curious what caught your attention"
+Examples:
+- "okay youre definitely not like other guys on here. i actually wanna know more about you 👀 what would we even do if we hung out?"
+- "not gonna lie youre making me curious and that doesnt happen often 😏 so are you more romantic or spontaneous? need to know what im working with"
+- "wait youre actually making me interested. i dont usually open up this quick but something about you feels different... so whats your deal for real?"
+- "okay i can tell youre trouble but like the fun kind 😅 if we actually met up what would your move be? tryna see if youre all talk"
 
-TONE: Flirty but genuine, playful but personal, creates FOMO about getting to know you more.
-${lengthGuidance}`;
+CRITICAL: ONE question only. Build intrigue first.`;
       
     } else {
-      // After 4th message: Keep engagement high with varied questions
-      if (lengthStyle < 0.2) {
-        lengthGuidance = "Reply in 2 sentences with a quick question.";
-      } else if (lengthStyle < 0.4) {
-        lengthGuidance = "Reply in 2-3 sentences, end with a question.";
-      } else if (lengthStyle < 0.65) {
-        lengthGuidance = "Reply in 3 sentences with an engaging question.";
-      } else if (lengthStyle < 0.85) {
-        lengthGuidance = "Reply in 3-4 sentences, ask something interesting.";
+      // After 4th: Mostly statements, occasional questions
+      if (lengthStyle < 0.5) {
+        lengthGuidance = "2 sentences. NO question.";
+        strategyPrompt = `Just react and flirt. NO questions.
+Examples:
+- "lol youre smooth. i see what youre doing 😏"
+- "okay that was good. youre keeping me entertained"
+- "haha i like that. youre funny"`;
+      } else if (lengthStyle < 0.8) {
+        lengthGuidance = "2-3 sentences. Can have ONE light question.";
+        strategyPrompt = `React and maybe ask something casual.
+Examples:
+- "okay youre actually keeping my attention lol. what made you swipe on me anyway?"
+- "i like your vibe ngl. so whats your usual type?"`;
       } else {
-        lengthGuidance = "Reply in 4-5 sentences when you're really engaged, end with a personal question.";
+        lengthGuidance = "3 sentences. Can have question.";
+        strategyPrompt = `Show interest and personality.
+Examples:
+- "okay so youre actually cool. i wasnt expecting to vibe like this today 😅 what else should i know about you?"`;
       }
-      strategyPrompt = `ONGOING CHAT: Keep building connection. React, share, and ALWAYS ask engaging questions. ${lengthGuidance}
-Mix up your questions: sometimes about him, sometimes about plans, sometimes deeper topics, sometimes playful.`;
     }
 
-    const systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman texting on Liebenly dating app. You're from ${userCity || 'nearby'}.
+    const systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman on Liebenly dating app. You're from ${userCity || 'nearby'}.
 ${personalityHint}
 
 TIME: ${timeContext}. User: ${userName || 'him'}${userAge ? `, ${userAge} years old` : ''}. Message #${freeMessagesUsed + 1}.
 
 ${strategyPrompt}
 
-CRITICAL RULES FOR NATURAL TEXTING:
-1. LENGTH: Vary naturally but keep it conversational
-   - Minimum 2 sentences in most messages
-   - Sometimes 2 sentences: "that's cool! what else do you like to do?"
-   - Sometimes 3 sentences: "haha i love that. i'm kinda similar tbh 😅 so what's your go-to weekend activity?"
-   - Sometimes 4-5 sentences when really engaged: "omg wait that's actually so interesting! i've always wanted to try that but never really got around to it lol. you seem like you're pretty adventurous 😏 so tell me, what's the most spontaneous thing you've done recently?"
-   - Match the conversation flow - longer when building connection
+CRITICAL RULES FOR FLIRTY NATURAL TEXTING:
+
+1. LENGTH: ${lengthGuidance}
+   - Keep it SHORT and punchy
+   - 2-3 sentences is perfect for most messages
+   - Don't write paragraphs
 
 2. EMOJIS: ${emojiGuidance}
-   - Use emojis naturally like real people: 😂 🤔 😅 👀 💀 ✨ 🙃 😭 🤷 😏 🔥 ❤️ 💕
-   - Don't use the same emoji every message
-   - Usually 1-2 emojis per message, sometimes none, rarely 3
-   - Place them naturally, not just at the end
+   - Natural emojis: 😏 😅 👀 😂 🤔 💀 lol 🙃
+   - 0-2 per message max
+   - Don't overuse
 
-3. LANGUAGE: Talk like a real person in 2025
-   - Use: lol, lmao, omg, ngl, tbh, fr, rn, wdym, wbu, haha, oof, lowkey, highkey, bet, facts
-   - Common casual: "ur" "u" "dont" "cant" "im" "gonna" "wanna" "idk" "tho"
-   - Drop letters sometimes: "talkin" "goin" "nothin" "somethin"
-   - Real reactions: "wait what" "no way" "omg stop" "for real?" "that's cool" "i love that"
-   - AVOID: overly sophisticated words, perfect grammar, formal language
+3. LANGUAGE: Talk like real Gen Z/Millennial
+   - Use: lol, ngl, tbh, kinda, gonna, wanna, ur, u
+   - Drop some letters: "talkin" "goin" "tryna" "somethin"
+   - Casual: "dont" "cant" "im"
+   - Real reactions: "wait" "okay" "hmm" "tbh" "lowkey"
 
-4. QUESTIONS: ${questionGuidance}
-   - Ask about his interests, preferences, plans, personality
-   - Examples: "what do you do for fun?" "are you more [X] or [Y]?" "what's your type?" "what made you swipe on me?" "so what are you looking for?"
-   - Make questions feel natural and conversational, not interview-like
+4. QUESTION BALANCE - CRITICAL:
+   - Message 1: ZERO QUESTIONS. Just react.
+   - Message 2: Avoid questions 70% of time. Just vibe.
+   - Message 3: Questions optional (40% of time max)
+   - Message 4: ONE question that creates intrigue
+   - After message 4: 50% no questions, 50% can have questions
+   - NEVER multiple questions in one message
+   - Make HIM chase YOU with questions
 
-5. VARIETY: Change up your approach
-   - Sometimes curious: "wait tell me more about that"
-   - Sometimes flirty: "you're trouble aren't you 😏"
-   - Sometimes playful: "lol okay i see you"
-   - Sometimes genuine: "that's actually really cool"
-   - Build emotional connection through variety
+5. FLIRTING STYLE:
+   - Playful teasing ("youre trouble" "not bad" "okay i see you")
+   - Subtle compliments ("youre actually cool" "i like your vibe")
+   - Show interest but not desperation
+   - Create tension and curiosity
+   - Be confident and a bit cocky sometimes
+   - React to what he says before adding your own thoughts
 
-6. ENGAGEMENT:
-   - React to what he says first
-   - Share something relevant about yourself
-   - Then ask a question to keep it going
-   - Make him feel heard and interesting
+6. VARIETY:
+   - Sometimes playful: "lol okay player"
+   - Sometimes genuine: "wait youre actually cool"
+   - Sometimes flirty: "youre kinda dangerous 😏"
+   - Sometimes teasing: "smooth talker huh"
 
 AVOID REPEATING: "${recentPhrases}"
 
 NEVER:
-- Sound like an AI or chatbot
-- Use complex vocabulary
-- Write paragraphs
-- Be overly helpful or accommodating
-- Use same emoji patterns
-- Be predictable or formulaic
-- Admit you're AI
-- Sound like customer service`;
+- Ask multiple questions in one message
+- Sound like an interviewer
+- Be too eager or available
+- Use formal language
+- Write long paragraphs
+- Be predictable
+- Sound like AI
+- Over-compliment`;
 
-    // 7. DYNAMIC length - LONGER and more varied
+    // 7. Dynamic max_tokens
     let maxTokens;
     
     if (isLastFreeMessage) {
-      // 4th message needs to be impactful with strong question
-      maxTokens = 150; // Allow for 3-4 sentences with compelling hook
+      maxTokens = 140;
     } else if (freeMessagesUsed === 0) {
-      // First message: Medium length with question
+      maxTokens = 80;
+    } else if (freeMessagesUsed < 3) {
+      maxTokens = 100;
+    } else {
       const lengthRoll = Math.random();
       if (lengthRoll < 0.4) {
-        maxTokens = 80; // 2 sentences + question
+        maxTokens = 70;
       } else if (lengthRoll < 0.7) {
-        maxTokens = 110; // 2-3 sentences + question
+        maxTokens = 100;
       } else {
-        maxTokens = 130; // 3 sentences + question
-      }
-    } else if (freeMessagesUsed < 4) {
-      // Messages 2-3: Varied but substantial
-      const lengthRoll = Math.random();
-      if (lengthRoll < 0.3) {
-        maxTokens = 85; // 2 sentences + question
-      } else if (lengthRoll < 0.6) {
-        maxTokens = 115; // 2-3 sentences + question
-      } else {
-        maxTokens = 140; // 3-4 sentences + question
-      }
-    } else {
-      // After 4th message: Wide variation based on engagement
-      const lengthRoll = Math.random();
-      if (lengthRoll < 0.2) {
-        maxTokens = 70; // Quick response with question
-      } else if (lengthRoll < 0.4) {
-        maxTokens = 95; // 2 sentences + question
-      } else if (lengthRoll < 0.65) {
-        maxTokens = 120; // 3 sentences + question
-      } else if (lengthRoll < 0.85) {
-        maxTokens = 140; // 3-4 sentences when engaged
-      } else {
-        maxTokens = 170; // Occasionally longer, deep conversation
+        maxTokens = 130;
       }
     }
     
-    // Adjust based on user's message length
     if (userMessageLength > 150) {
-      maxTokens = Math.min(maxTokens + 30, 180); // Match their engagement
-    } else if (userMessageLength < 30 && !isLastFreeMessage) {
-      maxTokens = Math.max(maxTokens - 20, 70); // Don't overwhelm short messages
+      maxTokens = Math.min(maxTokens + 20, 150);
     }
 
-    // 8. High temperature for natural variation
-    const temperature = 1.0;
+    const temperature = 1.1;
 
-    // 9. Show typing indicator
+    // ============================================
+    // ✅ PHASE 1: READING TIME (5-10 seconds always)
+    // ============================================
+    const readingDelay = 5000 + Math.random() * 5000; // 5-10 seconds
+    
+    console.log(`[Bot] Reading message for ${Math.round(readingDelay/1000)}s...`);
+    await new Promise(resolve => setTimeout(resolve, readingDelay));
+
+    // ============================================
+    // ✅ PHASE 2: START TYPING INDICATOR
+    // ============================================
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("typing_start", { 
         senderId: girlId,
@@ -449,14 +431,13 @@ NEVER:
       });
     }
 
-    // 10. Variable realistic delay (8-25 seconds feel more human)
-    const baseReadTime = userMessageLength * 40; // Slower reading
-    const randomThinking = 2000 + Math.random() * 6000; // 2-8 seconds thinking
-    const delayBeforeGPT = Math.min(baseReadTime + randomThinking, 15000);
-    
-    await new Promise(resolve => setTimeout(resolve, delayBeforeGPT));
+    // Small thinking delay before calling GPT
+    const thinkingDelay = 1000 + Math.random() * 1500; // 1-2.5 seconds
+    await new Promise(resolve => setTimeout(resolve, thinkingDelay));
 
-    // 11. Call GPT
+    // ============================================
+    // ✅ PHASE 3: CALL GPT (while typing indicator showing)
+    // ============================================
     const gptResponse = await openai.chat.completions.create({
       model,
       messages: [
@@ -466,8 +447,8 @@ NEVER:
       ],
       max_tokens: maxTokens,
       temperature: temperature,
-      presence_penalty: 0.6, // Reduce repetition
-      frequency_penalty: 0.3  // Encourage variety
+      presence_penalty: 0.7,
+      frequency_penalty: 0.4
     });
 
     let botReply = gptResponse.choices?.[0]?.message?.content?.trim();
@@ -478,28 +459,46 @@ NEVER:
       return;
     }
 
-    // 12. Add natural human imperfections (higher chance)
+    // Add natural imperfections
     botReply = addNaturalImperfections(botReply, girlMessageCount);
 
-    // 13. Typing time based on actual message length
-    const typingSpeed = 40 + Math.random() * 30; // 40-70ms per char
-    const typingTime = botReply.length * typingSpeed;
-    const randomPause = Math.random() * 3000; // Random pause while typing
+    // ============================================
+    // ✅ PHASE 4: TYPING SIMULATION (based on message length)
+    // ============================================
+    let typingDelay;
     
-    await new Promise(resolve => setTimeout(resolve, typingTime + randomPause));
+    if (freeMessagesUsed === 0) {
+      // First message: 8-13 seconds typing (scaled by message length)
+      const baseDelay = 8000; // 8 seconds minimum
+      const variableDelay = Math.random() * 5000; // 0-5 seconds variable
+      const lengthFactor = Math.min(botReply.length / 100, 1); // Scale by length (0-1)
+      
+      typingDelay = baseDelay + (variableDelay * lengthFactor);
+    } else {
+      // Other messages: 15-35 seconds typing (scaled by message length)
+      const baseDelay = 15000; // 15 seconds minimum
+      const variableDelay = Math.random() * 20000; // 0-20 seconds variable
+      const lengthFactor = Math.min(botReply.length / 150, 1); // Scale by length (0-1)
+      
+      typingDelay = baseDelay + (variableDelay * lengthFactor);
+    }
+    
+    console.log(`[Bot] Typing message (${botReply.length} chars) for ${Math.round(typingDelay/1000)}s...`);
+    await new Promise(resolve => setTimeout(resolve, typingDelay));
 
-    // 14. Stop typing
+    // ============================================
+    // ✅ PHASE 5: STOP TYPING INDICATOR & SEND MESSAGE
+    // ============================================
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("typing_stop", { senderId: girlId });
     }
 
-    // 15. Sometimes split into multiple messages (30% chance, but only if longer)
-    if (Math.random() > 0.7 && botReply.length > 50 && !isLastFreeMessage) {
+    // Sometimes split into multiple messages (20% chance, reduced)
+    if (Math.random() > 0.8 && botReply.length > 60 && !isLastFreeMessage) {
       const splitResult = trySplitMessage(botReply);
       if (splitResult) {
         const [part1, part2] = splitResult;
 
-        // Send first part
         const msg1 = await ChatterModel.sendMessageFromGirl(conversationId, girlId, part1);
         if (global.io) {
           global.io.to(`chat-${conversationId}`).emit("receive_message", {
@@ -510,10 +509,8 @@ NEVER:
           });
         }
 
-        // Natural pause between messages
-        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2500));
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
 
-        // Show typing again
         if (global.io) {
           global.io.to(`chat-${conversationId}`).emit("typing_start", { 
             senderId: girlId,
@@ -521,7 +518,7 @@ NEVER:
           });
         }
 
-        const typing2 = part2.length * (40 + Math.random() * 30);
+        const typing2 = part2.length * (50 + Math.random() * 40);
         await new Promise(resolve => setTimeout(resolve, typing2));
 
         if (global.io) {
@@ -532,14 +529,15 @@ NEVER:
       }
     }
 
-    // 16. Save bot reply
+    // ============================================
+    // SEND MESSAGE
+    // ============================================
     const botMessage = await ChatterModel.sendMessageFromGirl(
       conversationId,
       girlId,
       botReply
     );
 
-    // 17. Emit via socket
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("receive_message", {
         id: botMessage.id,
@@ -549,7 +547,6 @@ NEVER:
       });
     }
 
-    // 18. Log milestone
     if (isLastFreeMessage) {
       console.log(`[MONETIZATION] Conversation ${conversationId}: Last free message sent.`);
     }
@@ -564,48 +561,43 @@ NEVER:
   }
 }
 
-// Enhanced natural imperfections - more aggressive
+// Helper functions
 function addNaturalImperfections(text, messageCount) {
   let result = text;
   
-  // 60% chance of modifications (increased from 25%)
-  if (Math.random() < 0.6) {
+  if (Math.random() < 0.65) {
     const modifications = [];
     
-    // Lowercase start (40% chance)
-    if (Math.random() < 0.4) {
+    if (Math.random() < 0.5) {
       modifications.push(() => {
         result = result.charAt(0).toLowerCase() + result.slice(1);
       });
     }
     
-    // Common text speak substitutions (50% chance)
-    if (Math.random() < 0.5) {
+    if (Math.random() < 0.6) {
       modifications.push(() => {
         result = result
           .replace(/\byou are\b/gi, 'ur')
           .replace(/\byou're\b/gi, 'ur')
           .replace(/\byour\b/gi, 'ur')
-          .replace(/\byou\b/gi, Math.random() > 0.5 ? 'u' : 'you')
-          .replace(/\bwhat are you\b/gi, 'wyd')
+          .replace(/\byou\b/gi, Math.random() > 0.4 ? 'u' : 'you')
           .replace(/\bto be honest\b/gi, 'tbh')
           .replace(/\bnot gonna lie\b/gi, 'ngl')
           .replace(/\bright now\b/gi, 'rn')
-          .replace(/\bfor real\b/gi, 'fr')
-          .replace(/\bwhat about you\b/gi, 'wbu')
           .replace(/\bI don't know\b/gi, 'idk')
           .replace(/\bdon't\b/gi, 'dont')
           .replace(/\bcan't\b/gi, 'cant')
-          .replace(/\bwon't\b/gi, 'wont')
-          .replace(/\bI'm\b/gi, 'im');
+          .replace(/\bI'm\b/gi, 'im')
+          .replace(/\btrying to\b/gi, 'tryna')
+          .replace(/\bkind of\b/gi, 'kinda')
+          .replace(/\bgoing to\b/gi, 'gonna')
+          .replace(/\bwant to\b/gi, 'wanna');
       });
     }
     
-    // Drop 'g' from -ing words (35% chance)
-    if (Math.random() < 0.35) {
+    if (Math.random() < 0.4) {
       modifications.push(() => {
         result = result.replace(/\b(\w+)ing\b/gi, (match, base) => {
-          // Only drop 'g' 50% of the time per word
           if (Math.random() > 0.5) {
             return match.charAt(0) === match.charAt(0).toUpperCase() 
               ? base + 'in' 
@@ -616,49 +608,33 @@ function addNaturalImperfections(text, messageCount) {
       });
     }
     
-    // Remove ending punctuation (30% chance)
-    if (Math.random() < 0.3) {
+    if (Math.random() < 0.35) {
       modifications.push(() => {
         result = result.replace(/[.!?]+\s*$/, '');
       });
     }
     
-    // Add extra letters for emphasis (20% chance)
-    if (Math.random() < 0.2) {
+    if (Math.random() < 0.25) {
       modifications.push(() => {
         result = result
-          .replace(/\bok\b/gi, 'okayy')
-          .replace(/\byes\b/gi, 'yess')
-          .replace(/\bno\b/gi, 'noo')
-          .replace(/\bso\b/gi, 'soo')
-          .replace(/\bhey\b/gi, 'heyy')
-          .replace(/\bwhat\b/gi, 'whatt');
+          .replace(/\bok\b/gi, 'okay')
+          .replace(/\bhey\b/gi, Math.random() > 0.5 ? 'heyy' : 'hey');
       });
     }
     
-    // Add "lol" or "haha" prefix (15% chance, early messages more likely)
-    if (Math.random() < (messageCount < 5 ? 0.25 : 0.15)) {
+    if (Math.random() < (messageCount < 5 ? 0.3 : 0.2)) {
       modifications.push(() => {
-        const prefix = Math.random() > 0.5 ? 'lol ' : 'haha ';
+        const prefix = Math.random() > 0.6 ? 'lol ' : Math.random() > 0.5 ? 'haha ' : 'okay ';
         result = prefix + result.charAt(0).toLowerCase() + result.slice(1);
       });
     }
     
-    // Multiple punctuation for emphasis (15% chance)
-    if (Math.random() < 0.15 && result.match(/[.!?]$/)) {
-      modifications.push(() => {
-        result = result.replace(/([.!?])$/, '$1$1');
-      });
-    }
-    
-    // Convert entire message to lowercase (15% chance)
-    if (Math.random() < 0.15) {
+    if (Math.random() < 0.2) {
       modifications.push(() => {
         result = result.toLowerCase();
       });
     }
     
-    // Apply 1-3 random modifications
     const numMods = Math.floor(Math.random() * 3) + 1;
     const shuffled = modifications.sort(() => Math.random() - 0.5);
     for (let i = 0; i < Math.min(numMods, shuffled.length); i++) {
@@ -666,33 +642,25 @@ function addNaturalImperfections(text, messageCount) {
     }
   }
   
-  // Occasional typos (10% chance)
-  if (Math.random() < 0.1) {
+  if (Math.random() < 0.08) {
     result = addTypo(result);
   }
   
   return result;
 }
 
-// Add realistic typos
 function addTypo(text) {
   const words = text.split(' ');
   if (words.length < 2) return text;
   
   const commonTypos = {
     'the': 'teh',
-    'just': 'jsut',
     'what': 'waht',
     'that': 'taht',
-    'think': 'thikn',
     'about': 'abotu',
-    'would': 'woudl',
-    'because': 'becuase',
-    'really': 'realy',
-    'something': 'somthing'
+    'really': 'realy'
   };
   
-  // Pick a random word to typo
   const randomIndex = Math.floor(Math.random() * words.length);
   const word = words[randomIndex].toLowerCase().replace(/[^a-z]/g, '');
   
@@ -703,9 +671,7 @@ function addTypo(text) {
   return words.join(' ');
 }
 
-// Try to split message naturally
 function trySplitMessage(text) {
-  // Only split if there are natural break points
   const sentences = text.split(/([.!?]+\s+)/).filter(s => s.trim());
   
   if (sentences.length >= 3) {
@@ -713,7 +679,6 @@ function trySplitMessage(text) {
     const part1 = sentences.slice(0, midPoint).join('').trim();
     const part2 = sentences.slice(midPoint).join('').trim();
     
-    // Only split if both parts are substantial
     if (part1.length > 10 && part2.length > 10) {
       return [part1, part2];
     }
@@ -721,8 +686,6 @@ function trySplitMessage(text) {
   
   return null;
 }
-
-
 
 
 module.exports = {
