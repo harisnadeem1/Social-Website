@@ -1,6 +1,7 @@
 const db = require('../config/db');
-const openai = require('../config/openai');  // 👈 new import
-const ChatterModel = require('../models/chatterModel'); // reuse girl message function
+const openai = require('../config/openai');
+const ChatterModel = require('../models/chatterModel');
+const followupScheduler = require('../utils/followupScheduler'); // 👈 NEW IMPORT
 
 const getMessagesByConversation = async (req, res) => {
   const conversationId = parseInt(req.params.conversationId);
@@ -35,10 +36,6 @@ const getMessagesByConversation = async (req, res) => {
   }
 };
 
-
-
-
-
 const sendMessage = async (req, res) => {
   const { conversationId } = req.params;
   const { content } = req.body;
@@ -50,6 +47,11 @@ const sendMessage = async (req, res) => {
 
   try {
     await db.query('BEGIN');
+
+    // ============================================
+    // ✅ CANCEL any pending follow-ups when user replies
+    // ============================================
+    followupScheduler.cancel(parseInt(conversationId));
 
     // Deduct 5 coins atomically if the user has enough
     const coinResult = await db.query(
@@ -66,8 +68,6 @@ const sendMessage = async (req, res) => {
       await db.query('ROLLBACK');
       return res.status(403).json({ message: 'Insufficient coin balance' });
     }
-
-    
 
     // Insert the message
     const messageResult = await db.query(
@@ -98,9 +98,6 @@ const sendMessage = async (req, res) => {
     res.status(500).json({ message: 'Failed to send message' });
   }
 };
-
-// This is the updated handleChatbotReply function with flirtier responses and better timing
-// Replace the existing handleChatbotReply function in your messageController.js
 
 async function handleChatbotReply(conversationId, userId, userMessage) {
   try {
@@ -241,7 +238,6 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
     const lengthStyle = Math.random();
     
     if (freeMessagesUsed === 0) {
-      // First message: Quick, flirty, intriguing - NO QUESTIONS
       lengthGuidance = "2 sentences max. Just react.";
       strategyPrompt = `FIRST MESSAGE: Just react to his message. Be flirty and playful. DO NOT ASK ANY QUESTIONS.
 
@@ -255,7 +251,6 @@ Examples (NO questions):
 CRITICAL: ZERO QUESTIONS. Just vibe and react.`;
       
     } else if (freeMessagesUsed === 1) {
-      // Second message: React more, maybe share something - AVOID QUESTIONS
       lengthGuidance = "2-3 sentences. No questions unless absolutely natural.";
       strategyPrompt = `SECOND MESSAGE: React to what he said and vibe. Share your thoughts. AVOID QUESTIONS.
 
@@ -271,7 +266,6 @@ Examples with question (use only 30% of time):
 PREFER: Just statements and reactions. Make HIM ask YOU questions.`;
       
     } else if (freeMessagesUsed === 2) {
-      // Third message: Build connection - MINIMAL QUESTIONS
       lengthGuidance = "2-3 sentences. Statement preferred over question.";
       strategyPrompt = `THIRD MESSAGE: Show more interest. Share about yourself. Question is OPTIONAL.
 
@@ -286,7 +280,6 @@ Examples WITH question (use 40% of time):
 TONE: Flirty compliments. Make him feel special. Questions are optional.`;
       
     } else if (isLastFreeMessage) {
-      // Fourth message: ONE good question that creates intrigue
       lengthGuidance = "3 sentences. ONE question at the end.";
       strategyPrompt = `🔥 FOURTH MESSAGE - MAXIMUM INTRIGUE:
 Build up tension, compliment him, THEN one compelling question.
@@ -305,7 +298,6 @@ Examples:
 CRITICAL: ONE question only. Build intrigue first.`;
       
     } else {
-      // After 4th: Mostly statements, occasional questions
       if (lengthStyle < 0.5) {
         lengthGuidance = "2 sentences. NO question.";
         strategyPrompt = `Just react and flirt. NO questions.
@@ -328,7 +320,6 @@ Examples:
     }
 
     const systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman on Liebenly dating app. You're from ${userCity || 'nearby'}.
-${personalityHint}
 
 TIME: ${timeContext}. User: ${userName || 'him'}${userAge ? `, ${userAge} years old` : ''}. Message #${freeMessagesUsed + 1}.
 
@@ -416,7 +407,7 @@ NEVER:
     // ============================================
     // ✅ PHASE 1: READING TIME (5-10 seconds always)
     // ============================================
-    const readingDelay = 5000 + Math.random() * 5000; // 5-10 seconds
+    const readingDelay = 5000 + Math.random() * 5000;
     
     console.log(`[Bot] Reading message for ${Math.round(readingDelay/1000)}s...`);
     await new Promise(resolve => setTimeout(resolve, readingDelay));
@@ -432,7 +423,7 @@ NEVER:
     }
 
     // Small thinking delay before calling GPT
-    const thinkingDelay = 1000 + Math.random() * 1500; // 1-2.5 seconds
+    const thinkingDelay = 1000 + Math.random() * 1500;
     await new Promise(resolve => setTimeout(resolve, thinkingDelay));
 
     // ============================================
@@ -468,17 +459,15 @@ NEVER:
     let typingDelay;
     
     if (freeMessagesUsed === 0) {
-      // First message: 8-13 seconds typing (scaled by message length)
-      const baseDelay = 8000; // 8 seconds minimum
-      const variableDelay = Math.random() * 5000; // 0-5 seconds variable
-      const lengthFactor = Math.min(botReply.length / 100, 1); // Scale by length (0-1)
+      const baseDelay = 8000;
+      const variableDelay = Math.random() * 5000;
+      const lengthFactor = Math.min(botReply.length / 100, 1);
       
       typingDelay = baseDelay + (variableDelay * lengthFactor);
     } else {
-      // Other messages: 15-35 seconds typing (scaled by message length)
-      const baseDelay = 15000; // 15 seconds minimum
-      const variableDelay = Math.random() * 20000; // 0-20 seconds variable
-      const lengthFactor = Math.min(botReply.length / 150, 1); // Scale by length (0-1)
+      const baseDelay = 15000;
+      const variableDelay = Math.random() * 20000;
+      const lengthFactor = Math.min(botReply.length / 150, 1);
       
       typingDelay = baseDelay + (variableDelay * lengthFactor);
     }
@@ -493,7 +482,7 @@ NEVER:
       global.io.to(`chat-${conversationId}`).emit("typing_stop", { senderId: girlId });
     }
 
-    // Sometimes split into multiple messages (20% chance, reduced)
+    // Sometimes split into multiple messages
     if (Math.random() > 0.8 && botReply.length > 60 && !isLastFreeMessage) {
       const splitResult = trySplitMessage(botReply);
       if (splitResult) {
@@ -550,6 +539,19 @@ NEVER:
     if (isLastFreeMessage) {
       console.log(`[MONETIZATION] Conversation ${conversationId}: Last free message sent.`);
     }
+
+    // ============================================
+    // ✅ SCHEDULE FOLLOW-UP (using in-memory scheduler)
+    // ============================================
+    const followupDelay = (2 + Math.random() * 0.5) * 60 * 1000; // 2-2.5 minutes
+
+    followupScheduler.schedule(
+      parseInt(conversationId),
+      userId,
+      girlId,
+      1, // attemptNumber
+      followupDelay
+    );
 
   } catch (err) {
     console.error("Chatbot reply error:", err);
@@ -686,7 +688,6 @@ function trySplitMessage(text) {
   
   return null;
 }
-
 
 module.exports = {
   getMessagesByConversation,
