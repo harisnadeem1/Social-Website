@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const openai = require('../config/openai');
 const ChatterModel = require('../models/chatterModel');
-const followupScheduler = require('../utils/followupScheduler'); // 👈 NEW IMPORT
+const followupScheduler = require('../utils/followupScheduler');
 
 const getMessagesByConversation = async (req, res) => {
   const conversationId = parseInt(req.params.conversationId);
@@ -48,12 +48,8 @@ const sendMessage = async (req, res) => {
   try {
     await db.query('BEGIN');
 
-    // ============================================
-    // ✅ CANCEL any pending follow-ups when user replies
-    // ============================================
     followupScheduler.cancel(parseInt(conversationId));
 
-    // Deduct 5 coins atomically if the user has enough
     const coinResult = await db.query(
       `UPDATE coins 
        SET balance = balance - 5, 
@@ -69,7 +65,6 @@ const sendMessage = async (req, res) => {
       return res.status(403).json({ message: 'Insufficient coin balance' });
     }
 
-    // Insert the message
     const messageResult = await db.query(
       `INSERT INTO messages (conversation_id, sender_id, content, sent_at) 
        VALUES ($1, $2, $3, NOW()) 
@@ -77,7 +72,6 @@ const sendMessage = async (req, res) => {
       [conversationId, senderId, content]
     );
 
-    // Update last activity in the conversation
     await db.query(
       `UPDATE conversations SET last_activity = NOW() WHERE id = $1`,
       [conversationId]
@@ -101,7 +95,6 @@ const sendMessage = async (req, res) => {
 
 async function handleChatbotReply(conversationId, userId, userMessage) {
   try {
-    // 1. Fetch conversation data + message count for context
     const convoRes = await db.query(
       `SELECT 
          c.girl_id,
@@ -135,7 +128,6 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
       total_msg_count: totalMessageCount 
     } = convoRes.rows[0];
 
-    // 2. Fetch last 10 messages for better context
     const historyRes = await db.query(
       `SELECT m.sender_id, m.content, m.message_type, m.image_id, i.image_url,
               m.gift_id, g.image_path AS gift_image_path, g.name AS gift_name
@@ -150,18 +142,15 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
 
     const reversed = historyRes.rows.reverse();
 
-    // 3. Analyze conversation patterns
     const girlMessages = reversed.filter(m => m.sender_id === girlId);
     const userEmojiCount = (userMessage.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
     const userMessageLength = userMessage.length;
     
-    // Track emoji usage from last 3 messages to avoid repetition
     const recentEmojis = girlMessages
       .slice(-3)
       .map(m => (m.content?.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).join(''))
       .join('');
 
-    // 4. Build GPT history
     let useVision = false;
     const baseUrl = process.env.FRONTEND_BASE_URL || "https://liebenly.com";
 
@@ -195,10 +184,8 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
         }
       });
 
-    // 5. Choose model
     const model = useVision ? "gpt-4o" : "gpt-4o-mini";
 
-    // 6. Build system prompt
     const hour = new Date().getHours();
     const timeContext = hour < 6 ? "very late at night" :
                         hour < 12 ? "morning" :
@@ -378,7 +365,6 @@ NEVER:
 - Sound like AI
 - Over-compliment`;
 
-    // 7. Dynamic max_tokens
     let maxTokens;
     
     if (isLastFreeMessage) {
@@ -405,15 +391,15 @@ NEVER:
     const temperature = 1.1;
 
     // ============================================
-    // ✅ PHASE 1: READING TIME (5-10 seconds always)
+    // ✅ NEW: Delay before typing starts (8-10 seconds)
     // ============================================
-    const readingDelay = 5000 + Math.random() * 5000;
+    const delayBeforeTyping = 8000 + Math.random() * 2000;
     
-    console.log(`[Bot] Reading message for ${Math.round(readingDelay/1000)}s...`);
-    await new Promise(resolve => setTimeout(resolve, readingDelay));
+    console.log(`[Bot] Waiting ${Math.round(delayBeforeTyping/1000)}s before typing...`);
+    await new Promise(resolve => setTimeout(resolve, delayBeforeTyping));
 
     // ============================================
-    // ✅ PHASE 2: START TYPING INDICATOR
+    // ✅ START TYPING INDICATOR
     // ============================================
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("typing_start", { 
@@ -422,12 +408,8 @@ NEVER:
       });
     }
 
-    // Small thinking delay before calling GPT
-    const thinkingDelay = 1000 + Math.random() * 1500;
-    await new Promise(resolve => setTimeout(resolve, thinkingDelay));
-
     // ============================================
-    // ✅ PHASE 3: CALL GPT (while typing indicator showing)
+    // ✅ CALL GPT (while typing indicator showing)
     // ============================================
     const gptResponse = await openai.chat.completions.create({
       model,
@@ -450,33 +432,27 @@ NEVER:
       return;
     }
 
-    // Add natural imperfections
     botReply = addNaturalImperfections(botReply, girlMessageCount);
 
     // ============================================
-    // ✅ PHASE 4: TYPING SIMULATION (based on message length)
+    // ✅ TYPING SIMULATION (10-20 seconds based on message length)
     // ============================================
+    const messageLength = botReply.length;
     let typingDelay;
     
-    if (freeMessagesUsed === 0) {
-      const baseDelay = 8000;
-      const variableDelay = Math.random() * 5000;
-      const lengthFactor = Math.min(botReply.length / 100, 1);
-      
-      typingDelay = baseDelay + (variableDelay * lengthFactor);
+    if (messageLength < 30) {
+      typingDelay = 10000 + Math.random() * 2000; // 10-12 seconds
+    } else if (messageLength < 80) {
+      typingDelay = 12000 + Math.random() * 4000; // 12-16 seconds
     } else {
-      const baseDelay = 15000;
-      const variableDelay = Math.random() * 20000;
-      const lengthFactor = Math.min(botReply.length / 150, 1);
-      
-      typingDelay = baseDelay + (variableDelay * lengthFactor);
+      typingDelay = 16000 + Math.random() * 4000; // 16-20 seconds
     }
     
-    console.log(`[Bot] Typing message (${botReply.length} chars) for ${Math.round(typingDelay/1000)}s...`);
+    console.log(`[Bot] Typing message (${messageLength} chars) for ${Math.round(typingDelay/1000)}s...`);
     await new Promise(resolve => setTimeout(resolve, typingDelay));
 
     // ============================================
-    // ✅ PHASE 5: STOP TYPING INDICATOR & SEND MESSAGE
+    // ✅ STOP TYPING INDICATOR & SEND MESSAGE
     // ============================================
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("typing_stop", { senderId: girlId });
@@ -507,7 +483,17 @@ NEVER:
           });
         }
 
-        const typing2 = part2.length * (50 + Math.random() * 40);
+        const part2Length = part2.length;
+        let typing2;
+        
+        if (part2Length < 30) {
+          typing2 = 3000 + Math.random() * 2000; // 3-5 seconds
+        } else if (part2Length < 60) {
+          typing2 = 5000 + Math.random() * 3000; // 5-8 seconds
+        } else {
+          typing2 = 8000 + Math.random() * 4000; // 8-12 seconds
+        }
+        
         await new Promise(resolve => setTimeout(resolve, typing2));
 
         if (global.io) {
@@ -518,9 +504,6 @@ NEVER:
       }
     }
 
-    // ============================================
-    // SEND MESSAGE
-    // ============================================
     const botMessage = await ChatterModel.sendMessageFromGirl(
       conversationId,
       girlId,
@@ -540,16 +523,13 @@ NEVER:
       console.log(`[MONETIZATION] Conversation ${conversationId}: Last free message sent.`);
     }
 
-    // ============================================
-    // ✅ SCHEDULE FOLLOW-UP (using in-memory scheduler)
-    // ============================================
-    const followupDelay = (2 + Math.random() * 0.5) * 60 * 1000; // 2-2.5 minutes
+    const followupDelay = (2 + Math.random() * 0.5) * 60 * 1000;
 
     followupScheduler.schedule(
       parseInt(conversationId),
       userId,
       girlId,
-      1, // attemptNumber
+      1,
       followupDelay
     );
 
@@ -563,7 +543,6 @@ NEVER:
   }
 }
 
-// Helper functions
 function addNaturalImperfections(text, messageCount) {
   let result = text;
   
