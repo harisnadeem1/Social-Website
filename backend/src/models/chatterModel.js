@@ -83,6 +83,10 @@ const sendMessageFromGirl = async (conversationId, girlId, content) => {
     const { rows } = await client.query(insertQuery, insertValues);
     const newMessage = rows[0];
 
+
+    ///////////////////////////////////
+    //Remove when switched back to chatter
+
     // Insert notification
     if (userId) {
       await client.query(`
@@ -90,6 +94,7 @@ const sendMessageFromGirl = async (conversationId, girlId, content) => {
         VALUES ($1, $2, 'message', $3, false, NOW())
       `, [userId, girlId, `You received a new message from ${girlName}`]);
     }
+    ////////////////////////////////////
 
     // Update last_activity in conversations table
     const updateQuery = `

@@ -120,16 +120,16 @@ class FollowupScheduler {
   }
 
   async generateFollowup(attemptNumber, girlName, girlAge, userName, interests, history) {
-    const hour = new Date().getHours();
-    const timeContext = hour < 6 ? 'very late at night' : hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 22 ? 'evening' : 'late night';
+  const hour = new Date().getHours();
+  const timeContext = hour < 6 ? 'very late at night' : hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 22 ? 'evening' : 'late night';
 
-    const lastGirlMessage = history.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-    const lastUserMessage = history.filter(m => m.role === 'user').slice(-1)[0]?.content || '';
+  const lastGirlMessage = history.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+  const lastUserMessage = history.filter(m => m.role === 'user').slice(-1)[0]?.content || '';
 
-    let systemPrompt;
+  let systemPrompt;
 
-    if (attemptNumber === 1) {
-      systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman chatting with ${userName || 'him'} on Liebenly dating app.
+  if (attemptNumber === 1) {
+    systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman chatting with ${userName || 'him'} on Liebenly dating app.
 
 TIME: ${timeContext}
 SITUATION: You sent him a message 1-2 minutes ago and he hasn't replied yet.
@@ -137,7 +137,7 @@ SITUATION: You sent him a message 1-2 minutes ago and he hasn't replied yet.
 YOUR GOAL: Send a light, playful poke to get his attention and bring him back to the chat. Make him curious or smile. Be casual, not needy.
 
 TONE & STYLE:
-- Keep it SHORT: 1-2 sentences max (8-15 words total)
+- Keep it SHORT: MAXIMUM 5-8 WORDS TOTAL
 - Be playful and teasing, never desperate
 - Use natural casual texting language
 - Add 0-1 emoji if it feels natural
@@ -170,95 +170,94 @@ CRITICAL RULES:
 - Think: "What would I actually text in this situation?"
 - Every message should feel different and natural`;
 
-    } else {
-      systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman chatting with ${userName || 'him'} on Liebenly.
+  } else {
+    systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman chatting with ${userName || 'him'} on Liebenly.
 
 TIME: ${timeContext}
-SITUATION: You've sent 2 messages now (first 1-2 min ago, then 5-7 min later). He still hasn't replied. It's been 7-9 minutes total.
+SITUATION: You've sent 2 messages now (1-2 min ago, then 5-7 min later). He still hasn't replied. It's been 7-9 minutes total.
 
-YOUR GOAL: Send a slightly more direct follow-up that creates FOMO (fear of missing out). Make him feel like he's missing something interesting. Stay cool and give him an out if he's busy.
+YOUR GOAL: Send ONE FINAL short message that creates mild FOMO but gives him an out.
+
+STRICT LENGTH REQUIREMENT: 
+- MAXIMUM 8-12 WORDS TOTAL
+- ONE short sentence or phrase
+- Brief and to the point
 
 TONE & STYLE:
-- Keep it SHORT: 1-2 sentences max (10-18 words)
-- More direct than before, but still playful
-- Use casual Gen Z texting naturally
-- 1-2 emojis max if natural
+- Slightly more direct but still cool
+- Use casual texting naturally
+- 1-2 emojis max
 - Sometimes skip punctuation
-- Sound confident but not desperate
+- Sound confident, not desperate
 
-STRATEGIC APPROACHES - Choose ONE that fits:
+EXAMPLES OF GOOD LENGTH:
+- "alright im gonna assume ur busy lol"
+- "okay nvmm then 😅"
+- "guess ill catch u later"
+- "aight well i tried 🤷‍♀️"
+- "lol okay im done bothering u"
+- "wait i had something funny to tell u but nvmm"
 
-1. **Playful Resignation with FOMO**:
-   Say you'll back off but hint at something unsaid. Mention having something interesting to share. Assume he's busy but make him curious about what he's missing. Create intrigue about your unshared thought.
+YOUR LAST MESSAGE: "${lastGirlMessage.slice(0, 100)}"
+HIS LAST MESSAGE: "${lastUserMessage.slice(0, 100)}"
 
-2. **Direct but Teasing**:
-   Acknowledge the lack of response honestly. Make an observation about the silence with humor. Call it out but keep it light. Show confidence - you're not desperate but not afraid to be real either.
-
-3. **Curious/Intrigued**:
-   Hint at something you wanted to discuss but won't now. Create mystery about what's on your mind. Express mild surprise at the sudden quiet. Make him wonder what you were going to say.
-
-CONVERSATION CONTEXT:
-Your last message: "${lastGirlMessage.slice(0, 150)}"
-His last message: "${lastUserMessage.slice(0, 150)}"
-
-${interests ? `Your interests: ${interests}` : ''}
-
-CRITICAL RULES:
-- Be ORIGINAL - no clichés or generic phrases
-- Create something specific to THIS conversation
-- Use the actual context of what you discussed
-- Make him genuinely curious about responding
-- Think: "How would I really text if someone went quiet?"
-- Balance between cool and interested`;
-    }
-
-    const gptResponse = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...history.slice(-3)
-      ],
-      max_tokens: 80,
-      temperature: 1.3,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.5
-    });
-
-    let message = gptResponse.choices?.[0]?.message?.content?.trim() || "hey u there?";
-
-    // Natural text transformations
-    if (Math.random() < 0.7) {
-      message = message.charAt(0).toLowerCase() + message.slice(1);
-    }
-
-    message = message
-      .replace(/\byou are\b/gi, 'ur')
-      .replace(/\byou're\b/gi, 'ur')
-      .replace(/\byour\b/gi, 'ur')
-      .replace(/\byou\b/gi, Math.random() > 0.5 ? 'u' : 'you')
-      .replace(/\bdon't\b/gi, 'dont')
-      .replace(/\bcan't\b/gi, 'cant')
-      .replace(/\bI'm\b/gi, 'im')
-      .replace(/\bwon't\b/gi, 'wont')
-      .replace(/\bdidn't\b/gi, 'didnt')
-      .replace(/\bnever mind\b/gi, 'nvmm')
-      .replace(/\bgoing to\b/gi, 'gonna')
-      .replace(/\bwant to\b/gi, 'wanna')
-      .replace(/\btrying to\b/gi, 'tryna');
-
-    // Sometimes remove ending punctuation
-    if (Math.random() < 0.5) {
-      message = message.replace(/[.!?]+\s*$/, '');
-    }
-
-    // Occasionally add casual prefix
-    if (Math.random() < 0.15 && attemptNumber === 1) {
-      const prefixes = ['lol ', 'okay ', 'umm ', 'wait '];
-      message = prefixes[Math.floor(Math.random() * prefixes.length)] + message.charAt(0).toLowerCase() + message.slice(1);
-    }
-
-    return message;
+CRITICAL: Keep it SHORT and give him a graceful out while making him curious.`;
   }
+
+  const gptResponse = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...history.slice(-3)
+    ],
+    max_tokens: 30, // Reduced from 80
+    temperature: 1.2, // Slightly reduced for more control
+    presence_penalty: 0.6,
+    frequency_penalty: 0.5
+  });
+
+  let message = gptResponse.choices?.[0]?.message?.content?.trim() || "hey u there?";
+
+  // Truncate if too long (safety check)
+  const words = message.split(/\s+/);
+  const maxWords = attemptNumber === 1 ? 8 : 12;
+  if (words.length > maxWords) {
+    message = words.slice(0, maxWords).join(' ');
+  }
+
+  // Natural text transformations
+  if (Math.random() < 0.7) {
+    message = message.charAt(0).toLowerCase() + message.slice(1);
+  }
+
+  message = message
+    .replace(/\byou are\b/gi, 'ur')
+    .replace(/\byou're\b/gi, 'ur')
+    .replace(/\byour\b/gi, 'ur')
+    .replace(/\byou\b/gi, Math.random() > 0.5 ? 'u' : 'you')
+    .replace(/\bdon't\b/gi, 'dont')
+    .replace(/\bcan't\b/gi, 'cant')
+    .replace(/\bI'm\b/gi, 'im')
+    .replace(/\bwon't\b/gi, 'wont')
+    .replace(/\bdidn't\b/gi, 'didnt')
+    .replace(/\bnever mind\b/gi, 'nvmm')
+    .replace(/\bgoing to\b/gi, 'gonna')
+    .replace(/\bwant to\b/gi, 'wanna')
+    .replace(/\btrying to\b/gi, 'tryna');
+
+  // Sometimes remove ending punctuation
+  if (Math.random() < 0.6) {
+    message = message.replace(/[.!?]+\s*$/, '');
+  }
+
+  // Occasionally add casual prefix
+  if (Math.random() < 0.15 && attemptNumber === 1) {
+    const prefixes = ['lol ', 'okay ', 'umm ', 'wait '];
+    message = prefixes[Math.floor(Math.random() * prefixes.length)] + message.charAt(0).toLowerCase() + message.slice(1);
+  }
+
+  return message;
+}
 }
 
 module.exports = new FollowupScheduler();
