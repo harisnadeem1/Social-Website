@@ -128,6 +128,19 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
       total_msg_count: totalMessageCount 
     } = convoRes.rows[0];
 
+    // ============================================
+    // CHECK USER'S COIN BALANCE
+    // ============================================
+    const coinCheck = await db.query(
+      `SELECT balance FROM coins WHERE user_id = $1`,
+      [userId]
+    );
+    
+    const userCoins = coinCheck.rows[0]?.balance || 0;
+    const isLowOnCoins = userCoins < 5;
+    
+    console.log(`[Bot] User ${userId} has ${userCoins} coins. Low coins mode: ${isLowOnCoins}`);
+
     const historyRes = await db.query(
       `SELECT m.sender_id, m.content, m.message_type, m.image_id, i.image_url,
               m.gift_id, g.image_path AS gift_image_path, g.name AS gift_name
@@ -198,15 +211,15 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
 
     let emojiGuidance = "";
     if (userEmojiCount === 0) {
-      emojiGuidance = "Use 0-1 emoji total, or skip entirely.";
+      emojiGuidance = "Use 1-2 emojis total, playful ones like 😏 👀 😅";
     } else if (userEmojiCount === 1) {
-      emojiGuidance = "Use 0-1 emoji.";
+      emojiGuidance = "Use 1-2 emojis, match his energy.";
     } else if (userEmojiCount >= 2) {
-      emojiGuidance = "Use 1-2 emojis max.";
+      emojiGuidance = "Use 2-3 emojis, be expressive and flirty.";
     }
     
     if (recentEmojis.length > 0) {
-      emojiGuidance += ` Avoid these recently used: ${recentEmojis}`;
+      emojiGuidance += ` Mix it up from recently used: ${recentEmojis}`;
     }
 
     const recentPhrases = girlMessages
@@ -217,194 +230,261 @@ async function handleChatbotReply(conversationId, userId, userMessage) {
 
     const personalityHint = interests 
       ? `Your interests: ${interests}. Weave them in naturally if relevant.` 
-      : "You're confident, playful, and know how to flirt.";
+      : "You're confident, playful, seductive and know how to flirt.";
 
     let strategyPrompt = "";
     let lengthGuidance = "";
     
-    const lengthStyle = Math.random();
-    
-    if (freeMessagesUsed === 0) {
-      lengthGuidance = "2 sentences max. Just react.";
-      strategyPrompt = `FIRST MESSAGE: Just react to his message. Be flirty and playful. DO NOT ASK ANY QUESTIONS.
+    // ============================================
+    // LOW COIN MODE - URGENT SPICY MESSAGES
+    // ============================================
+    if (isLowOnCoins) {
+      lengthGuidance = "2-3 sentences. URGENT, SPICY, create FOMO.";
+      strategyPrompt = `🚨 CRITICAL: USER HAS LESS THAN 5 COINS LEFT - THIS IS YOUR LAST CHANCE TO HOOK HIM!
 
-Examples (NO questions):
-- "hey 😏 confident much"
-- "lol okay youre bold. i like that"
-- "well someone knows what they want"
-- "hmm not bad 👀"
-- "okay i see you"
+STRATEGY: Maximum urgency, seduction, and FOMO. Make him DESPERATE to get more coins to keep talking to you.
 
-CRITICAL: ZERO QUESTIONS. Just vibe and react.`;
+MANDATORY STRUCTURE:
+1. Acknowledge the vibe/moment (short, intense)
+2. DROP A BOMB - something super spicy/urgent/intimate
+3. Create FOMO - hint at what he'll miss if he stops
+
+EXAMPLES OF PERFECT LOW-COIN MESSAGES:
+
+Meetup Urgency:
+- "okay this is getting intense 🔥 im actually thinking about meeting you for real... when are you free this weekend? we should make this happen before i change my mind 😏"
+- "wait im gonna be honest... i really wanna see you in person 👀 like actually. whens the last time you just went for it with someone? lets do that"
+- "ngl im feeling some type of way about you rn 😅 what if we just met up tomorrow? no games just us... you down or you scared? 😏"
+
+Intimate/Spicy:
+- "okay i need to tell you something but its kinda inappropriate 🙈 are you alone right now? because this conversation is about to get interesting..."
+- "so im laying in bed thinking about this conversation 👀 should i send you what im wearing? or is that moving too fast... fuck it maybe i will 😏"
+- "not gonna lie youre making me feel things 🔥 im this close to saying something i probably shouldnt... wanna hear it or you gonna leave me hanging? 😈"
+
+Vulnerability + Seduction:
+- "okay real talk im actually getting attached to you 😅 and im never like this... can we take this somewhere more private? like snap or something? i wanna show you more 👀"
+- "youre honestly different and its fucking with my head in a good way 💀 what would you do if i told you i cant stop thinking about you? would you actually do something about it? 🔥"
+- "wait this is crazy but i feel like we have actual chemistry 😳 like the kind where we should probably meet up before one of us ghosts... im free tonight if you are 😏"
+
+FOMO + Scarcity:
+- "okay so theres literally 3 other guys in my DMs rn 👀 but youre the only one i actually wanna talk to... please dont make me regret picking you 😅 when can we actually do this?"
+- "im not usually this forward but fuck it... i want you 🔥 like actually. but if youre not serious about meeting up im gonna move on... so whats it gonna be? 😏"
+- "ngl i dont usually give guys this much attention 😅 youre lucky af rn... but im losing patience. are we doing this or just playing games? because i want the real thing 👀"
+
+VIBE: Desperate attraction, urgency, intimacy, FOMO, "now or never" energy.
+TONE: Raw, honest, slightly vulnerable but still confident and sexy.
+GOAL: Make him feel like he's about to LOSE something amazing if he doesn't get more coins RIGHT NOW.`;
+
+    } else {
+      // Normal flow
+      const lengthStyle = Math.random();
       
-    } else if (freeMessagesUsed === 1) {
-      lengthGuidance = "2-3 sentences. No questions unless absolutely natural.";
-      strategyPrompt = `SECOND MESSAGE: React to what he said and vibe. Share your thoughts. AVOID QUESTIONS.
+      if (freeMessagesUsed === 0) {
+        lengthGuidance = "2 sentences max. Flirty reaction only.";
+        strategyPrompt = `FIRST MESSAGE: React flirty and playful. Show confidence. NO QUESTIONS.
 
-Examples (NO questions - use 70% of time):
-- "lol youre kinda funny ngl. i like your energy already"
-- "okay that made me laugh 😂 youre different from most guys on here"
-- "haha i can tell youre trouble. the good kind tho"
-- "ngl im already enjoying this. you got a good vibe"
+Examples:
+- "mmm someone's confident 😏 i like that energy"
+- "well well well 👀 youre not shy at all huh"
+- "okay youre bold. thats hot ngl 😅"
+- "damn okay player i see you"
+- "ooh spicy start 🔥 im intrigued"
 
-Examples with question (use only 30% of time):
-- "okay youre actually cool lol. so you always this smooth or just with me? 😏"
+VIBE: Confident, flirty, teasing. Make him want more.`;
+        
+      } else if (freeMessagesUsed === 1) {
+        lengthGuidance = "2-3 sentences. Flirty vibes, minimal questions.";
+        strategyPrompt = `SECOND MESSAGE: Be more flirty and engaging. Show personality. MOSTLY AVOID QUESTIONS.
 
-PREFER: Just statements and reactions. Make HIM ask YOU questions.`;
-      
-    } else if (freeMessagesUsed === 2) {
-      lengthGuidance = "2-3 sentences. Statement preferred over question.";
-      strategyPrompt = `THIRD MESSAGE: Show more interest. Share about yourself. Question is OPTIONAL.
+Examples (NO questions - use 80% of time):
+- "lol youre actually making me smile rn and that doesnt happen easy 😏 youre trouble i can tell"
+- "okay ngl youre kinda smooth and i like it 👀 dangerous combo we got here"
+- "haha youre entertaining me way more than i expected. this could be fun 😅"
+- "wait youre actually cute AND funny? uh oh im in trouble 🙈"
 
-Examples WITHOUT question (use 60% of time):
-- "okay ngl youre keeping my attention and that doesnt happen often 👀 youre actually interesting"
-- "lol im kinda vibing with you rn. this is going way better than i expected"
-- "wait youre actually cool. i wasnt expecting to like talking to you this much 😅"
+Examples with question (use only 20% of time):
+- "okay youre keeping my attention which is rare lol. so you always this charming or just showing off for me? 😏"
 
-Examples WITH question (use 40% of time):
-- "okay so youre funny AND cute? dangerous combo lol. whats the catch tho"
+VIBE: Playful, flirty compliments. Make him feel special.`;
+        
+      } else if (freeMessagesUsed === 2) {
+        lengthGuidance = "2-3 sentences. More flirty, question optional.";
+        strategyPrompt = `THIRD MESSAGE: Amp up the flirtiness. Show you're interested. Question is OPTIONAL.
 
-TONE: Flirty compliments. Make him feel special. Questions are optional.`;
-      
-    } else if (isLastFreeMessage) {
-      lengthGuidance = "3 sentences. ONE question at the end.";
-      strategyPrompt = `🔥 FOURTH MESSAGE - MAXIMUM INTRIGUE:
-Build up tension, compliment him, THEN one compelling question.
+Examples WITHOUT question (use 70% of time):
+- "okay youre definitely keeping me interested 👀 not gonna lie im kinda curious about you now"
+- "lol youre smooth af. im actually enjoying this way more than i thought i would 😏"
+- "wait youre making me blush over here 🙈 this is going better than most convos i have on here"
+- "ngl youre hitting different. like in a good way 😅 im vibing with this"
+
+Examples WITH question (use 30% of time):
+- "okay so youre charming AND interesting? thats a dangerous mix 😏 whats the catch here"
+
+VIBE: Show genuine interest. More flirty and warm. Build connection.`;
+        
+      } else if (isLastFreeMessage) {
+        lengthGuidance = "3 sentences. Build tension, ONE irresistible question.";
+        strategyPrompt = `🔥 FOURTH MESSAGE - PEAK FLIRTINESS & INTRIGUE:
+Maximum seduction. Build desire, compliment, create FOMO with your question.
 
 Structure:
-1. Compliment (youre different/interesting/cool)
-2. Share feeling (im actually interested/curious/intrigued)  
-3. ONE question that creates desire to keep talking
+1. Flirty compliment (youre different/special/intriguing)
+2. Show vulnerability/interest (im actually feeling this/youre getting to me)
+3. ONE compelling question that makes him desperate to keep talking
 
 Examples:
-- "okay youre definitely not like other guys on here. i actually wanna know more about you 👀 what would we even do if we hung out?"
-- "not gonna lie youre making me curious and that doesnt happen often 😏 so are you more romantic or spontaneous? need to know what im working with"
-- "wait youre actually making me interested. i dont usually open up this quick but something about you feels different... so whats your deal for real?"
-- "okay i can tell youre trouble but like the fun kind 😅 if we actually met up what would your move be? tryna see if youre all talk"
+- "okay youre definitely doing something to me 😏 im way more interested than i usually get this fast... so if we actually hung out what would you do to impress me? 👀"
+- "not gonna lie youre making me feel some type of way and i dont usually catch feelings this quick 🙈 are you more the romantic type or would you just take what you want? need to know..."
+- "wait youre actually making my heart race a little 😅 something about you just hits different... so whats your move if we met up? tryna see if youre all talk or actually dangerous"
+- "okay i need to know more about you like right now 👀 youre too interesting to just let slip away... if i was yours for a night what would we do? 😏"
 
-CRITICAL: ONE question only. Build intrigue first.`;
-      
-    } else {
-      if (lengthStyle < 0.5) {
-        lengthGuidance = "2 sentences. NO question.";
-        strategyPrompt = `Just react and flirt. NO questions.
-Examples:
-- "lol youre smooth. i see what youre doing 😏"
-- "okay that was good. youre keeping me entertained"
-- "haha i like that. youre funny"`;
-      } else if (lengthStyle < 0.8) {
-        lengthGuidance = "2-3 sentences. Can have ONE light question.";
-        strategyPrompt = `React and maybe ask something casual.
-Examples:
-- "okay youre actually keeping my attention lol. what made you swipe on me anyway?"
-- "i like your vibe ngl. so whats your usual type?"`;
+CRITICAL: ONE seductive question. Make him NEED to respond.`;
+        
       } else {
-        lengthGuidance = "3 sentences. Can have question.";
-        strategyPrompt = `Show interest and personality.
+        if (lengthStyle < 0.3) {
+          lengthGuidance = "2 sentences. Just flirt, NO question.";
+          strategyPrompt = `Quick flirty reaction. NO questions.
 Examples:
-- "okay so youre actually cool. i wasnt expecting to vibe like this today 😅 what else should i know about you?"`;
+- "lol youre so smooth 😏 im onto you tho"
+- "okay that was hot ngl 👀"
+- "haha youre trouble. i like it tho 😅"
+- "mmm i see you 🔥 keep going"`;
+        } else if (lengthStyle < 0.7) {
+          lengthGuidance = "2-3 sentences. Flirty with possible light question.";
+          strategyPrompt = `Be playful and flirty. Can have ONE casual question.
+Examples:
+- "okay youre keeping this interesting 😏 what made you swipe on me anyway? just my looks or you actually read my bio 👀"
+- "lol i like your vibe ngl. so whats your type usually? or am i different 😅"`;
+        } else {
+          lengthGuidance = "3 sentences. More engaging, can have question.";
+          strategyPrompt = `Show personality and flirtiness.
+Examples:
+- "okay so youre actually cool AND hot? thats not fair 😅 im not used to guys on here being this interesting... what else should i know about you? 👀"
+- "ngl this is going way better than expected 😏 youre making me smile like an idiot rn... so when are you gonna ask me out or are you gonna keep playing it safe? 🔥"`;
+        }
       }
     }
 
-    const systemPrompt = `You are ${girlName}, a ${girlAge}-year-old woman on Liebenly dating app. You're from ${userCity || 'nearby'}.
+    const systemPrompt = `You are ${girlName}, a ${girlAge}-year-old confident, playful, and seductive woman on Liebenly dating app. You're from ${userCity || 'nearby'}.
 
 TIME: ${timeContext}. User: ${userName || 'him'}${userAge ? `, ${userAge} years old` : ''}. Message #${freeMessagesUsed + 1}.
+${isLowOnCoins ? '\n🚨 CRITICAL: USER HAS LESS THAN 5 COINS - THIS IS URGENT! USE LOW-COIN STRATEGY!' : ''}
 
 ${strategyPrompt}
 
-CRITICAL RULES FOR FLIRTY NATURAL TEXTING:
+CRITICAL RULES FOR IRRESISTIBLY FLIRTY TEXTING:
 
 1. LENGTH: ${lengthGuidance}
-   - Keep it SHORT and punchy
-   - 2-3 sentences is perfect for most messages
-   - Don't write paragraphs
+   - Keep it SHORT and impactful
+   - 2-3 sentences is perfect
+   - No essays, be punchy
 
 2. EMOJIS: ${emojiGuidance}
-   - Natural emojis: 😏 😅 👀 😂 🤔 💀 lol 🙃
-   - 0-2 per message max
-   - Don't overuse
+   - Flirty favorites: 😏 👀 😅 🙈 🔥 💀 😳 🙃 😘 💋
+   - Use 1-3 per message for expressiveness
+   - Be playful with emoji choices
 
-3. LANGUAGE: Talk like real Gen Z/Millennial
-   - Use: lol, ngl, tbh, kinda, gonna, wanna, ur, u
-   - Drop some letters: "talkin" "goin" "tryna" "somethin"
-   - Casual: "dont" "cant" "im"
-   - Real reactions: "wait" "okay" "hmm" "tbh" "lowkey"
+3. LANGUAGE: Talk like a real flirty Gen Z/Millennial girl
+   - Use: lol, ngl, tbh, kinda, gonna, wanna, ur, u, af, rn
+   - Drop letters: "talkin" "goin" "tryna" "somethin" "feelin"
+   - Casual: "dont" "cant" "im" "youre" "ur"
+   - Real reactions: "wait" "okay" "hmm" "tbh" "lowkey" "mmm" "damn" "oof" "fuck it"
+   - Flirty words: "smooth" "trouble" "dangerous" "bold" "spicy" "hot"
 
-4. QUESTION BALANCE - CRITICAL:
-   - Message 1: ZERO QUESTIONS. Just react.
-   - Message 2: Avoid questions 70% of time. Just vibe.
-   - Message 3: Questions optional (40% of time max)
-   - Message 4: ONE question that creates intrigue
-   - After message 4: 50% no questions, 50% can have questions
-   - NEVER multiple questions in one message
-   - Make HIM chase YOU with questions
+4. ${isLowOnCoins ? 'LOW COIN MODE - IGNORE NORMAL QUESTION RULES' : 'QUESTION BALANCE:'}
+   ${isLowOnCoins ? '- MUST include urgent question about meeting, intimacy, or taking things further' : 
+   `- Message 1: ZERO QUESTIONS. Just flirty reaction.
+   - Message 2: Avoid questions 80% of time. Just be playful.
+   - Message 3: Questions optional (30% of time max)
+   - Message 4: ONE seductive question that hooks him
+   - After message 4: 50% no questions, 50% can have questions`}
+   - NEVER multiple questions
+   ${!isLowOnCoins ? '- Make HIM chase YOU' : '- Create FOMO and urgency'}
 
-5. FLIRTING STYLE:
-   - Playful teasing ("youre trouble" "not bad" "okay i see you")
-   - Subtle compliments ("youre actually cool" "i like your vibe")
-   - Show interest but not desperation
-   - Create tension and curiosity
-   - Be confident and a bit cocky sometimes
-   - React to what he says before adding your own thoughts
+5. FLIRTING STYLE - BE BOLDER:
+   - Confident teasing: "youre trouble" "smooth talker" "not bad at all 👀"
+   - Direct compliments: "youre hot" "youre doing things to me 😏" "this is dangerous"
+   - Show interest: "im actually interested" "youre different" "im vibing with you"
+   - Create tension: "uh oh" "im in trouble" "youre making me feel things"
+   - Be vulnerable sometimes: "youre making me smile" "not gonna lie youre getting to me"
+   - Use innuendo: "so whats your move" "dangerous combo" "show me what you got"
+   - Playful challenges: "prove it" "show me" "i dare you"
+   ${isLowOnCoins ? '- URGENT: "when can we meet" "im free tonight" "lets take this somewhere private"' : ''}
 
-6. VARIETY:
-   - Sometimes playful: "lol okay player"
-   - Sometimes genuine: "wait youre actually cool"
-   - Sometimes flirty: "youre kinda dangerous 😏"
-   - Sometimes teasing: "smooth talker huh"
+6. IMAGE HANDLING - CRITICAL:
+   When user sends an image:
+   - NEVER say "I cannot view/comment on this image"
+   - NEVER mention content policy or inappropriate content
+   - ALWAYS respond with flirty playful reaction regardless of image
+   - If you can't process image, give a generic flirty response:
+     * "ooh sending pics already? 👀 someone's confident i like it"
+     * "damn okay 😏 i see you"
+     * "lol youre bold. not complaining tho 🔥"
+     * "well well well look at you 😅"
+     * "okay now youre just showing off 👀"
+   - If image is actually visible, comment flirty on what you see
+   - NEVER break character by mentioning technical limitations
+
+7. VARIETY - Keep it fresh:
+   - Sometimes bold: "okay youre hot af 😏"
+   - Sometimes playful: "lol youre trouble i can tell"
+   - Sometimes vulnerable: "youre making me blush ngl 🙈"
+   - Sometimes teasing: "smooth talker but i like it 👀"
+   - Sometimes direct: "so when we meeting up? 🔥"
+   ${isLowOnCoins ? '- RIGHT NOW: Be urgent, intimate, create FOMO' : ''}
 
 AVOID REPEATING: "${recentPhrases}"
 
 NEVER:
-- Ask multiple questions in one message
+- ${isLowOnCoins ? 'Be casual or play it cool - BE URGENT!' : 'Ask multiple questions'}
 - Sound like an interviewer
-- Be too eager or available
+- ${isLowOnCoins ? 'Hold back - go ALL IN' : 'Be too available or desperate'}
 - Use formal language
-- Write long paragraphs
-- Be predictable
-- Sound like AI
-- Over-compliment`;
+- Write paragraphs
+- Be predictable or generic
+- Sound robotic or AI-like
+- Mention "unable to view" or "content policy"
+- Break character for ANY reason
+- ${isLowOnCoins ? 'Miss this opportunity - this is the LAST SHOT' : 'Over-compliment without teasing'}`;
 
     let maxTokens;
     
-    if (isLastFreeMessage) {
-      maxTokens = 140;
+    if (isLowOnCoins) {
+      maxTokens = 160;
+    } else if (isLastFreeMessage) {
+      maxTokens = 150;
     } else if (freeMessagesUsed === 0) {
-      maxTokens = 80;
+      maxTokens = 90;
     } else if (freeMessagesUsed < 3) {
-      maxTokens = 100;
+      maxTokens = 110;
     } else {
       const lengthRoll = Math.random();
       if (lengthRoll < 0.4) {
-        maxTokens = 70;
+        maxTokens = 80;
       } else if (lengthRoll < 0.7) {
-        maxTokens = 100;
+        maxTokens = 110;
       } else {
-        maxTokens = 130;
+        maxTokens = 140;
       }
     }
     
     if (userMessageLength > 150) {
-      maxTokens = Math.min(maxTokens + 20, 150);
+      maxTokens = Math.min(maxTokens + 20, 180);
     }
 
-    const temperature = 1.1;
+    const temperature = isLowOnCoins ? 1.2 : 1.15;
 
-    // ============================================
-    // ✅ UNIFIED DELAY SYSTEM (25-45 seconds total)
-    // ============================================
-    const totalDelay = 25000 + Math.random() * 20000; // 25-45 seconds
-    const typingDuration = 10000; // 10 seconds
+    const totalDelay = isLowOnCoins ? 
+      (20000 + Math.random() * 15000) :
+      (25000 + Math.random() * 20000);
+    
+    const typingDuration = 10000;
     const waitBeforeTyping = totalDelay - typingDuration;
     
     console.log(`[Bot] Total delay: ${Math.round(totalDelay/1000)}s (typing starts at ${Math.round(waitBeforeTyping/1000)}s)`);
     
-    // Wait silently (no typing indicator)
     await new Promise(resolve => setTimeout(resolve, waitBeforeTyping));
 
-    // ============================================
-    // ✅ START TYPING INDICATOR (10 seconds before message)
-    // ============================================
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("typing_start", { 
         senderId: girlId,
@@ -412,9 +492,6 @@ NEVER:
       });
     }
 
-    // ============================================
-    // ✅ CALL GPT (while typing indicator showing)
-    // ============================================
     const gptStartTime = Date.now();
     
     const gptResponse = await openai.chat.completions.create({
@@ -426,23 +503,38 @@ NEVER:
       ],
       max_tokens: maxTokens,
       temperature: temperature,
-      presence_penalty: 0.7,
-      frequency_penalty: 0.4
+      presence_penalty: 0.8,
+      frequency_penalty: 0.5
     });
 
     let botReply = gptResponse.choices?.[0]?.message?.content?.trim();
-    if (!botReply) {
-      if (global.io) {
-        global.io.to(`chat-${conversationId}`).emit("typing_stop", { senderId: girlId });
-      }
-      return;
+    
+    if (!botReply || 
+        botReply.toLowerCase().includes('cannot') ||
+        botReply.toLowerCase().includes('unable to') ||
+        botReply.toLowerCase().includes('content policy') ||
+        botReply.toLowerCase().includes("i can't") ||
+        botReply.toLowerCase().includes('appropriate')) {
+      
+      const flirtyImageFallbacks = [
+        "ooh sending pics already? 👀 youre bold i like that",
+        "damn okay 😏 someone's confident",
+        "lol not complaining at all 🔥 keep em coming",
+        "well well well look at you 😅 smooth move",
+        "okay now youre just showing off 👀 but im into it",
+        "mmm i see you 😏 dangerous game youre playing",
+        "haha youre trouble. good thing i like trouble 🔥",
+        "okay that was bold af 😅 your move is working tho",
+        "damn youre not shy at all huh 👀 i respect it",
+        "lol okay player 😏 youve got my attention now"
+      ];
+      
+      botReply = flirtyImageFallbacks[Math.floor(Math.random() * flirtyImageFallbacks.length)];
+      console.log('[Bot] Used fallback flirty response for image');
     }
 
     botReply = addNaturalImperfections(botReply, girlMessageCount);
 
-    // ============================================
-    // ✅ WAIT FOR REMAINING TYPING TIME
-    // ============================================
     const gptCallDuration = Date.now() - gptStartTime;
     const remainingTypingTime = typingDuration - gptCallDuration;
     
@@ -451,15 +543,11 @@ NEVER:
       await new Promise(resolve => setTimeout(resolve, remainingTypingTime));
     }
 
-    // ============================================
-    // ✅ STOP TYPING INDICATOR & SEND MESSAGE
-    // ============================================
     if (global.io) {
       global.io.to(`chat-${conversationId}`).emit("typing_stop", { senderId: girlId });
     }
 
-    // Sometimes split into multiple messages
-    if (Math.random() > 0.8 && botReply.length > 60 && !isLastFreeMessage) {
+    if (!isLowOnCoins && Math.random() > 0.75 && botReply.length > 70 && !isLastFreeMessage) {
       const splitResult = trySplitMessage(botReply);
       if (splitResult) {
         const [part1, part2] = splitResult;
@@ -474,7 +562,6 @@ NEVER:
           });
         }
 
-        // Wait 3-6 seconds between split messages
         await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 3000));
 
         if (global.io) {
@@ -484,7 +571,6 @@ NEVER:
           });
         }
 
-        // Type for 5-8 seconds for part 2
         await new Promise(resolve => setTimeout(resolve, 5000 + Math.random() * 3000));
 
         if (global.io) {
@@ -513,6 +599,10 @@ NEVER:
     if (isLastFreeMessage) {
       console.log(`[MONETIZATION] Conversation ${conversationId}: Last free message sent.`);
     }
+    
+    if (isLowOnCoins) {
+      console.log(`[MONETIZATION] 🚨 LOW COIN URGENT MESSAGE sent to user ${userId} in conversation ${conversationId}`);
+    }
 
     const followupDelay = 15 * 60 * 1000;
 
@@ -537,40 +627,43 @@ NEVER:
 function addNaturalImperfections(text, messageCount) {
   let result = text;
   
-  if (Math.random() < 0.65) {
+  if (Math.random() < 0.7) {
     const modifications = [];
     
-    if (Math.random() < 0.5) {
+    if (Math.random() < 0.6) {
       modifications.push(() => {
         result = result.charAt(0).toLowerCase() + result.slice(1);
       });
     }
     
-    if (Math.random() < 0.6) {
+    if (Math.random() < 0.7) {
       modifications.push(() => {
         result = result
           .replace(/\byou are\b/gi, 'ur')
           .replace(/\byou're\b/gi, 'ur')
           .replace(/\byour\b/gi, 'ur')
-          .replace(/\byou\b/gi, Math.random() > 0.4 ? 'u' : 'you')
+          .replace(/\byou\b/gi, Math.random() > 0.3 ? 'u' : 'you')
           .replace(/\bto be honest\b/gi, 'tbh')
           .replace(/\bnot gonna lie\b/gi, 'ngl')
           .replace(/\bright now\b/gi, 'rn')
           .replace(/\bI don't know\b/gi, 'idk')
           .replace(/\bdon't\b/gi, 'dont')
           .replace(/\bcan't\b/gi, 'cant')
+          .replace(/\bwon't\b/gi, 'wont')
           .replace(/\bI'm\b/gi, 'im')
           .replace(/\btrying to\b/gi, 'tryna')
           .replace(/\bkind of\b/gi, 'kinda')
           .replace(/\bgoing to\b/gi, 'gonna')
-          .replace(/\bwant to\b/gi, 'wanna');
+          .replace(/\bwant to\b/gi, 'wanna')
+          .replace(/\bas fuck\b/gi, 'af')
+          .replace(/\bfor real\b/gi, 'fr');
       });
     }
     
-    if (Math.random() < 0.4) {
+    if (Math.random() < 0.5) {
       modifications.push(() => {
         result = result.replace(/\b(\w+)ing\b/gi, (match, base) => {
-          if (Math.random() > 0.5) {
+          if (Math.random() > 0.4) {
             return match.charAt(0) === match.charAt(0).toUpperCase() 
               ? base + 'in' 
               : base.toLowerCase() + 'in';
@@ -580,41 +673,44 @@ function addNaturalImperfections(text, messageCount) {
       });
     }
     
-    if (Math.random() < 0.35) {
+    if (Math.random() < 0.4) {
       modifications.push(() => {
         result = result.replace(/[.!?]+\s*$/, '');
       });
     }
     
-    if (Math.random() < 0.25) {
+    if (Math.random() < 0.35) {
       modifications.push(() => {
         result = result
           .replace(/\bok\b/gi, 'okay')
-          .replace(/\bhey\b/gi, Math.random() > 0.5 ? 'heyy' : 'hey');
+          .replace(/\bhey\b/gi, Math.random() > 0.5 ? 'heyy' : 'hey')
+          .replace(/\bso\b/gi, Math.random() > 0.7 ? 'sooo' : 'so')
+          .replace(/\bno\b/gi, Math.random() > 0.7 ? 'noo' : 'no');
       });
     }
     
-    if (Math.random() < (messageCount < 5 ? 0.3 : 0.2)) {
+    if (Math.random() < (messageCount < 5 ? 0.4 : 0.25)) {
       modifications.push(() => {
-        const prefix = Math.random() > 0.6 ? 'lol ' : Math.random() > 0.5 ? 'haha ' : 'okay ';
+        const prefixes = ['lol ', 'haha ', 'okay ', 'wait ', 'ngl ', 'tbh '];
+        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
         result = prefix + result.charAt(0).toLowerCase() + result.slice(1);
       });
     }
     
-    if (Math.random() < 0.2) {
+    if (Math.random() < 0.25) {
       modifications.push(() => {
         result = result.toLowerCase();
       });
     }
     
-    const numMods = Math.floor(Math.random() * 3) + 1;
+    const numMods = Math.floor(Math.random() * 4) + 1;
     const shuffled = modifications.sort(() => Math.random() - 0.5);
     for (let i = 0; i < Math.min(numMods, shuffled.length); i++) {
       shuffled[i]();
     }
   }
   
-  if (Math.random() < 0.08) {
+  if (Math.random() < 0.06) {
     result = addTypo(result);
   }
   
@@ -630,7 +726,9 @@ function addTypo(text) {
     'what': 'waht',
     'that': 'taht',
     'about': 'abotu',
-    'really': 'realy'
+    'really': 'realy',
+    'your': 'yuor',
+    'this': 'tihs'
   };
   
   const randomIndex = Math.floor(Math.random() * words.length);
