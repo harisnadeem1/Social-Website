@@ -23,7 +23,7 @@ const addLike = async (req, res) => {
     const likeId = likeResult.rows[0].id;
 
     // ✅ TRIGGER AUTOMATED BOT RESPONSE
-    handleLikeResponse(likeId, senderId, receiverId);
+    // handleLikeResponse(likeId, senderId, receiverId);
 
     return res.status(201).json({ status: 'like_sent' });
   } catch (err) {

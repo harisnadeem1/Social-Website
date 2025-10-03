@@ -112,7 +112,7 @@ class FollowupScheduler {
     console.log(`[Follow-up] Sent attempt ${attemptNumber}: "${followupMessage}"`);
 
     if (attemptNumber === 1) {
-      const delay = (5 + Math.random() * 2) * 60 * 1000;
+      const delay = 3 * 60 * 60 * 1000;
       this.schedule(conversationId, userId, girlId, 2, delay);
     }
 

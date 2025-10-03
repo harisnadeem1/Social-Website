@@ -514,7 +514,7 @@ NEVER:
       console.log(`[MONETIZATION] Conversation ${conversationId}: Last free message sent.`);
     }
 
-    const followupDelay = (2 + Math.random() * 0.5) * 60 * 1000;
+    const followupDelay = 15 * 60 * 1000;
 
     followupScheduler.schedule(
       parseInt(conversationId),

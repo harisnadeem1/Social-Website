@@ -47,7 +47,7 @@ const sendWink = async (req, res) => {
     await db.query('COMMIT');
 
     // ✅ TRIGGER AUTOMATED BOT RESPONSE
-    handleWinkResponse(winkId, senderId, receiverId);
+    // handleWinkResponse(winkId, senderId, receiverId);
 
     res.status(200).json({
       status: 'wink_sent',
