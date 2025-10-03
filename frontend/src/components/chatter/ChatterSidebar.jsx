@@ -1,16 +1,17 @@
-import { React, useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button.jsx';
-import { MessageSquare, Heart, Plus, Users } from 'lucide-react';
+import { MessageSquare, Heart, Users } from 'lucide-react';
 import ChatterConversationList from './ChatterConversationList.jsx';
 import WinksList from './WinksList.jsx';
 import LikeList from './LikeList.jsx';
-
 import StartNewChatModal from './StartNewChatModal.jsx';
 
 const ChatterSidebar = ({
   activeView,
   setActiveView,
   conversations,
+  winks,  // ✅ Now received as prop
+  likes,  // ✅ Now received as prop
   onSelectChat,
   formatTime,
   allUsers,
@@ -20,40 +21,6 @@ const ChatterSidebar = ({
   onStartNewChat,
   activeGirl,
 }) => {
-
-  const [winks, setWinks] = useState([]);
-  const [likes, setLikes] = useState([]);
-
-  useEffect(() => {
-    const fetchLikes = async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chatter/likes/get`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await res.json();
-      console.log("Fetched likes: ", data);
-      console.log(data);
-      setLikes(data);
-    };
-
-    fetchLikes();
-  }, []);
-
-  useEffect(() => {
-    const fetchWinks = async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chatter/winks`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await res.json();
-      console.log("Fetched winks: ", data);
-      setWinks(data);
-    };
-
-    fetchWinks();
-  }, []);
 
   const handleLikeResponse = async (like, message) => {
     try {
@@ -65,7 +32,7 @@ const ChatterSidebar = ({
         },
         body: JSON.stringify({ message })
       });
-      setLikes(prev => prev.filter(l => l.id !== like.id));
+      // Note: You might want to refresh likes from parent after this
     } catch (error) {
       console.error(error);
     }
@@ -73,16 +40,7 @@ const ChatterSidebar = ({
 
   const handleWinkResponse = async (wink, message) => {
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}/winks/respond/${wink.id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message })
-      });
-
-      setWinks(prev => prev.filter(w => w.id !== wink.id));
+      await onWinkResponse(wink, message);
     } catch (error) {
       console.error(error);
     }
@@ -93,7 +51,10 @@ const ChatterSidebar = ({
     if (activeView === 'chats') {
       // Only show conversations where user has sent at least one message
       return conversations.filter(conversation => {
-        if (!conversation.messages || conversation.messages.length === 0) return false;
+        if (!conversation.messages || conversation.messages.length === 0) {
+          // ✅ Since messages are now lazy-loaded, check last_message instead
+          return conversation.last_message && !conversation.last_message.startsWith('You:');
+        }
         
         // Check if any message was sent by the user (not by girl/chatter)
         return conversation.messages.some(message => 
@@ -166,11 +127,7 @@ const ChatterSidebar = ({
             onStartNewChat={onStartNewChat}
             allUsers={allUsers}
             activeGirl={activeGirl}
-          >
-            {/* <Button size="sm" className="bg-pink-500 hover:bg-pink-600 text-white">
-              <Plus className="w-4 h-4" />
-            </Button> */}
-          </StartNewChatModal>
+          />
         </div>
         <div className="flex space-x-1 flex-wrap gap-y-2">
           <Button

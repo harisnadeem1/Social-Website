@@ -9,7 +9,6 @@ import AuthContext from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast.js';
 import useSocket from '@/hooks/useSocket';
 import { unlockChat } from '../api/chatLock';
-import axios from 'axios';
 
 const ChatterDashboard = () => {
   const {
@@ -19,6 +18,8 @@ const ChatterDashboard = () => {
     activeGirl,
     setActiveGirl,
     conversations,
+    winks,
+    likes,
     selectedChat,
     message,
     setMessage,
@@ -33,42 +34,24 @@ const ChatterDashboard = () => {
     isLockedByYou,
     lockHolderName,
     setSelectedChatId,
+    handleBackToInbox,
+    isLoading,
   } = useChatterState();
   
   const socketRef = useSocket();
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
     toast({
       title: "Logged out successfully",
-      description: "See you soon from the Chatter Hub! 👋",
+      description: "See you soon from the Chatter Hub!",
     });
   };
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [winks, setWinks] = useState([]);
-
-  useEffect(() => {
-    const fetchWinks = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chatter/winks`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setWinks(res.data); // assuming the backend returns the winks array
-      } catch (err) {
-        console.error("Failed to fetch winks:", err);
-      }
-    };
-
-    fetchWinks();
-  }, []);
 
   useEffect(() => {
     const handleUnload = async () => {
@@ -82,38 +65,32 @@ const ChatterDashboard = () => {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [selectedChat]);
 
-  useEffect(() => {
-    if (!socketRef.current) return;
-
-    socketRef.current.on('receiveMessage', (data) => {
-      // You can call handleSelectChat again or directly append the message to selectedChat
-    });
-
-    return () => {
-      socketRef.current.off('receiveMessage');
-    };
-  }, [socketRef.current]);
-
   const handleSelectChatAndCloseSidebar = (chat) => {
     handleSelectChat(chat);
-    socketRef.current.emit('joinRoom', chat.conversation_id);
+    if (socketRef.current) {
+      socketRef.current.emit('joinRoom', chat.conversation_id);
+    }
     setSidebarOpen(false);
   };
 
-  const handleBackToInbox = async () => {
-    const token = localStorage.getItem('token');
-    if (selectedChat) {
-      await unlockChat(selectedChat.conversation_id, token);
-    }
-    setSelectedChatId(null);
-  };
-
-  // Set default activeView to 'chats' instead of 'conversations'
-  useEffect(() => {
-    if (!activeView || activeView === 'conversations') {
-      setActiveView('chats');
-    }
-  }, [activeView, setActiveView]);
+  // ✅ Loading screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <Helmet>
+          <title>Loading - Chatter Dashboard</title>
+        </Helmet>
+        
+        <div className="text-center">
+          <div className="w-16 h-16 mb-4 mx-auto">
+            <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin"></div>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Chats...</h2>
+          <p className="text-gray-500 text-sm">Please wait while we fetch your conversations</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -139,11 +116,12 @@ const ChatterDashboard = () => {
             setActiveView={setActiveView}
             conversations={conversations}
             winks={winks}
+            likes={likes}
             onSelectChat={handleSelectChatAndCloseSidebar}
             formatTime={formatTime}
             allUsers={allUsers}
             girlProfiles={girlProfiles}
-            currentChatterId={user.email}
+            currentChatterId={user?.email}
             onWinkResponse={handleWinkResponse}
             onStartNewChat={handleStartNewChat}
             activeGirl={activeGirl}
