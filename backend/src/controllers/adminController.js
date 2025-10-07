@@ -46,11 +46,11 @@ const getDashboardStats = async (req, res) => {
     `);
 
     const dailyActiveUsersRes = await db.query(`
-      SELECT COUNT(DISTINCT c.user_id) as daily_active_users
-      FROM conversations c
-      JOIN users u ON c.user_id = u.id
-      WHERE u.role = 'user' 
-        AND DATE(c.last_activity) = CURRENT_DATE
+      SELECT COUNT(DISTINCT m.sender_id) AS daily_active_users
+FROM messages m
+JOIN users u ON m.sender_id = u.id
+WHERE u.role = 'user'
+  AND DATE(m.sent_at) = CURRENT_DATE;
     `);
 
     const todayRevenueRes = await db.query(`
@@ -260,13 +260,12 @@ ORDER BY msg_date DESC;
     // ===================================
     const messageStatsRes = await db.query(`
       SELECT 
-        COUNT(*) as total_messages_today,
-        COUNT(DISTINCT m.conversation_id) as active_conversations_today
-      FROM messages m
-      JOIN conversations c ON m.conversation_id = c.id
-      JOIN users u ON c.user_id = u.id
-      WHERE u.role = 'user'
-        AND DATE(m.sent_at) = CURRENT_DATE
+  COUNT(*) AS total_messages_today,
+  COUNT(DISTINCT m.conversation_id) AS active_conversations_today
+FROM messages m
+JOIN users u ON m.sender_id = u.id
+WHERE u.role = 'user'
+  AND DATE(m.sent_at) = CURRENT_DATE;
     `);
 
     // ===================================
