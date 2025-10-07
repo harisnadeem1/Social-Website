@@ -6,48 +6,48 @@ const WomenGallery = ({ onSignUp }) => {
   const womenProfiles = [
     {
       id: 1,
-      name: 'Emma',
+      name: 'Kaye',
       age: 28,
-      Image:'https://i.ibb.co/zVDSG611/profile.jpg',
+      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636432/blob_ukie3z.png',
       description: 'Beautiful young woman with blonde hair smiling outdoors in natural lighting'
     },
     {
       id: 2,
-      name: 'Sofia',
+      name: 'Ramona',
       age: 26,
-      Image:'https://i.ibb.co/RTzz4r0C/profile.jpg',
+      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636714/blob_vnceyh.png',
 
       description: 'Latina woman with dark hair and warm smile in urban setting'
     },
     {
       id: 3,
-      name: 'Aria',
+      name: 'Patty',
       age: 27,
-            Image:'https://i.ibb.co/dwc5r4nn/profile.jpg',
+            Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1754174738/blob_u9jj4k.jpg',
 
       description: 'Indian woman with long black hair, elegant and professional look'
     },
     {
       id: 4,
-      name: 'Isabella',
+      name: 'Martina',
       age: 25,
-            Image:'https://i.ibb.co/7tLmZDhV/profile.jpg',
+            Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757362465/blob_frlibl.jpg',
 
       description: 'Hispanic woman with curly hair and bright smile at the beach'
     },
     {
       id: 5,
-      name: 'Chloe',
+      name: 'Lila',
       age: 29,
-            Image:'https://i.ibb.co/2Y1QTCvC/profile.jpg',
+            Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757610840/blob_auf647.png',
 
       description: 'Blonde woman with blue eyes in casual summer outfit'
     },
     {
       id: 6,
-      name: 'Maya',
+      name: 'Cameron',
       age: 24,
-            Image:'https://i.ibb.co/jvmDKCG5/singlefoto.jpg',
+            Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636076/blob_i23wve.png',
 
       description: 'Asian woman with stylish haircut and modern fashion sense'
     }
