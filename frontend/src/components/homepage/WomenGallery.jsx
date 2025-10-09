@@ -11,7 +11,7 @@ const WomenGallery = ({ onSignUp }) => {
       age: 28,
       location: 'New York',
       interests: ['Travel', 'Yoga'],
-      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636432/blob_ukie3z.png',
+      Image: 'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636432/blob_ukie3z.png',
       description: 'Beautiful young woman with blonde hair smiling outdoors in natural lighting',
       online: true
     },
@@ -21,7 +21,7 @@ const WomenGallery = ({ onSignUp }) => {
       age: 26,
       location: 'Los Angeles',
       interests: ['Music', 'Art'],
-      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636714/blob_vnceyh.png',
+      Image: 'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636714/blob_vnceyh.png',
       description: 'Latina woman with dark hair and warm smile in urban setting',
       online: true
     },
@@ -31,7 +31,7 @@ const WomenGallery = ({ onSignUp }) => {
       age: 27,
       location: 'Chicago',
       interests: ['Books', 'Coffee'],
-      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1754174738/blob_u9jj4k.jpg',
+      Image: 'https://res.cloudinary.com/dt6smpghz/image/upload/v1754174738/blob_u9jj4k.jpg',
       description: 'Indian woman with long black hair, elegant and professional look',
       online: false
     },
@@ -41,7 +41,7 @@ const WomenGallery = ({ onSignUp }) => {
       age: 25,
       location: 'Miami',
       interests: ['Beach', 'Dancing'],
-      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757362465/blob_frlibl.jpg',
+      Image: 'https://res.cloudinary.com/dt6smpghz/image/upload/v1757362465/blob_frlibl.jpg',
       description: 'Hispanic woman with curly hair and bright smile at the beach',
       online: true
     },
@@ -51,7 +51,7 @@ const WomenGallery = ({ onSignUp }) => {
       age: 29,
       location: 'Seattle',
       interests: ['Hiking', 'Photography'],
-      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757610840/blob_auf647.png',
+      Image: 'https://res.cloudinary.com/dt6smpghz/image/upload/v1757610840/blob_auf647.png',
       description: 'Blonde woman with blue eyes in casual summer outfit',
       online: true
     },
@@ -61,7 +61,7 @@ const WomenGallery = ({ onSignUp }) => {
       age: 24,
       location: 'San Francisco',
       interests: ['Tech', 'Fitness'],
-      Image:'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636076/blob_i23wve.png',
+      Image: 'https://res.cloudinary.com/dt6smpghz/image/upload/v1757636076/blob_i23wve.png',
       description: 'Asian woman with stylish haircut and modern fashion sense',
       online: false
     }
@@ -104,7 +104,7 @@ const WomenGallery = ({ onSignUp }) => {
               Ready to Connect
             </span>
           </h2>
-          
+
           <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Real profiles, genuine connections. Start chatting with verified singles in your area today.
           </p>
@@ -124,15 +124,15 @@ const WomenGallery = ({ onSignUp }) => {
               <div className="relative bg-white rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
                 {/* Image Container */}
                 <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                  <img  
+                  <img
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     alt={`${profile.name}, ${profile.age} years old - beautiful woman smiling`}
                     src={profile.Image}
                   />
-                  
+
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
-                  
+
                   {/* Online Status Badge */}
                   {profile.online && (
                     <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-green-500 rounded-full shadow-lg">
@@ -153,7 +153,7 @@ const WomenGallery = ({ onSignUp }) => {
                       <h3 className="text-2xl font-bold">{profile.name}</h3>
                       <span className="text-xl font-light">{profile.age}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-1 text-sm text-white/90 mb-3">
                       <MapPin className="w-4 h-4" />
                       <span>{profile.location}</span>
@@ -162,7 +162,7 @@ const WomenGallery = ({ onSignUp }) => {
                     {/* Interests Tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       {profile.interests.map((interest, idx) => (
-                        <span 
+                        <span
                           key={idx}
                           className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium border border-white/30"
                         >
@@ -172,25 +172,25 @@ const WomenGallery = ({ onSignUp }) => {
                     </div>
 
                     {/* Action Buttons */}
-<div className="flex gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 transform translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0">
-  <motion.button
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    onClick={onSignUp}
-    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-xl font-semibold text-sm shadow-lg transition-all duration-300"
-  >
-    <MessageCircle className="w-4 h-4" />
-    Chat Now
-  </motion.button>
-  
-  <motion.button
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    className="p-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-xl transition-all duration-300 border border-white/30"
-  >
-    <Heart className="w-5 h-5" />
-  </motion.button>
-</div>
+                    <div className="flex gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 transform translate-y-0 sm:translate-y-4 sm:group-hover:translate-y-0">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={onSignUp}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-xl font-semibold text-sm shadow-lg transition-all duration-300"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Chat Now
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="p-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-xl transition-all duration-300 border border-white/30"
+                      >
+                        <Heart className="w-5 h-5" />
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -198,11 +198,11 @@ const WomenGallery = ({ onSignUp }) => {
               {/* Floating sparkle effect */}
               <motion.div
                 className="absolute -top-2 -right-2 text-yellow-400"
-                animate={{ 
+                animate={{
                   rotate: [0, 360],
                   scale: [1, 1.2, 1]
                 }}
-                transition={{ 
+                transition={{
                   duration: 3,
                   repeat: Infinity,
                   ease: "easeInOut"
@@ -215,70 +215,7 @@ const WomenGallery = ({ onSignUp }) => {
         </div>
 
         {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <div className="inline-block bg-white rounded-3xl shadow-2xl p-8 sm:p-12 max-w-3xl">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Heart className="w-6 h-6 text-pink-500 fill-pink-500 animate-pulse" />
-              <Heart className="w-8 h-8 text-pink-500 fill-pink-500 animate-pulse animation-delay-150" />
-              <Heart className="w-6 h-6 text-pink-500 fill-pink-500 animate-pulse animation-delay-300" />
-            </div>
-
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Ready to Start Your Love Story?
-            </h3>
-            
-            <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
-              Join thousands of singles who found their perfect match. Create your profile and start chatting in minutes!
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  onClick={onSignUp}
-                  className="group relative overflow-hidden bg-gradient-to-r from-pink-500 via-purple-600 to-pink-500 hover:from-pink-600 hover:via-purple-700 hover:to-pink-600 text-white px-10 py-6 text-lg font-semibold rounded-2xl shadow-2xl hover:shadow-pink-500/50 transition-all duration-500 bg-[length:200%_auto] hover:bg-right"
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5" />
-                    Start Chatting Now
-                  </span>
-                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-                </Button>
-              </motion.div>
-
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  onClick={onSignUp}
-                  variant="outline"
-                  className="px-10 py-6 text-lg font-semibold rounded-2xl border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all duration-300"
-                >
-                  View All Profiles
-                </Button>
-              </motion.div>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex flex-wrap justify-center items-center gap-6 mt-8 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span>100% Verified Profiles</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                <span>Safe & Secure</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <span>Free to Join</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        
       </div>
 
       <style jsx>{`
