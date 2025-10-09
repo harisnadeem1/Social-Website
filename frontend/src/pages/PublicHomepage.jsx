@@ -11,6 +11,9 @@ import LoginModal from '@/components/homepage/LoginModal';
 import SignupModal from '@/components/homepage/SignupModal';
 import CTASection from '@/components/homepage/CTASection';
 import { Link } from 'react-router-dom';
+import FloatingSignupButton from "@/components/homepage/FloatingSignupButton";
+import FloatingChatWidget from "@/components/homepage/FloatingChatWidget";
+
 
 const PublicHomepage = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -78,6 +81,7 @@ const PublicHomepage = () => {
               </Button>
             </div>
           </div>
+
         </div>
       </header>
 
@@ -171,6 +175,10 @@ const PublicHomepage = () => {
         onOpenChange={setShowSignupModal}
         onSwitchToLogin={switchToLogin}
       />
+
+      {/* <FloatingSignupButton onClick={handleSignUp} /> */}
+      <FloatingChatWidget onSignUp={handleSignUp} />
+
     </div>
   );
 };

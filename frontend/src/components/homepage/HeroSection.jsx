@@ -16,10 +16,10 @@ const HeroSection = ({ onLogin, onSignUp }) => {
         <img
           className="block md:hidden w-full h-full object-cover opacity-60"
           alt="Happy couple on mobile background"
-          src="/hero/Hero-background-mobile.jpeg"
+          src="/hero/Hero-background-mobile-3.jpeg"
         />
-        
-       
+
+
 
       </div>
 
@@ -29,17 +29,17 @@ const HeroSection = ({ onLogin, onSignUp }) => {
           <motion.div
             key={i}
             className="absolute"
-            initial={{ 
-              x: Math.random() * window.innerWidth, 
+            initial={{
+              x: Math.random() * window.innerWidth,
               y: window.innerHeight + 100,
-              opacity: 0 
+              opacity: 0
             }}
-            animate={{ 
+            animate={{
               y: -100,
               opacity: [0, 0.6, 0],
               x: Math.random() * window.innerWidth
             }}
-            transition={{ 
+            transition={{
               duration: 8 + Math.random() * 4,
               repeat: Infinity,
               delay: i * 2,
@@ -52,14 +52,15 @@ const HeroSection = ({ onLogin, onSignUp }) => {
       </div>
 
       {/* Main content */}
-      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center z-10">
+      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 flex flex-col justify-end sm:justify-center min-h-screen pb-10 sm:pb-0">
+
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
           className="max-w-5xl mx-auto"
         >
-         
+
 
           {/* Main headline */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-[1.1] tracking-tight">
@@ -80,18 +81,18 @@ const HeroSection = ({ onLogin, onSignUp }) => {
               Starts Here
             </motion.span>
           </h1>
-          
-          {/* Subheadline */}
-         <motion.p
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.8, delay: 0.7 }}
-  className="text-xl sm:text-2xl md:text-3xl text-white mb-12 max-w-3xl mx-auto leading-relaxed font-bold"
->
-  Connect with verified singles who share your values and are ready for something real.
-</motion.p>
 
-          
+          {/* Subheadline */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="text-xl sm:text-2xl md:text-3xl text-white mb-12 max-w-3xl mx-auto leading-relaxed font-bold"
+          >
+            Connect with verified singles who share your values and are ready for something real.
+          </motion.p>
+
+
           {/* CTA Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -99,28 +100,28 @@ const HeroSection = ({ onLogin, onSignUp }) => {
             transition={{ duration: 0.8, delay: 0.9 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
           >
-           <Button 
+           <Button
   size="lg"
   onClick={onSignUp}
-  className="group w-full sm:w-auto bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 text-white text-lg px-10 py-7 h-auto rounded-full shadow-2xl shadow-pink-500/50 hover:shadow-pink-500/70 transition-all duration-500 transform hover:scale-105 border-2 border-white/20 font-semibold bg-[length:200%_auto] hover:bg-right uppercase"
+  className="group w-full sm:w-auto bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 hover:from-pink-600 hover:via-purple-600 hover:to-pink-600 text-white text-base sm:text-lg px-6 sm:px-10 py-4 sm:py-6 h-auto rounded-full shadow-lg sm:shadow-2xl shadow-pink-500/40 hover:shadow-pink-500/60 transition-all duration-500 transform hover:scale-105 border border-white/20 font-semibold bg-[length:200%_auto] hover:bg-right uppercase"
 >
-  <Heart className="w-5 h-5 mr-2 group-hover:fill-current transition-all" />
   Start Your Journey
-  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
 </Button>
 
-<Button 
+<Button
   size="lg"
   variant="outline"
   onClick={onLogin}
-  className="w-full sm:w-auto border-2 border-white/40 text-white hover:bg-white hover:text-purple-600 text-lg px-10 py-7 h-auto rounded-full backdrop-blur-xl bg-white/10 hover:bg-white transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg uppercase"
+  className="w-full sm:w-auto border border-white/30 text-white hover:bg-white hover:text-purple-600 text-base sm:text-lg px-6 sm:px-10 py-4 sm:py-6 h-auto rounded-full backdrop-blur-xl bg-white/10 hover:bg-white transition-all duration-300 transform hover:scale-105 font-semibold shadow-md sm:shadow-lg uppercase"
 >
   Sign In
 </Button>
 
+
           </motion.div>
 
-          
+
         </motion.div>
       </div>
 
