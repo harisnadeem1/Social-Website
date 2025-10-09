@@ -319,20 +319,20 @@ const ChatPage = () => {
 
     const messageCost = 5;
     if (coins < messageCost) {
-      toast({
-        title: "Insufficient Coins",
-        description: `You need ${messageCost} coins to send a message. Buy coins now!`,
-        variant: "destructive",
-        action: (
-          <Button
-            size="sm"
-            onClick={() => window.location.href = '/coins'}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white"
-          >
-            Buy Coins
-          </Button>
-        )
-      });
+     toast({
+  title: "Not enough coins",
+  description: `You need ${messageCost} coins to send this message`,
+  className: "border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800",
+  action: (
+    <Button
+      size="sm"
+      onClick={() => window.location.href = '/coins'}
+      className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+    >
+      Get Coins
+    </Button>
+  )
+});
       return;
     }
 

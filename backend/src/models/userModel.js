@@ -12,7 +12,7 @@ const createUserByEmail = async (email, password, full_name, role) => {
 
 
 
-const createInitialCoinBalance = async (userId, amount = 20) => {
+const createInitialCoinBalance = async (userId, amount = 10) => {
   await db.query(
     `INSERT INTO coins (user_id, balance) VALUES ($1, $2)`,
     [userId, amount]

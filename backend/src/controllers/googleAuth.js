@@ -66,7 +66,7 @@ const googleRegisterUser = async (req, res) => {
       isNewUser = true;
 
       // Add default coins
-      await pool.query(`INSERT INTO coins (user_id, balance) VALUES ($1, $2)`, [user.id, 20]);
+      await pool.query(`INSERT INTO coins (user_id, balance) VALUES ($1, $2)`, [user.id, 10]);
 
       // ✅ Link referral if slug exists
       if (referral_slug) {

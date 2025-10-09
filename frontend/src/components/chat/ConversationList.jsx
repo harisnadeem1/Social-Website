@@ -15,13 +15,11 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
     }
     
     const lastMessage = conversation.messages[conversation.messages.length - 1];
-    // Handle both raw timestamps and sent_at dates
     return lastMessage.sent_at || lastMessage.rawTimestamp || conversation.lastActivity || 0;
   };
 
   // Filter out conversations that don't have any messages
   const conversationsWithMessages = conversations.filter(conversation => {
-    // Check if conversation has messages array and it's not empty
     return conversation.messages && conversation.messages.length > 0;
   });
 
@@ -44,10 +42,8 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
     const isToday = date.toDateString() === now.toDateString();
 
     if (isToday) {
-      // Show only time like 10:30 PM
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else {
-      // Show date + time like Jun 29, 10:30 PM
       const datePart = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
       const timePart = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       return `${datePart}, ${timePart}`;
@@ -59,34 +55,43 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
     if (!conversation.messages || conversation.messages.length === 0) return false;
 
     const lastMessage = conversation.messages[conversation.messages.length - 1];
-    // Check if the last message was sent by someone other than current user
     return lastMessage.senderId !== currentUserId;
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200 bg-white sticky top-16 z-40">
-        <div className="flex justify-center items-center">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+    <div className="h-full flex flex-col bg-white">
+      {/* Header - Hidden on mobile, visible on desktop */}
+      <div className="hidden sm:block px-6 py-4 border-b sticky top-16 z-40 bg-white">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">
             Messages
-            {isLoading && (
-              <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
-            )}
           </h2>
+          {isLoading && (
+            <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
+          )}
         </div>
       </div>
 
-      <div className="mb-2 px-2">
-        <input
-          type="text"
-          placeholder="Search..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isLoading}
-        />
+      {/* Search Bar */}
+      <div className="px-4 sm:px-6 py-3 sm:py-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+            disabled={isLoading}
+          />
+          {/* Show loader on mobile in search bar area */}
+          {isLoading && (
+            <Loader2 className="sm:hidden absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-pink-500" />
+          )}
+        </div>
       </div>
 
+      {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence>
           {filteredConversations.map((conversation, index) => {
@@ -96,70 +101,69 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
             return (
               <motion.div
                 key={conversation.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                whileHover={{ scale: 1.01 }}
-                className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                className="px-4 sm:px-6 py-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
                 onClick={() => !isLoading && onSelectChat(conversation)}
               >
-                <div className="flex items-center space-x-3">
-                  <div className="relative">
-                    <Avatar className="w-12 h-12">
+                <div className="flex items-start gap-3">
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="w-14 h-14 sm:w-12 sm:h-12">
                       <AvatarImage src={conversation.avatar} alt={conversation.name} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white font-medium">
                         {conversation.name?.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     {conversation.online && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
                     )}
                   </div>
 
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      {/* Name with Verified Tick */}
-                      <div className="flex items-center">
-                        <h3 className={`font-medium text-gray-900 truncate ${showNewMessagesBadge ? 'font-semibold' : ''}`}>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <h3 className={`text-sm sm:text-base truncate ${showNewMessagesBadge ? 'font-semibold text-gray-900' : 'font-medium text-gray-800'}`}>
                           {conversation.name}
                         </h3>
-                        {/* Verified Tick - Only show if conversation is verified */}
                         {conversation.is_verified && (
                           <img
                             src="/bluetick/verified.png"
                             alt="Verified"
-                            className="w-4 h-4 ml-1 flex-shrink-0"
+                            className="w-4 h-4 flex-shrink-0"
                             title="Verified Profile"
                             onError={(e) => {
-                              // Fallback if image doesn't load
                               e.target.style.display = 'none';
                             }}
                           />
                         )}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500">
-                          {formatTime(latestMessageTime)}
-                        </span>
-                        {showNewMessagesBadge && (
-                          <Badge className="bg-pink-500 text-white text-xs px-2 py-1">
-                            New
-                          </Badge>
-                        )}
-                      </div>
+                      <span className="text-xs text-gray-500 flex-shrink-0">
+                        {formatTime(latestMessageTime)}
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className={`text-sm text-gray-600 truncate ${showNewMessagesBadge ? 'font-medium' : ''}`}>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-sm truncate ${showNewMessagesBadge ? 'font-medium text-gray-700' : 'text-gray-500'}`}>
                         {conversation.lastMessage === 'You: null'
                           ? '🎁 You sent a gift'
                           : conversation.lastMessage}
                       </p>
-                      {conversation.unread > 0 && (
-                        <Badge className="bg-red-500 text-white text-xs ml-2">
-                          {conversation.unread}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {showNewMessagesBadge && (
+                          <Badge className="bg-pink-500 hover:bg-pink-500 text-white text-xs px-2 py-0.5 rounded-full">
+                            New
+                          </Badge>
+                        )}
+                        {conversation.unread > 0 && (
+                          <Badge className="bg-red-500 hover:bg-red-500 text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] flex items-center justify-center">
+                            {conversation.unread}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -168,22 +172,23 @@ const ConversationList = ({ conversations, onSelectChat, isLoading = false, curr
           })}
         </AnimatePresence>
 
+        {/* Empty State */}
         {!isLoading && filteredConversations.length === 0 && (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <p className="text-gray-500 text-sm">
-                {searchTerm ? 'No conversations found' : 'No conversations yet'}
+          <div className="flex items-center justify-center py-12 px-4">
+            <div className="text-center max-w-xs">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-900 font-medium mb-1">
+                {searchTerm ? 'No conversations found' : 'No messages yet'}
               </p>
-              {searchTerm && (
-                <p className="text-gray-400 text-xs mt-1">
-                  Try searching with different keywords
-                </p>
-              )}
-              {!searchTerm && conversationsWithMessages.length === 0 && conversations.length > 0 && (
-                <p className="text-gray-400 text-xs mt-1">
-                  Start messaging to see conversations here
-                </p>
-              )}
+              <p className="text-sm text-gray-500">
+                {searchTerm 
+                  ? 'Try searching with different keywords' 
+                  : conversationsWithMessages.length === 0 && conversations.length > 0
+                    ? 'Start messaging to see conversations here'
+                    : 'Your conversations will appear here'}
+              </p>
             </div>
           </div>
         )}
